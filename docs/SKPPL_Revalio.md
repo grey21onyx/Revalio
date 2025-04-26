@@ -1,0 +1,1129 @@
+# SPESIFIKASI KEBUTUHAN DAN PERANCANGAN PERANGKAT LUNAK
+
+# Aplikasi Edukasi Digital untuk Memberdayakan Sampah Menjadi Sumber Penghasilan (Revalio)
+
+Dipersiapkan oleh:
+- 4342401070
+- 43424001072
+- 4342401085 – Berkat Tua Siallagan
+
+Program Studi Teknologi Rekayasa Perangkat Lunak  
+Politeknik Negeri Batam  
+Jl. Ahmad Yani, Batam 29461  
+2025
+
+## Daftar Isi
+
+1. [Pendahuluan](#1-pendahuluan)
+   1. [Tujuan](#11-tujuan)
+   2. [Lingkup Masalah](#12-lingkup-masalah)
+   3. [Definisi, Akronim dan Singkatan](#13-definisi-akronim-dan-singkatan)
+   4. [Aturan Penamaan dan Penomoran](#14-aturan-penamaan-dan-penomoran)
+   5. [Referensi](#15-referensi)
+   6. [Ikhtisar Dokumen](#16-ikhtisar-dokumen)
+
+2. [Deskripsi Umum Perangkat Lunak](#2-deskripsi-umum-perangkat-lunak)
+   1. [Deskripsi Umum Sistem](#21-deskripsi-umum-sistem)
+   2. [Proses Bisnis Sistem](#22-proses-bisnis-sistem)
+   3. [Karakteristik Pengguna](#23-karakteristik-pengguna)
+   4. [Batasan](#24-batasan)
+   5. [Rancangan Lingkungan Implementasi](#25-rancangan-lingkungan-implementasi)
+
+3. [Deskripsi Rinci Kebutuhan](#3-deskripsi-rinci-kebutuhan)
+   1. [Deskripsi Fungsional](#31-deskripsi-fungsional)
+   2. [Use Case Diagram](#32-use-case-diagram)
+   3. [Use Case 1](#33-use-case-1)
+      1. [Skenario](#331-skenario)
+      2. [Interaksi Objek](#332-interaksi-objek)
+   4. [Use Case 2](#34-use-case-2)
+      1. [Skenario](#341-skenario)
+      2. [Interaksi Objek](#342-interaksi-objek)
+   5. [Use Case 3](#35-use-case-3)
+      1. [Skenario](#351-skenario)
+      2. [Interaksi Objek](#352-interaksi-objek)
+   6. [Use Case 4](#36-use-case-4)
+      1. [Skenario](#361-skenario)
+      2. [Interaksi Objek](#362-interaksi-objek)
+   7. [Deskripsi Kebutuhan Non Fungsional](#37-deskripsi-kebutuhan-non-fungsional)
+
+4. [Deskripsi Kelas-Kelas](#4-deskripsi-kelas-kelas)
+   1. [Class Diagram](#41-class-diagram)
+   2. [Class User](#42-class-user)
+   3. [Class WasteItem](#43-class-wasteitem)
+   4. [Class WasteRecord](#44-class-wasterecord)
+   5. [Class EducationalContent](#45-class-educationalcontent)
+   6. [State Machine Diagram](#46-state-machine-diagram)
+
+5. [Deskripsi Data](#5-deskripsi-data)
+   1. [Entity-Relationship Diagram](#51-entity-relationship-diagram)
+   2. [Daftar Tabel](#52-daftar-tabel)
+   3. [Struktur Tabel users](#53-struktur-tabel-users)
+   4. [Struktur Tabel waste_items](#54-struktur-tabel-waste_items)
+   5. [Struktur Tabel waste_records](#55-struktur-tabel-waste_records)
+   6. [Struktur Tabel educational_contents](#56-struktur-tabel-educational_contents)
+   7. [Struktur Tabel recycling_guides](#57-struktur-tabel-recycling_guides)
+   8. [Struktur Tabel reuse_ideas](#58-struktur-tabel-reuse_ideas)
+   9. [Struktur Tabel potential_buyers](#59-struktur-tabel-potential_buyers)
+   10. [Struktur Tabel price_histories](#510-struktur-tabel-price_histories)
+   11. [Struktur Tabel comments](#511-struktur-tabel-comments)
+   12. [Struktur Tabel ratings](#512-struktur-tabel-ratings)
+   13. [Struktur Tabel user_favorites](#513-struktur-tabel-user_favorites)
+   14. [Struktur Tabel user_completions](#514-struktur-tabel-user_completions)
+   15. [Struktur Tabel notifications](#515-struktur-tabel-notifications)
+   16. [Skema Relasi Antar Tabel](#516-skema-relasi-antar-tabel)
+
+6. [Perancangan Antarmuka](#6-perancangan-antarmuka)
+   1. [Antarmuka Beranda](#61-antarmuka-beranda)
+   2. [Antarmuka Katalog Sampah Bernilai](#62-antarmuka-katalog-sampah-bernilai)
+   3. [Antarmuka Detail Sampah](#63-antarmuka-detail-sampah)
+   4. [Antarmuka Tracking Sampah](#64-antarmuka-tracking-sampah)
+   5. [Antarmuka Panduan Daur Ulang & Reuse](#65-antarmuka-panduan-daur-ulang-reuse)
+   6. [Antarmuka Detail Panduan](#66-antarmuka-detail-panduan)
+
+7. [Matriks Keterunutan](#7-matriks-keterunutan)
+
+## 1. Pendahuluan
+
+### 1.1 Tujuan
+
+Dokumen Spesifikasi Kebutuhan dan Perancangan Perangkat Lunak (SKPPL) ini bertujuan untuk menjelaskan kebutuhan dan rancangan dari Revalio, sebuah platform edukasi digital yang membantu masyarakat memahami cara mengelola sampah rumah tangga dan industri ringan agar bisa memiliki nilai ekonomis. Dokumen ini akan menjadi acuan bagi pengembang dalam membangun sistem dan bagi pengguna untuk memahami fungsionalitas yang akan tersedia.
+
+### 1.2 Lingkup Masalah
+
+Revalio berfokus pada pemberdayaan masyarakat untuk mengelola sampah dengan lebih baik dan mendapatkan nilai ekonomis dari sampah. Lingkup dari aplikasi Revalio meliputi:
+
+- Edukasi mengenai jenis-jenis sampah yang bisa diolah dan dijual, termasuk sampah rumah tangga dan industri ringan seperti besi tua, kardus, kaleng, botol plastik, dan limbah lainnya
+- Panduan klasifikasi dan sortir sampah yang interaktif
+- Informasi tentang nilai ekonomis dari berbagai jenis sampah
+- Panduan daur ulang dan reuse untuk berbagai jenis sampah
+- Tips monetisasi limbah, termasuk informasi tentang cara menjual dan siapa yang membeli
+- Sistem tracking volume sampah yang dikelola pengguna
+- Edukasi tentang dampak lingkungan dari pengelolaan sampah dan peluang usaha yang bisa dihasilkan
+
+Aplikasi ini TIDAK berfungsi sebagai tempat jual beli langsung, melainkan sebagai panduan interaktif, tool manajemen, dan sumber informasi terpercaya dalam proses pengelolaan sampah.
+
+### 1.3 Definisi, Akronim dan Singkatan
+
+| Istilah/Akronim | Definisi |
+|-----------------|----------|
+| SKPPL | Spesifikasi Kebutuhan dan Perancangan Perangkat Lunak |
+| Revalio | Aplikasi Edukasi Digital untuk Memberdayakan Sampah Menjadi Sumber Penghasilan |
+| UI | User Interface (Antarmuka Pengguna) |
+| UX | User Experience (Pengalaman Pengguna) |
+| API | Application Programming Interface |
+| CRUD | Create, Read, Update, Delete |
+| MVP | Minimum Viable Product |
+| Daur Ulang | Proses mengolah sampah menjadi produk baru |
+| Reuse | Penggunaan kembali sampah untuk fungsi yang sama atau berbeda |
+| Monetisasi | Proses menghasilkan uang dari suatu aset, dalam konteks ini adalah sampah |
+
+### 1.4 Aturan Penamaan dan Penomoran
+
+- Penomoran bab dimulai dari angka 1 dengan format angka Arab
+- Penomoran sub-bab menggunakan format [nomor bab].[nomor sub-bab]
+- Penamaan use case menggunakan format [UC-nomor]
+- Penamaan kelas menggunakan format PascalCase
+- Penamaan tabel database menggunakan format snake_case
+- Penamaan atribut dan method menggunakan format camelCase
+
+### 1.5 Referensi
+
+1. IEEE Std 830-1998, IEEE Recommended Practice for Software Requirements Specifications
+2. UML 2.5 Specification
+3. Undang-Undang Nomor 18 Tahun 2008 tentang Pengelolaan Sampah
+4. Peraturan Pemerintah Nomor 81 Tahun 2012 tentang Pengelolaan Sampah Rumah Tangga dan Sampah Sejenis Sampah Rumah Tangga
+
+### 1.6 Ikhtisar Dokumen
+
+Dokumen SKPPL ini terdiri dari tujuh bagian utama:
+1. Pendahuluan: menjelaskan tujuan, lingkup, dan konvensi dokumen
+2. Deskripsi Umum Perangkat Lunak: memberikan gambaran umum tentang sistem dan lingkungannya
+3. Deskripsi Rinci Kebutuhan: menjelaskan kebutuhan fungsional dan non-fungsional secara detail
+4. Deskripsi Kelas-Kelas: menjelaskan struktur dan relasi antar kelas dalam sistem
+5. Deskripsi Data: menjelaskan struktur data dan skema database
+6. Perancangan Antarmuka: menampilkan rancangan antarmuka pengguna
+7. Matriks Keterunutan: menunjukkan hubungan antara kebutuhan dan implementasinya
+
+## 2. Deskripsi Umum Perangkat Lunak
+
+### 2.1 Deskripsi Umum Sistem
+
+Revalio adalah platform edukasi digital yang bertujuan untuk memberdayakan masyarakat dalam mengelola sampah rumah tangga dan industri ringan menjadi sumber penghasilan. Aplikasi ini menyediakan informasi komprehensif tentang jenis-jenis sampah yang memiliki nilai ekonomis (seperti besi tua, kardus, kaleng, botol plastik), cara pengelolaannya, dan potensi nilainya di pasaran.
+
+Sistem ini dibangun sebagai panduan interaktif yang memungkinkan pengguna untuk:
+- Mempelajari klasifikasi dan cara sortir berbagai jenis sampah
+- Memahami proses daur ulang dan reuse untuk setiap jenis sampah
+- Mendapatkan tips monetisasi limbah, termasuk informasi tentang cara menjual dan target pembeli
+- Melacak volume sampah yang telah dikelola
+- Mendapatkan edukasi tentang dampak lingkungan dan peluang usaha terkait pengelolaan sampah
+
+Aplikasi ini tidak berfungsi sebagai marketplace untuk jual beli sampah, melainkan sebagai sumber informasi terpercaya dan alat manajemen yang memberdayakan pengguna untuk mengoptimalkan nilai dari sampah yang mereka hasilkan.
+
+Sistem ini dibangun dengan arsitektur client-server, dengan aplikasi web responsif yang dapat diakses melalui browser di berbagai perangkat.
+
+### 2.2 Proses Bisnis Sistem
+
+Proses bisnis dari aplikasi Revalio meliputi:
+
+1. **Pendaftaran dan Otentikasi**
+   - Pengguna mendaftar dengan email atau media sosial
+   - Pengguna melengkapi profil dan preferensi jenis sampah yang ingin dikelola
+
+2. **Edukasi Pengelolaan Sampah**
+   - Pengguna mengakses materi edukasi tentang berbagai jenis sampah yang memiliki nilai ekonomis
+   - Pengguna mempelajari cara klasifikasi dan sortir sampah yang benar
+   - Pengguna mempelajari proses daur ulang dan reuse untuk setiap jenis sampah
+   - Pengguna menyelesaikan kuis untuk menguji pemahaman
+
+3. **Eksplorasi Nilai Ekonomis Sampah**
+   - Pengguna mengakses informasi tentang nilai ekonomis berbagai jenis sampah
+   - Sistem memberikan perkiraan harga pasar terkini
+   - Pengguna mendapatkan tips untuk memaksimalkan nilai jual sampah
+
+4. **Panduan Monetisasi Sampah**
+   - Pengguna mempelajari cara mengemas, menyimpan, dan memasarkan sampah dengan benar
+   - Pengguna mendapatkan informasi tentang siapa yang membeli jenis sampah tertentu
+   - Pengguna mendapatkan tips negosiasi dan standar harga pasar
+
+5. **Tracking Volume Sampah**
+   - Pengguna mencatat jenis dan volume sampah yang dikelola
+   - Sistem menghitung estimasi dampak lingkungan positif yang dihasilkan
+   - Sistem menghitung estimasi nilai ekonomi yang berpotensi diperoleh
+
+6. **Edukasi Dampak Lingkungan & Peluang Usaha**
+   - Pengguna mengakses informasi tentang dampak positif dari pengelolaan sampah
+   - Pengguna mempelajari peluang usaha terkait daur ulang dan pengelolaan sampah
+   - Pengguna mendapatkan inspirasi sukses story dari pelaku usaha pengelolaan sampah
+
+7. **Komunitas dan Pembelajaran**
+   - Pengguna dapat berbagi pengalaman dan tips pengelolaan sampah
+   - Pengguna berpartisipasi dalam tantangan atau kampanye pengelolaan sampah
+   - Pengguna mendapatkan update informasi terbaru tentang inovasi pengelolaan sampah
+
+8. **Administrasi Sistem**
+   - Manajemen konten edukasi
+   - Moderasi komunitas
+   - Analisis dan pelaporan aktivitas pengguna
+   - Konfigurasi sistem
+
+### 2.3 Karakteristik Pengguna
+
+Aplikasi Revalio akan digunakan oleh beberapa jenis pengguna, antara lain:
+
+1. **Masyarakat Umum**
+   - Memiliki pengetahuan dasar tentang teknologi
+   - Tertarik untuk mengelola sampah dengan lebih baik
+   - Ingin mendapatkan penghasilan tambahan dari sampah rumah tangga
+   - Membutuhkan panduan praktis dan terstruktur tentang pengelolaan sampah
+
+2. **Pelaku UMKM**
+   - Menghasilkan sampah industri ringan yang ingin dikelola dengan lebih baik
+   - Mencari cara untuk meminimalisir biaya pengelolaan limbah
+   - Tertarik untuk mengimplementasikan praktik ramah lingkungan dalam bisnis
+
+3. **Komunitas Peduli Lingkungan**
+   - Aktif dalam kegiatan pelestarian lingkungan
+   - Mencari informasi dan alat untuk mengedukasi masyarakat tentang pengelolaan sampah
+   - Ingin mempromosikan praktik daur ulang dan reuse di komunitas
+
+4. **Pendidik dan Peneliti**
+   - Membutuhkan materi edukasi tentang pengelolaan sampah
+   - Mencari data dan informasi terkini tentang nilai ekonomis sampah
+   - Ingin menggunakan platform sebagai alat bantu mengajar
+
+5. **Administrator Sistem**
+   - Mengelola konten edukasi
+   - Memantau aktivitas pengguna
+   - Mengelola data master dan referensi
+
+### 2.4 Batasan
+
+Beberapa batasan dalam pengembangan aplikasi Revalio:
+
+1. **Batasan Teknis**
+   - Aplikasi web harus kompatibel dengan browser modern (Chrome, Firefox, Safari, Edge)
+   - Responsif untuk berbagai ukuran layar (desktop, tablet, mobile)
+   - Menggunakan teknologi web standar (HTML5, CSS3, JavaScript)
+
+2. **Batasan Operasional**
+   - Aplikasi membutuhkan koneksi internet untuk sebagian besar fitur
+   - Fitur penjemputan sampah bergantung pada ketersediaan bank sampah/pengepul di lokasi pengguna
+   - Harga sampah dapat berubah-ubah sesuai kondisi pasar
+
+3. **Batasan Keamanan**
+   - Data pengguna harus dilindungi sesuai regulasi privasi data
+   - Transaksi finansial harus mengikuti standar keamanan yang berlaku
+   - Verifikasi identitas diperlukan untuk fitur tertentu
+
+### 2.5 Rancangan Lingkungan Implementasi
+
+Aplikasi Revalio akan diimplementasikan dengan lingkungan sebagai berikut:
+
+1. **Frontend**
+   - Framework: React.js
+   - UI Library: Material-UI
+   - State Management: Redux
+
+2. **Backend**
+   - Platform: Node.js
+   - Framework: Express.js
+   - Database: MongoDB
+   - Authentication: JWT
+
+3. **Deployment**
+   - Cloud Platform: AWS / Google Cloud
+   - CI/CD: GitHub Actions
+   - Monitoring: Sentry
+
+4. **Persyaratan Perangkat Pengguna**
+   - Browser versi terbaru (Chrome, Firefox, Safari, Edge)
+   - Koneksi internet minimal 3G
+   - Kamera (opsional, untuk fitur identifikasi sampah)
+   - GPS (untuk fitur lokasi)
+
+## 3. Deskripsi Rinci Kebutuhan
+
+### 3.1 Deskripsi Fungsional
+
+Aplikasi Revalio memiliki kebutuhan fungsional sebagai berikut:
+
+1. **Manajemen Pengguna**
+   - Pendaftaran pengguna baru
+   - Login dan autentikasi
+   - Manajemen profil
+   - Reset password
+   - Penyesuaian preferensi jenis sampah yang diminati
+
+2. **Edukasi Pengelolaan Sampah**
+   - Menampilkan materi pembelajaran tentang klasifikasi dan sortir sampah
+   - Menyediakan panduan interaktif daur ulang dan reuse
+   - Kuis dan evaluasi pemahaman
+   - Tracking progress pembelajaran
+   - Infografis dan video tutorial pengelolaan sampah
+
+3. **Eksplorasi Nilai Ekonomis Sampah**
+   - Katalog jenis sampah yang memiliki nilai ekonomis
+   - Informasi detail tentang nilai ekonomis setiap jenis sampah
+   - Update berkala tentang tren harga pasaran
+   - Kalkulator estimasi nilai sampah berdasarkan jenis dan volume
+
+4. **Panduan Monetisasi Sampah**
+   - Panduan cara mengemas dan menyimpan sampah dengan benar
+   - Informasi tentang pembeli potensial untuk setiap jenis sampah
+   - Tips negosiasi dan standar harga pasar
+   - Praktik terbaik dalam memasarkan sampah untuk dijual
+
+5. **Tracking Volume Sampah**
+   - Pencatatan jenis dan volume sampah yang dikelola
+   - Visualisasi statistik pengelolaan sampah
+   - Perhitungan dampak lingkungan positif 
+   - Estimasi nilai ekonomi yang berpotensi diperoleh
+
+6. **Edukasi Dampak Lingkungan & Peluang Usaha**
+   - Materi edukasi tentang dampak positif pengelolaan sampah
+   - Informasi tentang peluang usaha di bidang pengelolaan sampah
+   - Studi kasus dan sukses story pelaku usaha pengelolaan sampah
+   - Panduan memulai usaha di bidang pengelolaan sampah
+
+7. **Komunitas dan Pembelajaran**
+   - Forum diskusi pengelolaan sampah
+   - Berbagi tips dan pengalaman
+   - Tantangan dan kampanye pengelolaan sampah
+   - Notifikasi dan update informasi terbaru
+
+8. **Administrasi Sistem**
+   - Manajemen konten edukasi
+   - Moderasi komunitas
+   - Analisis dan pelaporan aktivitas pengguna
+   - Konfigurasi sistem
+
+### 3.2 Use Case Diagram
+
+![Use Case Diagram](https://via.placeholder.com/800x600?text=Use+Case+Diagram+Revalio)
+
+### 3.3 Use Case 1: Mempelajari Jenis Sampah dan Nilainya
+
+#### 3.3.1 Skenario
+
+**Nama Use Case:** UC-1 Mempelajari Jenis Sampah dan Nilainya
+
+**Aktor:** Pengguna (Masyarakat Umum, Pelaku UMKM)
+
+**Deskripsi:** Use case ini menggambarkan proses pengguna mempelajari berbagai jenis sampah yang memiliki nilai ekonomis dan memahami nilai potensialnya di pasaran.
+
+**Kondisi Awal:** Pengguna telah masuk ke aplikasi Revalio.
+
+**Alur Utama:**
+1. Pengguna memilih menu "Katalog Sampah Bernilai".
+2. Sistem menampilkan daftar kategori sampah (plastik, kertas, logam, elektronik, dll).
+3. Pengguna memilih salah satu kategori sampah.
+4. Sistem menampilkan daftar jenis sampah dalam kategori tersebut.
+5. Pengguna memilih salah satu jenis sampah.
+6. Sistem menampilkan detail informasi tentang sampah tersebut, meliputi:
+   - Deskripsi dan karakteristik
+   - Foto/gambar contoh
+   - Perkiraan nilai ekonomis per satuan berat
+   - Tingkat kesulitan pengumpulan dan pengelolaan
+   - Tips penyortiran dan penyimpanan
+7. Pengguna dapat melihat grafik perubahan nilai sampah tersebut dalam beberapa periode waktu.
+8. Pengguna dapat menambahkan jenis sampah tersebut ke daftar favorit untuk akses cepat di masa mendatang.
+
+**Kondisi Akhir:** Pengguna mendapatkan informasi lengkap tentang jenis sampah tertentu dan nilai ekonomisnya.
+
+**Alur Alternatif:**
+- Pada langkah 5, pengguna dapat menggunakan fitur pencarian untuk mencari jenis sampah tertentu.
+- Pada langkah 6, jika informasi detail tidak tersedia, sistem akan menampilkan pesan dan menyarankan jenis sampah serupa.
+
+#### 3.3.2 Interaksi Objek
+
+![Sequence Diagram UC-1](https://via.placeholder.com/800x400?text=Sequence+Diagram+UC-1)
+
+### 3.4 Use Case 2: Tracking Volume Sampah
+
+#### 3.4.1 Skenario
+
+**Nama Use Case:** UC-2 Tracking Volume Sampah
+
+**Aktor:** Pengguna (Masyarakat Umum, Pelaku UMKM)
+
+**Deskripsi:** Use case ini menggambarkan proses pengguna mencatat dan melacak volume sampah yang telah dikelola serta melihat estimasi nilai ekonomis dan dampak lingkungan.
+
+**Kondisi Awal:** Pengguna telah login ke aplikasi Revalio.
+
+**Alur Utama:**
+1. Pengguna memilih menu "Tracking Sampah".
+2. Sistem menampilkan form pencatatan sampah baru dan riwayat pencatatan sebelumnya.
+3. Pengguna memilih opsi "Catat Sampah Baru".
+4. Sistem menampilkan form dengan field:
+   - Jenis sampah (dropdown atau pencarian)
+   - Berat/volume (dengan pilihan satuan: kg, gram, liter)
+   - Tanggal pengumpulan
+   - Kondisi sampah (dropdown: sangat baik, baik, cukup)
+   - Catatan tambahan (opsional)
+   - Upload foto (opsional)
+5. Pengguna mengisi formulir dan memilih "Simpan".
+6. Sistem memproses data dan menampilkan:
+   - Konfirmasi penyimpanan berhasil
+   - Estimasi nilai ekonomis dari sampah yang dicatat
+   - Estimasi dampak lingkungan positif (pengurangan emisi CO2, penghematan energi, dll)
+7. Sistem memperbarui dashboard pengguna dengan total volume sampah yang telah dikelola dan estimasi nilai ekonomisnya.
+
+**Kondisi Akhir:** Data sampah tercatat dalam sistem dan dashboard pengguna terupdate.
+
+**Alur Alternatif:**
+- Pada langkah 5, jika pengguna tidak mengisi field wajib, sistem akan menampilkan pesan error.
+- Pada langkah 2, pengguna dapat memilih untuk melihat statistik dan grafik dari data yang sudah direkam sebelumnya.
+- Pengguna dapat mengedit atau menghapus catatan sampah yang sudah diinput sebelumnya.
+
+#### 3.4.2 Interaksi Objek
+
+![Sequence Diagram UC-2](https://via.placeholder.com/800x400?text=Sequence+Diagram+UC-2)
+
+### 3.5 Use Case 3: Mempelajari Panduan Daur Ulang & Reuse
+
+#### 3.5.1 Skenario
+
+**Nama Use Case:** UC-3 Mempelajari Panduan Daur Ulang & Reuse
+
+**Aktor:** Pengguna (Masyarakat Umum, Komunitas Peduli Lingkungan, Pendidik)
+
+**Deskripsi:** Use case ini menggambarkan proses pengguna mempelajari cara mendaur ulang atau menggunakan kembali berbagai jenis sampah.
+
+**Kondisi Awal:** Pengguna telah masuk ke aplikasi Revalio.
+
+**Alur Utama:**
+1. Pengguna memilih menu "Panduan Daur Ulang & Reuse".
+2. Sistem menampilkan daftar kategori panduan (daur ulang plastik, daur ulang kertas, kerajinan dari sampah, dll).
+3. Pengguna memilih salah satu kategori.
+4. Sistem menampilkan daftar panduan dalam kategori tersebut.
+5. Pengguna memilih salah satu panduan.
+6. Sistem menampilkan detail panduan yang berisi:
+   - Judul dan deskripsi
+   - Tingkat kesulitan
+   - Estimasi waktu pengerjaan
+   - Bahan-bahan yang dibutuhkan
+   - Alat-alat yang dibutuhkan
+   - Langkah-langkah dengan gambar/video
+   - Hasil akhir
+   - Tips dan saran
+7. Pengguna dapat menandai panduan sebagai "Favorit" atau "Selesai Dicoba".
+8. Pengguna dapat memberikan rating dan komentar pada panduan.
+
+**Kondisi Akhir:** Pengguna mendapatkan informasi detail tentang cara mendaur ulang atau menggunakan kembali jenis sampah tertentu.
+
+**Alur Alternatif:**
+- Pada langkah 2, pengguna dapat menggunakan fitur pencarian untuk mencari panduan spesifik.
+- Pada langkah 6, pengguna dapat mengunduh panduan dalam format PDF untuk dibaca offline.
+- Pengguna dapat membagikan panduan ke media sosial atau mengirimkan kepada teman.
+
+#### 3.5.2 Interaksi Objek
+
+![Sequence Diagram UC-3](https://via.placeholder.com/800x400?text=Sequence+Diagram+UC-3)
+
+### 3.6 Use Case 4: Mendapatkan Tips Monetisasi Limbah
+
+#### 3.6.1 Skenario
+
+**Nama Use Case:** UC-4 Mendapatkan Tips Monetisasi Limbah
+
+**Aktor:** Pengguna (Masyarakat Umum, Pelaku UMKM)
+
+**Deskripsi:** Use case ini menggambarkan proses pengguna mendapatkan tips dan informasi tentang cara memonetisasi limbah, termasuk cara menjual dan informasi pembeli potensial.
+
+**Kondisi Awal:** Pengguna telah masuk ke aplikasi Revalio.
+
+**Alur Utama:**
+1. Pengguna memilih menu "Tips Monetisasi".
+2. Sistem menampilkan daftar kategori tips (cara menjual, pembeli potensial, teknik negosiasi, dll).
+3. Pengguna memilih kategori "Pembeli Potensial".
+4. Sistem menampilkan form filter:
+   - Jenis sampah (dropdown: plastik, kertas, logam, elektronik, dll)
+   - Lokasi (input text dengan auto-complete atau pilih dari peta)
+   - Volume minimum (opsional)
+5. Pengguna mengisi filter dan memilih "Cari".
+6. Sistem menampilkan daftar pembeli potensial yang sesuai dengan kriteria pencarian, meliputi:
+   - Nama pembeli (bank sampah, pengepul, perusahaan daur ulang)
+   - Jenis sampah yang dibeli
+   - Kisaran harga
+   - Persyaratan (kondisi, volume minimum, dll)
+   - Lokasi dan kontak
+   - Rating dari pengguna lain
+7. Pengguna dapat menyimpan hasil pencarian atau membagikannya.
+
+**Kondisi Akhir:** Pengguna mendapatkan informasi tentang pembeli potensial untuk jenis sampah tertentu di lokasi yang diinginkan.
+
+**Alur Alternatif:**
+- Pada langkah 3, pengguna dapat memilih kategori lain seperti "Cara Menjual" atau "Teknik Negosiasi".
+- Pada langkah 6, jika tidak ada hasil yang sesuai, sistem akan menyarankan untuk memperluas area pencarian atau mengubah filter.
+- Pengguna dapat memberikan rating dan ulasan tentang pengalaman mereka dengan pembeli tertentu.
+
+#### 3.6.2 Interaksi Objek
+
+![Sequence Diagram UC-4](https://via.placeholder.com/800x400?text=Sequence+Diagram+UC-4)
+
+### 3.7 Deskripsi Kebutuhan Non Fungsional
+
+1. **Keamanan**
+   - Sistem harus mengimplementasikan autentikasi yang kuat
+   - Data sensitif harus dienkripsi
+   - Sistem harus terlindungi dari serangan umum (CSRF, XSS, SQL Injection)
+
+2. **Kinerja**
+   - Waktu respons halaman tidak lebih dari 3 detik
+   - Sistem harus dapat menangani minimal 1000 pengguna konkuren
+   - Ketersediaan sistem 99.9% (downtime maksimal 8.76 jam/tahun)
+
+3. **Usabilitas**
+   - Antarmuka intuitif dan mudah digunakan
+   - Waktu pembelajaran pengguna baru tidak lebih dari 30 menit
+   - Mendukung aksesibilitas sesuai standar WCAG 2.1
+
+4. **Skalabilitas**
+   - Sistem harus dapat diskalakan secara horizontal
+   - Database harus mendukung sharding untuk pertumbuhan data
+
+5. **Kompatibilitas**
+   - Kompatibel dengan browser modern (Chrome, Firefox, Safari, Edge)
+   - Responsif untuk perangkat dengan ukuran layar berbeda
+
+## 4. Deskripsi Kelas-Kelas
+
+### 4.1 Class Diagram
+
+![Class Diagram](https://via.placeholder.com/800x600?text=Class+Diagram+Revalio)
+
+### 4.2 Class User
+
+```java
+/**
+ * Class User merepresentasikan pengguna aplikasi Revalio
+ */
+public class User {
+    // Attributes
+    private int userId;
+    private String username;
+    private String email;
+    private String password;
+    private String fullName;
+    private String phoneNumber;
+    private String address;
+    private UserRole role;
+    private Date registrationDate;
+    private Date lastLoginDate;
+    private boolean isActive;
+    
+    // Methods
+    public boolean register(String username, String email, String password);
+    public boolean login(String email, String password);
+    public boolean updateProfile(UserProfileDTO profileData);
+    public boolean changePassword(String oldPassword, String newPassword);
+    public List<WasteRecord> getWasteRecords();
+    public Dashboard getDashboard();
+    public List<EducationalContent> getFavoriteContent();
+    public void addToFavorites(EducationalContent content);
+    public void removeFromFavorites(EducationalContent content);
+}
+
+public enum UserRole {
+    REGULAR_USER,
+    PREMIUM_USER,
+    EDUCATOR,
+    ADMIN
+}
+```
+
+### 4.3 Class WasteItem
+
+```java
+/**
+ * Class WasteItem merepresentasikan jenis sampah yang dapat dikelola
+ */
+public class WasteItem {
+    // Attributes
+    private int wasteItemId;
+    private String name;
+    private String description;
+    private WasteCategory category;
+    private List<String> imageUrls;
+    private String handlingInstructions;
+    private String storageGuidelines;
+    private DifficultyLevel collectionDifficulty;
+    private DifficultyLevel processingDifficulty;
+    private boolean isRecyclable;
+    private boolean isReusable;
+    
+    // Methods
+    public double getEstimatedValue(Date asOfDate);
+    public List<PriceHistory> getPriceHistory(Date startDate, Date endDate);
+    public List<Buyer> getPotentialBuyers(String location);
+    public List<RecyclingGuide> getRecyclingGuides();
+    public List<ReuseIdea> getReuseIdeas();
+    public EnvironmentalImpact getEnvironmentalImpact(double weight);
+}
+
+public enum WasteCategory {
+    PLASTIC,
+    PAPER,
+    METAL,
+    GLASS,
+    ELECTRONIC,
+    TEXTILE,
+    ORGANIC,
+    HAZARDOUS,
+    OTHER
+}
+
+public enum DifficultyLevel {
+    VERY_EASY,
+    EASY,
+    MODERATE,
+    DIFFICULT,
+    VERY_DIFFICULT
+}
+```
+
+### 4.4 Class WasteRecord
+
+```java
+/**
+ * Class WasteRecord merepresentasikan catatan sampah yang dikelola pengguna
+ */
+public class WasteRecord {
+    // Attributes
+    private int recordId;
+    private User user;
+    private WasteItem wasteItem;
+    private double quantity;
+    private UnitOfMeasure unitOfMeasure;
+    private Date collectionDate;
+    private ItemCondition condition;
+    private String notes;
+    private List<String> photoUrls;
+    private Date recordDate;
+    
+    // Methods
+    public double getEstimatedValue();
+    public EnvironmentalImpact getEnvironmentalImpact();
+    public boolean update(WasteRecordDTO recordData);
+    public boolean delete();
+}
+
+public enum UnitOfMeasure {
+    KILOGRAM,
+    GRAM,
+    LITER,
+    PIECE,
+    CUBIC_METER
+}
+
+public enum ItemCondition {
+    EXCELLENT,
+    GOOD,
+    FAIR,
+    POOR
+}
+```
+
+### 4.5 Class EducationalContent
+
+```java
+/**
+ * Class EducationalContent merepresentasikan konten edukasi dalam aplikasi
+ */
+public class EducationalContent {
+    // Attributes
+    private int contentId;
+    private String title;
+    private String description;
+    private ContentType type;
+    private ContentCategory category;
+    private String author;
+    private Date publishDate;
+    private Date lastUpdateDate;
+    private int viewCount;
+    private double averageRating;
+    private List<String> tags;
+    private String content;
+    private List<String> mediaUrls;
+    
+    // Methods
+    public List<Comment> getComments();
+    public boolean addComment(User user, String commentText);
+    public boolean rateContent(User user, int rating);
+    public List<EducationalContent> getRelatedContent();
+    public boolean markAsCompleted(User user);
+    public boolean isCompletedBy(User user);
+}
+
+public enum ContentType {
+    ARTICLE,
+    VIDEO,
+    INFOGRAPHIC,
+    QUIZ,
+    TUTORIAL,
+    CASE_STUDY
+}
+
+public enum ContentCategory {
+    WASTE_CLASSIFICATION,
+    RECYCLING_GUIDE,
+    REUSE_IDEA,
+    MONETIZATION_TIP,
+    ENVIRONMENTAL_IMPACT,
+    BUSINESS_OPPORTUNITY
+}
+```
+
+### 4.6 State Machine Diagram
+
+![State Machine Diagram](https://via.placeholder.com/800x400?text=State+Machine+Diagram+for+WasteRecord)
+
+## 5. Deskripsi Data
+
+### 5.1 Entity-Relationship Diagram
+
+![Entity-Relationship Diagram](https://via.placeholder.com/800x600?text=ERD+Revalio)
+
+### 5.2 Daftar Tabel
+
+Aplikasi Revalio menggunakan basis data berikut:
+
+1. users - Menyimpan data pengguna
+2. waste_items - Menyimpan informasi jenis-jenis sampah
+3. waste_categories - Menyimpan kategori sampah
+4. waste_records - Menyimpan catatan sampah yang dikelola pengguna
+5. educational_contents - Menyimpan konten edukasi
+6. recycling_guides - Menyimpan panduan daur ulang
+7. reuse_ideas - Menyimpan ide penggunaan kembali sampah
+8. potential_buyers - Menyimpan informasi pembeli potensial
+9. price_histories - Menyimpan riwayat harga sampah
+10. comments - Menyimpan komentar pengguna
+11. ratings - Menyimpan rating pengguna
+12. user_favorites - Menyimpan konten favorit pengguna
+13. user_completions - Menyimpan konten yang telah diselesaikan pengguna
+14. notifications - Menyimpan notifikasi pengguna
+
+### 5.3 Struktur Tabel users
+
+| Field | Tipe Data | Keterangan | Konstrain |
+|-------|-----------|------------|-----------|
+| user_id | INT | ID unik pengguna | PK, AUTO_INCREMENT |
+| username | VARCHAR(50) | Nama pengguna | UNIQUE, NOT NULL |
+| email | VARCHAR(100) | Alamat email | UNIQUE, NOT NULL |
+| password_hash | VARCHAR(255) | Hash password | NOT NULL |
+| full_name | VARCHAR(100) | Nama lengkap | NOT NULL |
+| phone_number | VARCHAR(20) | Nomor telepon | |
+| address | TEXT | Alamat lengkap | |
+| role | ENUM | Peran pengguna | DEFAULT 'REGULAR_USER' |
+| registration_date | DATETIME | Tanggal pendaftaran | DEFAULT CURRENT_TIMESTAMP |
+| last_login_date | DATETIME | Tanggal login terakhir | |
+| is_active | BOOLEAN | Status aktif | DEFAULT TRUE |
+| profile_picture_url | VARCHAR(255) | URL foto profil | |
+
+### 5.4 Struktur Tabel waste_items
+
+| Field | Tipe Data | Keterangan | Konstrain |
+|-------|-----------|------------|-----------|
+| waste_item_id | INT | ID unik jenis sampah | PK, AUTO_INCREMENT |
+| name | VARCHAR(100) | Nama jenis sampah | NOT NULL |
+| description | TEXT | Deskripsi | NOT NULL |
+| category_id | INT | ID kategori sampah | FK, NOT NULL |
+| handling_instructions | TEXT | Instruksi penanganan | |
+| storage_guidelines | TEXT | Panduan penyimpanan | |
+| collection_difficulty | ENUM | Tingkat kesulitan pengumpulan | |
+| processing_difficulty | ENUM | Tingkat kesulitan pengolahan | |
+| is_recyclable | BOOLEAN | Dapat didaur ulang | DEFAULT FALSE |
+| is_reusable | BOOLEAN | Dapat digunakan kembali | DEFAULT FALSE |
+| current_value_min | DECIMAL(10,2) | Nilai minimum saat ini | |
+| current_value_max | DECIMAL(10,2) | Nilai maksimum saat ini | |
+| value_unit | VARCHAR(20) | Satuan nilai (per kg, per pcs, dll) | |
+| created_at | DATETIME | Tanggal pembuatan | DEFAULT CURRENT_TIMESTAMP |
+| updated_at | DATETIME | Tanggal pembaruan | DEFAULT CURRENT_TIMESTAMP |
+
+### 5.5 Struktur Tabel waste_records
+
+| Field | Tipe Data | Keterangan | Konstrain |
+|-------|-----------|------------|-----------|
+| record_id | INT | ID unik catatan | PK, AUTO_INCREMENT |
+| user_id | INT | ID pengguna | FK, NOT NULL |
+| waste_item_id | INT | ID jenis sampah | FK, NOT NULL |
+| quantity | DECIMAL(10,2) | Jumlah | NOT NULL |
+| unit_of_measure | ENUM | Satuan ukuran | NOT NULL |
+| collection_date | DATE | Tanggal pengumpulan | NOT NULL |
+| condition | ENUM | Kondisi sampah | NOT NULL |
+| notes | TEXT | Catatan tambahan | |
+| estimated_value | DECIMAL(10,2) | Estimasi nilai | |
+| record_date | DATETIME | Tanggal pencatatan | DEFAULT CURRENT_TIMESTAMP |
+
+### 5.6 Struktur Tabel educational_contents
+
+| Field | Tipe Data | Keterangan | Konstrain |
+|-------|-----------|------------|-----------|
+| content_id | INT | ID unik konten | PK, AUTO_INCREMENT |
+| title | VARCHAR(100) | Judul konten | NOT NULL |
+| description | TEXT | Deskripsi konten | NOT NULL |
+| type | ENUM | Tipe konten | NOT NULL |
+| category | ENUM | Kategori konten | NOT NULL |
+| author | VARCHAR(100) | Penulis konten | NOT NULL |
+| publish_date | DATETIME | Tanggal publikasi | NOT NULL |
+| last_update_date | DATETIME | Tanggal pembaruan | NOT NULL |
+| view_count | INT | Jumlah tampilan | NOT NULL |
+| average_rating | DECIMAL(3,2) | Rata-rata rating | NOT NULL |
+| tags | TEXT | Tag konten | |
+| content | TEXT | Konten | NOT NULL |
+| media_urls | TEXT | URL media konten | |
+
+### 5.7 Struktur Tabel recycling_guides
+
+| Field | Tipe Data | Keterangan | Konstrain |
+|-------|-----------|------------|-----------|
+| guide_id | INT | ID unik panduan | PK, AUTO_INCREMENT |
+| title | VARCHAR(100) | Judul panduan | NOT NULL |
+| description | TEXT | Deskripsi panduan | NOT NULL |
+| difficulty | ENUM | Tingkat kesulitan | NOT NULL |
+| estimated_time | INT | Estimasi waktu | NOT NULL |
+| materials | TEXT | Bahan-bahan yang dibutuhkan | NOT NULL |
+| tools | TEXT | Alat-alat yang dibutuhkan | NOT NULL |
+| steps | TEXT | Langkah-langkah panduan | NOT NULL |
+| result | TEXT | Hasil akhir | NOT NULL |
+| tips | TEXT | Tips dan saran | |
+
+### 5.8 Struktur Tabel reuse_ideas
+
+| Field | Tipe Data | Keterangan | Konstrain |
+|-------|-----------|------------|-----------|
+| idea_id | INT | ID unik ide | PK, AUTO_INCREMENT |
+| title | VARCHAR(100) | Judul ide | NOT NULL |
+| description | TEXT | Deskripsi ide | NOT NULL |
+| category | ENUM | Kategori ide | NOT NULL |
+| difficulty | ENUM | Tingkat kesulitan | NOT NULL |
+| estimated_time | INT | Estimasi waktu | NOT NULL |
+| materials | TEXT | Bahan-bahan yang dibutuhkan | NOT NULL |
+| tools | TEXT | Alat-alat yang dibutuhkan | NOT NULL |
+| steps | TEXT | Langkah-langkah ide | NOT NULL |
+| result | TEXT | Hasil akhir | NOT NULL |
+| tips | TEXT | Tips dan saran | |
+
+### 5.9 Struktur Tabel potential_buyers
+
+| Field | Tipe Data | Keterangan | Konstrain |
+|-------|-----------|------------|-----------|
+| buyer_id | INT | ID unik pembeli | PK, AUTO_INCREMENT |
+| name | VARCHAR(100) | Nama pembeli | NOT NULL |
+| type | ENUM | Tipe pembeli | NOT NULL |
+| location | TEXT | Lokasi pembeli | NOT NULL |
+| contact_info | TEXT | Informasi kontak | NOT NULL |
+| rating | DECIMAL(3,2) | Rating pembeli | NOT NULL |
+| notes | TEXT | Catatan tambahan | |
+
+### 5.10 Struktur Tabel price_histories
+
+| Field | Tipe Data | Keterangan | Konstrain |
+|-------|-----------|------------|-----------|
+| history_id | INT | ID unik riwayat harga | PK, AUTO_INCREMENT |
+| waste_item_id | INT | ID jenis sampah | FK, NOT NULL |
+| date | DATE | Tanggal harga | NOT NULL |
+| price | DECIMAL(10,2) | Harga | NOT NULL |
+| unit | ENUM | Satuan harga | NOT NULL |
+
+### 5.11 Struktur Tabel comments
+
+| Field | Tipe Data | Keterangan | Konstrain |
+|-------|-----------|------------|-----------|
+| comment_id | INT | ID unik komentar | PK, AUTO_INCREMENT |
+| content_id | INT | ID konten | FK, NOT NULL |
+| user_id | INT | ID pengguna | FK, NOT NULL |
+| comment_text | TEXT | Teks komentar | NOT NULL |
+| comment_date | DATETIME | Tanggal komentar | NOT NULL |
+
+### 5.12 Struktur Tabel ratings
+
+| Field | Tipe Data | Keterangan | Konstrain |
+|-------|-----------|------------|-----------|
+| rating_id | INT | ID unik rating | PK, AUTO_INCREMENT |
+| content_id | INT | ID konten | FK, NOT NULL |
+| user_id | INT | ID pengguna | FK, NOT NULL |
+| rating_value | DECIMAL(3,2) | Nilai rating | NOT NULL |
+| rating_date | DATETIME | Tanggal rating | NOT NULL |
+
+### 5.13 Struktur Tabel user_favorites
+
+| Field | Tipe Data | Keterangan | Konstrain |
+|-------|-----------|------------|-----------|
+| favorite_id | INT | ID unik favorit | PK, AUTO_INCREMENT |
+| user_id | INT | ID pengguna | FK, NOT NULL |
+| content_id | INT | ID konten | FK, NOT NULL |
+| favorite_date | DATETIME | Tanggal favorit | NOT NULL |
+
+### 5.14 Struktur Tabel user_completions
+
+| Field | Tipe Data | Keterangan | Konstrain |
+|-------|-----------|------------|-----------|
+| completion_id | INT | ID unik penyelesaian | PK, AUTO_INCREMENT |
+| user_id | INT | ID pengguna | FK, NOT NULL |
+| content_id | INT | ID konten | FK, NOT NULL |
+| completion_date | DATETIME | Tanggal penyelesaian | NOT NULL |
+
+### 5.15 Struktur Tabel notifications
+
+| Field | Tipe Data | Keterangan | Konstrain |
+|-------|-----------|------------|-----------|
+| notification_id | INT | ID unik notifikasi | PK, AUTO_INCREMENT |
+| user_id | INT | ID pengguna | FK, NOT NULL |
+| title | VARCHAR(100) | Judul notifikasi | NOT NULL |
+| message | TEXT | Pesan notifikasi | NOT NULL |
+| is_read | BOOLEAN | Status baca | NOT NULL |
+| created_at | DATETIME | Tanggal pembuatan | NOT NULL |
+
+### 5.16 Skema Relasi Antar Tabel
+
+![Skema Relasi](https://via.placeholder.com/800x600?text=Skema+Relasi+Antar+Tabel)
+
+## 6. Perancangan Antarmuka
+
+### 6.1 Antarmuka Beranda
+
+Halaman beranda merupakan halaman utama yang ditampilkan setelah pengguna login. Antarmuka ini menampilkan ringkasan informasi penting dan akses cepat ke fitur-fitur utama.
+
+![Mockup Beranda](https://via.placeholder.com/800x600?text=Mockup+Beranda+Revalio)
+
+**Komponen Utama:**
+1. Header dengan logo Revalio dan menu navigasi utama
+2. Profil singkat pengguna dan notifikasi
+3. Dashboard statistik personal yang menampilkan:
+   - Total sampah yang telah dikelola
+   - Estimasi nilai ekonomis
+   - Dampak lingkungan positif (pengurangan emisi CO2)
+4. Kartu akses cepat ke fitur utama:
+   - Katalog Sampah Bernilai
+   - Panduan Daur Ulang & Reuse
+   - Tracking Sampah
+   - Tips Monetisasi
+5. Konten edukasi terbaru
+6. Aktivitas komunitas terkini
+7. Footer dengan tautan tambahan dan informasi kontak
+
+**Interaksi:**
+- Pengguna dapat mengklik kartu fitur untuk navigasi cepat
+- Dashboard statistik dapat diexpand untuk melihat detail lebih lengkap
+- Konten edukasi terbaru dapat di-scroll horizontal
+- Pengguna dapat menyesuaikan widget yang ditampilkan di beranda
+
+### 6.2 Antarmuka Katalog Sampah Bernilai
+
+Halaman ini menampilkan berbagai jenis sampah yang memiliki nilai ekonomis, dikategorikan untuk memudahkan pencarian.
+
+![Mockup Katalog Sampah](https://via.placeholder.com/800x600?text=Mockup+Katalog+Sampah+Bernilai)
+
+**Komponen Utama:**
+1. Header dengan judul halaman dan breadcrumb navigation
+2. Panel filter dan pencarian:
+   - Dropdown kategori sampah
+   - Sorting options (nilai tertinggi, terpopuler, terbaru)
+   - Field pencarian
+3. Grid view/list view jenis sampah dengan:
+   - Gambar representatif
+   - Nama sampah
+   - Kategori
+   - Kisaran nilai ekonomis
+   - Indikator tingkat kesulitan pengumpulan/pengolahan
+4. Pagination atau infinite scroll
+5. Tombol favorit pada setiap item
+
+**Interaksi:**
+- Pengguna dapat memfilter dan mencari jenis sampah
+- Toggle antara tampilan grid dan list
+- Mengklik item untuk melihat detail lengkap
+- Menambahkan item ke favorit dengan tombol berbentuk hati
+- Sorting dan filtering diproses secara real-time
+
+### 6.3 Antarmuka Detail Sampah
+
+Halaman ini menampilkan informasi detail tentang jenis sampah tertentu.
+
+![Mockup Detail Sampah](https://via.placeholder.com/800x600?text=Mockup+Detail+Sampah)
+
+**Komponen Utama:**
+1. Header dengan nama sampah dan breadcrumb navigation
+2. Galeri foto/gambar sampah dengan carousel
+3. Informasi umum:
+   - Deskripsi lengkap
+   - Kategori dan karakteristik
+   - Kisaran nilai ekonomis (dengan grafik trend harga)
+4. Tab informasi tambahan:
+   - Panduan Pengumpulan & Penyimpanan
+   - Cara Pengolahan
+   - Pembeli Potensial
+   - Dampak Lingkungan
+5. Tombol aksi:
+   - Tambahkan ke Tracking
+   - Simpan ke Favorit
+   - Bagikan
+6. Konten terkait yang mungkin diminati pengguna
+
+**Interaksi:**
+- Pengguna dapat menggeser carousel untuk melihat foto/gambar tambahan
+- Tab informasi dapat dipilih untuk melihat detail berbeda
+- Grafik trend harga dapat diinteraksi untuk melihat nilai pada periode tertentu
+- Tombol aksi memberikan feedback visual saat diklik
+
+### 6.4 Antarmuka Tracking Sampah
+
+Halaman ini memungkinkan pengguna mencatat dan melacak sampah yang telah mereka kumpulkan.
+
+![Mockup Tracking Sampah](https://via.placeholder.com/800x600?text=Mockup+Tracking+Sampah)
+
+**Komponen Utama:**
+1. Header dengan judul halaman
+2. Dashboard dengan grafik dan statistik:
+   - Total sampah per kategori (chart pie)
+   - Trend pengumpulan sampah (chart line)
+   - Estimasi total nilai ekonomis
+3. Form pencatatan sampah baru:
+   - Dropdown jenis sampah
+   - Input jumlah dan satuan
+   - Datepicker tanggal pengumpulan
+   - Dropdown kondisi
+   - Field catatan
+   - Upload foto
+4. Tabel riwayat pencatatan dengan:
+   - Tanggal
+   - Jenis sampah
+   - Jumlah
+   - Nilai estimasi
+   - Tombol edit/hapus
+5. Filter dan sorting untuk tabel riwayat
+
+**Interaksi:**
+- Form pencatatan sampah dapat diexpand/collapse
+- Dashboard statistik interaktif dengan hover tooltips
+- Tabel riwayat dapat difilter dan disorting
+- Edit dan hapus entri dengan konfirmasi
+- Upload foto dengan preview
+
+### 6.5 Antarmuka Panduan Daur Ulang & Reuse
+
+Halaman ini menyajikan berbagai tutorial dan panduan tentang cara mendaur ulang atau menggunakan kembali sampah.
+
+![Mockup Panduan Daur Ulang](https://via.placeholder.com/800x600?text=Mockup+Panduan+Daur+Ulang+%26+Reuse)
+
+**Komponen Utama:**
+1. Header dengan judul halaman dan breadcrumb navigation
+2. Panel filter:
+   - Dropdown kategori
+   - Filter tingkat kesulitan
+   - Filter waktu pengerjaan
+   - Checkbox "hanya tampilkan yang belum dicoba"
+3. Grid panduan dengan card:
+   - Thumbnail hasil akhir
+   - Judul
+   - Rating pengguna (bintang)
+   - Tingkat kesulitan
+   - Estimasi waktu
+   - Indikator sudah dicoba/belum
+4. Pagination
+5. Tombol "Unggah Panduan Baru" (untuk pengguna tertentu)
+
+**Interaksi:**
+- Pengguna dapat memfilter panduan berdasarkan berbagai kriteria
+- Mengklik card untuk melihat detail panduan
+- Rating dengan hover effect
+- Bookmark panduan favorit
+
+### 6.6 Antarmuka Detail Panduan
+
+Halaman ini menampilkan langkah-langkah detail dari panduan daur ulang atau reuse.
+
+![Mockup Detail Panduan](https://via.placeholder.com/800x600?text=Mockup+Detail+Panduan)
+
+**Komponen Utama:**
+1. Header dengan judul panduan dan breadcrumb
+2. Informasi umum:
+   - Thumbnail hasil akhir
+   - Penulis/kontributor
+   - Rating dan jumlah ulasan
+   - Tingkat kesulitan
+   - Estimasi waktu
+3. Bagian "Yang Anda Butuhkan":
+   - Daftar bahan dengan gambar
+   - Daftar alat dengan gambar
+4. Langkah-langkah:
+   - Penomoran jelas
+   - Deskripsi tekstual
+   - Foto/ilustrasi/video untuk setiap langkah
+5. Tips dan saran tambahan
+6. Bagian komentar dan ulasan
+7. Tombol aksi:
+   - Tandai sebagai Selesai Dicoba
+   - Simpan ke Favorit
+   - Bagikan
+   - Unduh PDF
+
+**Interaksi:**
+- Navigasi langkah-langkah dengan tombol next/prev
+- Video tutorial dapat diputar inline
+- Gambar dapat diperbesar dengan klik
+- Pengguna dapat menandai panduan selesai dicoba dan memberikan rating
+
+## 7. Matriks Keterunutan
+
+Matriks keterunutan menunjukkan hubungan antara kebutuhan fungsional, use case, class, dan antarmuka dalam aplikasi Revalio.
+
+| ID | Kebutuhan Fungsional | Use Case | Class | Antarmuka |
+|----|---------------------|----------|-------|-----------|
+| F1 | Pendaftaran dan otentikasi pengguna | UC-Login, UC-Register | User | Halaman Login, Halaman Register |
+| F2 | Mempelajari jenis sampah dan nilai ekonomisnya | UC-1: Mempelajari Jenis Sampah dan Nilainya | WasteItem, PriceHistory | Antarmuka Katalog Sampah Bernilai, Antarmuka Detail Sampah |
+| F3 | Tracking volume sampah yang dikelola | UC-2: Tracking Volume Sampah | WasteRecord, EnvironmentalImpact | Antarmuka Tracking Sampah |
+| F4 | Mempelajari panduan daur ulang dan reuse | UC-3: Mempelajari Panduan Daur Ulang & Reuse | EducationalContent, RecyclingGuide, ReuseIdea | Antarmuka Panduan Daur Ulang & Reuse, Antarmuka Detail Panduan |
+| F5 | Mendapatkan tips monetisasi limbah | UC-4: Mendapatkan Tips Monetisasi Limbah | PotentialBuyer, MonetizationTip | Antarmuka Tips Monetisasi |
+| F6 | Mengelola konten favorit | UC-SaveFavorite | User, UserFavorite | Bagian Favorit di berbagai antarmuka |
+| F7 | Berpartisipasi dalam komunitas | UC-Community | Comment, Rating, ForumPost | Antarmuka Komunitas (belum didetailkan) |
+| F8 | Menerima notifikasi dan update | UC-Notification | Notification | Pop-up Notifikasi, Halaman Notifikasi |
+| F9 | Mendapatkan edukasi tentang dampak lingkungan | UC-Environmental | EducationalContent, EnvironmentalImpact | Bagian Dampak Lingkungan di Dashboard |
+| F10 | Mempelajari peluang usaha dari pengelolaan sampah | UC-BusinessOpportunity | EducationalContent, BusinessOpportunity | Halaman Peluang Usaha (belum didetailkan) |
+
+### Diagram Keterunutan
+
+![Diagram Keterunutan](https://via.placeholder.com/800x600?text=Diagram+Keterunutan+Revalio)
+
+Matriks keterunutan ini membantu memastikan bahwa semua kebutuhan fungsional terpenuhi oleh use case, class, dan antarmuka yang dirancang, serta mengidentifikasi ketergantungan dan relasi antar komponen sistem.

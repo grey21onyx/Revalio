@@ -1,94 +1,103 @@
-# SPESIFIKASI KEBUTUHAN DAN PERANCANGAN PERANGKAT LUNAK
+SPESIFIKASI KEBUTUHAN DAN PERANCANGAN
+ PERANGKAT LUNAK
 
-# Aplikasi Edukasi Digital untuk Memberdayakan Sampah Menjadi Sumber Penghasilan (Revalio)
+
+
+
+Aplikasi Edukasi Digital untuk Memberdayakan Sampah Menjadi Sumber Penghasilan (Revalio)
+
+
+
 
 Dipersiapkan oleh:
-- 4342401070
-- 43424001072
-- 4342401085 – Berkat Tua Siallagan
+4342401070 - Muhamad Ariffadhlullah
+43424001072 - Diva Satria
+4342401085 - Berkat Tua Siallagan
 
-Program Studi Teknologi Rekayasa Perangkat Lunak  
-Politeknik Negeri Batam  
-Jl. Ahmad Yani, Batam 29461  
+
+
+
+
+
+
+
+
+Program Studi Teknologi Rekayasa Perangkat Lunak
+Politeknik Negeri Batam
+Jl. Ahmad Yani, Batam 29461
 2025
+ 
+<!-- Daftar isi ini sudah menggunakan anchor link. Klik untuk shortcut ke bagian terkait. -->
+1 [PENDAHULUAN](#1-pendahuluan)<br>
+  1.1 [TUJUAN](#11-tujuan)<br>
+  1.2 [LINGKUP MASALAH](#12-lingkup-masalah)<br>
+  1.3 [DEFINISI, AKRONIM DAN SINGKATAN](#13-definisi-akronim-dan-singkatan)<br>
+  1.4 [ATURAN PENAMAAN DAN PENOMORAN](#14-aturan-penamaan-dan-penomoran)<br>
+  1.5 [REFERENSI](#15-referensi)<br>
+  1.6 [IKHTISAR DOKUMEN](#16-ikhtisar-dokumen)<br>
+2 [DESKRIPSI UMUM PERANGKAT LUNAK](#2-deskripsi-umum-perangkat-lunak)<br>
+  2.1 [DESKRIPSI UMUM SISTEM](#21-deskripsi-umum-sistem)<br>
+  2.2 [PROSES BISNIS SISTEM](#22-proses-bisnis-sistem)<br>
+  2.3 [KARAKTERISTIK PENGGUNA](#23-karakteristik-pengguna)<br>
+  2.4 [BATASAN](#24-batasan)<br>
+  2.5 [RANCANGAN LINGKUNGAN IMPLEMENTASI](#25-rancangan-lingkungan-implementasi)<br>
+3 [DESKRIPSI RINCI KEBUTUHAN](#3-deskripsi-rinci-kebutuhan)<br>
+  3.1 [DESKRIPSI FUNGSIONAL](#31-deskripsi-fungsional)<br>
+    3.1.1 [Use Case Diagram](#311-use-case-diagram)<br>
+    3.1.2 [Use Case Mempelajari Jenis Sampah dan Nilainya](#312-use-case-mempelajari-jenis-sampah-dan-nilainya)<br>
+      3.1.2.1 [Skenario](#3121-skenario)<br>
+      3.1.2.2 [Interaksi Objek](#3122-interaksi-objek)<br>
+    3.1.3 [Use Case Tracking Volume Sampah](#313-use-case-tracking-volume-sampah)<br>
+      3.1.3.1 [Skenario](#3131-skenario)<br>
+      3.1.3.2 [Interaksi Objek](#3132-interaksi-objek)<br>
+    3.1.4 [Use Case Mempelajari Panduan Daur Ulang & Reuse](#314-use-case-mempelajari-panduan-daur-ulang--reuse)<br>
+      3.1.4.1 [Skenario](#3141-skenario)<br>
+      3.1.4.2 [Interaksi Objek](#3142-interaksi-objek)<br>
+    3.1.5 [Use Case Mendapatkan Tips Monetisasi Limbah](#315-use-case-mendapatkan-tips-monetisasi-limbah)<br>
+      3.1.5.1 [Skenario](#3151-skenario)<br>
+      3.1.5.2 [Interaksi Objek](#3152-interaksi-objek)<br>
+  3.2 [DESKRIPSI KEBUTUHAN NON FUNGSIONAL](#32-deskripsi-kebutuhan-non-fungsional)<br>
+4 [DESKRIPSI KELAS-KELAS](#4-deskripsi-kelas-kelas)<br>
+  4.1 [CLASS DIAGRAM](#41-class-diagram)<br>
+  4.2 [CLASS USER](#42-class-user)<br>
+  4.3 [CLASS WASTEITEM](#43-class-wasteitem)<br>
+  4.4 [CLASS WASTERECORD](#44-class-wasterecord)<br>
+  4.5 [CLASS EDUCATIONALCONTENT](#45-class-educationalcontent)<br>
+  4.6 [STATE MACHINE DIAGRAM](#46-state-machine-diagram)<br>
+5 [DESKRIPSI DATA](#5-deskripsi-data)<br>
+  5.1 [ENTITY-RELATIONSHIP DIAGRAM](#51-entity-relationship-diagram)<br>
+  5.2 [DAFTAR TABEL](#52-daftar-tabel)<br>
+  5.3 [STRUKTUR TABEL USERS](#53-struktur-tabel-users)<br>
+  5.4 [STRUKTUR TABEL WASTE_ITEMS](#54-struktur-tabel-waste_items)<br>
+  5.5 [STRUKTUR TABEL WASTE_RECORDS](#55-struktur-tabel-waste_records)<br>
+  5.6 [STRUKTUR TABEL EDUCATIONAL_CONTENTS](#56-struktur-tabel-educational_contents)<br>
+  5.7 [STRUKTUR TABEL RECYCLING_GUIDES](#57-struktur-tabel-recycling_guides)<br>
+  5.8 [STRUKTUR TABEL REUSE_IDEAS](#58-struktur-tabel-reuse_ideas)<br>
+  5.9 [STRUKTUR TABEL POTENTIAL_BUYERS](#59-struktur-tabel-potential_buyers)<br>
+  5.10 [STRUKTUR TABEL PRICE_HISTORIES](#510-struktur-tabel-price_histories)<br>
+  5.11 [STRUKTUR TABEL COMMENTS](#511-struktur-tabel-comments)<br>
+  5.12 [STRUKTUR TABEL RATINGS](#512-struktur-tabel-ratings)<br>
+  5.13 [STRUKTUR TABEL USER_FAVORITES](#513-struktur-tabel-user_favorites)<br>
+  5.14 [STRUKTUR TABEL USER_COMPLETIONS](#514-struktur-tabel-user_completions)<br>
+  5.15 [STRUKTUR TABEL NOTIFICATIONS](#515-struktur-tabel-notifications)<br>
+  5.16 [SKEMA RELASI ANTAR TABEL](#516-skema-relasi-antar-tabel)<br>
+6 [PERANCANGAN ANTARMUKA](#6-perancangan-antarmuka)<br>
+  6.1 [ANTARMUKA BERANDA](#61-antarmuka-beranda)<br>
+  6.2 [ANTARMUKA KATALOG SAMPAH BERNILAI](#62-antarmuka-katalog-sampah-bernilai)<br>
+  6.3 [ANTARMUKA DETAIL SAMPAH](#63-antarmuka-detail-sampah)<br>
+  6.4 [ANTARMUKA TRACKING SAMPAH](#64-antarmuka-tracking-sampah)<br>
+  6.5 [ANTARMUKA PANDUAN DAUR ULANG & REUSE](#65-antarmuka-panduan-daur-ulang--reuse)<br>
+  6.6 [ANTARMUKA DETAIL PANDUAN](#66-antarmuka-detail-panduan)<br>
+7 [MATRIKS KETERUNUTAN](#7-matriks-keterunutan)<br>
 
-## Daftar Isi
+ 
+1	Pendahuluan 
 
-1. [Pendahuluan](#1-pendahuluan)
-   1. [Tujuan](#11-tujuan)
-   2. [Lingkup Masalah](#12-lingkup-masalah)
-   3. [Definisi, Akronim dan Singkatan](#13-definisi-akronim-dan-singkatan)
-   4. [Aturan Penamaan dan Penomoran](#14-aturan-penamaan-dan-penomoran)
-   5. [Referensi](#15-referensi)
-   6. [Ikhtisar Dokumen](#16-ikhtisar-dokumen)
-
-2. [Deskripsi Umum Perangkat Lunak](#2-deskripsi-umum-perangkat-lunak)
-   1. [Deskripsi Umum Sistem](#21-deskripsi-umum-sistem)
-   2. [Proses Bisnis Sistem](#22-proses-bisnis-sistem)
-   3. [Karakteristik Pengguna](#23-karakteristik-pengguna)
-   4. [Batasan](#24-batasan)
-   5. [Rancangan Lingkungan Implementasi](#25-rancangan-lingkungan-implementasi)
-
-3. [Deskripsi Rinci Kebutuhan](#3-deskripsi-rinci-kebutuhan)
-   1. [Deskripsi Fungsional](#31-deskripsi-fungsional)
-   2. [Use Case Diagram](#32-use-case-diagram)
-   3. [Use Case 1](#33-use-case-1)
-      1. [Skenario](#331-skenario)
-      2. [Interaksi Objek](#332-interaksi-objek)
-   4. [Use Case 2](#34-use-case-2)
-      1. [Skenario](#341-skenario)
-      2. [Interaksi Objek](#342-interaksi-objek)
-   5. [Use Case 3](#35-use-case-3)
-      1. [Skenario](#351-skenario)
-      2. [Interaksi Objek](#352-interaksi-objek)
-   6. [Use Case 4](#36-use-case-4)
-      1. [Skenario](#361-skenario)
-      2. [Interaksi Objek](#362-interaksi-objek)
-   7. [Deskripsi Kebutuhan Non Fungsional](#37-deskripsi-kebutuhan-non-fungsional)
-
-4. [Deskripsi Kelas-Kelas](#4-deskripsi-kelas-kelas)
-   1. [Class Diagram](#41-class-diagram)
-   2. [Class User](#42-class-user)
-   3. [Class WasteItem](#43-class-wasteitem)
-   4. [Class WasteRecord](#44-class-wasterecord)
-   5. [Class EducationalContent](#45-class-educationalcontent)
-   6. [State Machine Diagram](#46-state-machine-diagram)
-
-5. [Deskripsi Data](#5-deskripsi-data)
-   1. [Entity-Relationship Diagram](#51-entity-relationship-diagram)
-   2. [Daftar Tabel](#52-daftar-tabel)
-   3. [Struktur Tabel users](#53-struktur-tabel-users)
-   4. [Struktur Tabel waste_items](#54-struktur-tabel-waste_items)
-   5. [Struktur Tabel waste_records](#55-struktur-tabel-waste_records)
-   6. [Struktur Tabel educational_contents](#56-struktur-tabel-educational_contents)
-   7. [Struktur Tabel recycling_guides](#57-struktur-tabel-recycling_guides)
-   8. [Struktur Tabel reuse_ideas](#58-struktur-tabel-reuse_ideas)
-   9. [Struktur Tabel potential_buyers](#59-struktur-tabel-potential_buyers)
-   10. [Struktur Tabel price_histories](#510-struktur-tabel-price_histories)
-   11. [Struktur Tabel comments](#511-struktur-tabel-comments)
-   12. [Struktur Tabel ratings](#512-struktur-tabel-ratings)
-   13. [Struktur Tabel user_favorites](#513-struktur-tabel-user_favorites)
-   14. [Struktur Tabel user_completions](#514-struktur-tabel-user_completions)
-   15. [Struktur Tabel notifications](#515-struktur-tabel-notifications)
-   16. [Skema Relasi Antar Tabel](#516-skema-relasi-antar-tabel)
-
-6. [Perancangan Antarmuka](#6-perancangan-antarmuka)
-   1. [Antarmuka Beranda](#61-antarmuka-beranda)
-   2. [Antarmuka Katalog Sampah Bernilai](#62-antarmuka-katalog-sampah-bernilai)
-   3. [Antarmuka Detail Sampah](#63-antarmuka-detail-sampah)
-   4. [Antarmuka Tracking Sampah](#64-antarmuka-tracking-sampah)
-   5. [Antarmuka Panduan Daur Ulang & Reuse](#65-antarmuka-panduan-daur-ulang-reuse)
-   6. [Antarmuka Detail Panduan](#66-antarmuka-detail-panduan)
-
-7. [Matriks Keterunutan](#7-matriks-keterunutan)
-
-## 1. Pendahuluan
-
-### 1.1 Tujuan
+1.1	Tujuan
 
 Dokumen Spesifikasi Kebutuhan dan Perancangan Perangkat Lunak (SKPPL) ini bertujuan untuk menjelaskan kebutuhan dan rancangan dari Revalio, sebuah platform edukasi digital yang membantu masyarakat memahami cara mengelola sampah rumah tangga dan industri ringan agar bisa memiliki nilai ekonomis. Dokumen ini akan menjadi acuan bagi pengembang dalam membangun sistem dan bagi pengguna untuk memahami fungsionalitas yang akan tersedia.
 
-### 1.2 Lingkup Masalah
+1.2	Lingkup Masalah
 
 Revalio berfokus pada pemberdayaan masyarakat untuk mengelola sampah dengan lebih baik dan mendapatkan nilai ekonomis dari sampah. Lingkup dari aplikasi Revalio meliputi:
 
@@ -102,7 +111,7 @@ Revalio berfokus pada pemberdayaan masyarakat untuk mengelola sampah dengan lebi
 
 Aplikasi ini TIDAK berfungsi sebagai tempat jual beli langsung, melainkan sebagai panduan interaktif, tool manajemen, dan sumber informasi terpercaya dalam proses pengelolaan sampah.
 
-### 1.3 Definisi, Akronim dan Singkatan
+1.3	Definisi, Akronim dan Singkatan
 
 | Istilah/Akronim | Definisi |
 |-----------------|----------|
@@ -117,7 +126,7 @@ Aplikasi ini TIDAK berfungsi sebagai tempat jual beli langsung, melainkan sebaga
 | Reuse | Penggunaan kembali sampah untuk fungsi yang sama atau berbeda |
 | Monetisasi | Proses menghasilkan uang dari suatu aset, dalam konteks ini adalah sampah |
 
-### 1.4 Aturan Penamaan dan Penomoran
+1.4	Aturan Penamaan dan Penomoran
 
 - Penomoran bab dimulai dari angka 1 dengan format angka Arab
 - Penomoran sub-bab menggunakan format [nomor bab].[nomor sub-bab]
@@ -126,14 +135,14 @@ Aplikasi ini TIDAK berfungsi sebagai tempat jual beli langsung, melainkan sebaga
 - Penamaan tabel database menggunakan format snake_case
 - Penamaan atribut dan method menggunakan format camelCase
 
-### 1.5 Referensi
+1.5	Referensi
 
 1. IEEE Std 830-1998, IEEE Recommended Practice for Software Requirements Specifications
 2. UML 2.5 Specification
 3. Undang-Undang Nomor 18 Tahun 2008 tentang Pengelolaan Sampah
 4. Peraturan Pemerintah Nomor 81 Tahun 2012 tentang Pengelolaan Sampah Rumah Tangga dan Sampah Sejenis Sampah Rumah Tangga
 
-### 1.6 Ikhtisar Dokumen
+1.6	Ikhtisar Dokumen
 
 Dokumen SKPPL ini terdiri dari tujuh bagian utama:
 1. Pendahuluan: menjelaskan tujuan, lingkup, dan konvensi dokumen
@@ -144,9 +153,9 @@ Dokumen SKPPL ini terdiri dari tujuh bagian utama:
 6. Perancangan Antarmuka: menampilkan rancangan antarmuka pengguna
 7. Matriks Keterunutan: menunjukkan hubungan antara kebutuhan dan implementasinya
 
-## 2. Deskripsi Umum Perangkat Lunak
+2	Deskripsi Umum Perangkat Lunak
 
-### 2.1 Deskripsi Umum Sistem
+2.1	Deskripsi Umum Sistem
 
 Revalio adalah platform edukasi digital yang bertujuan untuk memberdayakan masyarakat dalam mengelola sampah rumah tangga dan industri ringan menjadi sumber penghasilan. Aplikasi ini menyediakan informasi komprehensif tentang jenis-jenis sampah yang memiliki nilai ekonomis (seperti besi tua, kardus, kaleng, botol plastik), cara pengelolaannya, dan potensi nilainya di pasaran.
 
@@ -161,7 +170,7 @@ Aplikasi ini tidak berfungsi sebagai marketplace untuk jual beli sampah, melaink
 
 Sistem ini dibangun dengan arsitektur client-server, dengan aplikasi web responsif yang dapat diakses melalui browser di berbagai perangkat.
 
-### 2.2 Proses Bisnis Sistem
+2.2	Proses Bisnis Sistem
 
 Proses bisnis dari aplikasi Revalio meliputi:
 
@@ -206,7 +215,7 @@ Proses bisnis dari aplikasi Revalio meliputi:
    - Analisis dan pelaporan aktivitas pengguna
    - Konfigurasi sistem
 
-### 2.3 Karakteristik Pengguna
+2.3	Karakteristik Pengguna
 
 Aplikasi Revalio akan digunakan oleh beberapa jenis pengguna, antara lain:
 
@@ -236,7 +245,7 @@ Aplikasi Revalio akan digunakan oleh beberapa jenis pengguna, antara lain:
    - Memantau aktivitas pengguna
    - Mengelola data master dan referensi
 
-### 2.4 Batasan
+2.4	Batasan
 
 Beberapa batasan dalam pengembangan aplikasi Revalio:
 
@@ -255,7 +264,7 @@ Beberapa batasan dalam pengembangan aplikasi Revalio:
    - Transaksi finansial harus mengikuti standar keamanan yang berlaku
    - Verifikasi identitas diperlukan untuk fitur tertentu
 
-### 2.5 Rancangan Lingkungan Implementasi
+2.5	Rancangan Lingkungan Implementasi
 
 Aplikasi Revalio akan diimplementasikan dengan lingkungan sebagai berikut:
 
@@ -263,12 +272,14 @@ Aplikasi Revalio akan diimplementasikan dengan lingkungan sebagai berikut:
    - Framework: React.js
    - UI Library: Material-UI
    - State Management: Redux
+   - Styling: Tailwind CSS
+   - Animation: GSAP (GreenSock Animation Platform)
 
 2. **Backend**
-   - Platform: Node.js
-   - Framework: Express.js
-   - Database: MongoDB
-   - Authentication: JWT
+   - Framework: Laravel
+   - Database: MySQL
+   - Authentication: Laravel Sanctum
+   - ORM: Eloquent
 
 3. **Deployment**
    - Cloud Platform: AWS / Google Cloud
@@ -281,9 +292,9 @@ Aplikasi Revalio akan diimplementasikan dengan lingkungan sebagai berikut:
    - Kamera (opsional, untuk fitur identifikasi sampah)
    - GPS (untuk fitur lokasi)
 
-## 3. Deskripsi Rinci Kebutuhan
+3	Deskripsi Rinci Kebutuhan
 
-### 3.1 Deskripsi Fungsional
+3.1	Deskripsi Fungsional
 
 Aplikasi Revalio memiliki kebutuhan fungsional sebagai berikut:
 
@@ -337,13 +348,13 @@ Aplikasi Revalio memiliki kebutuhan fungsional sebagai berikut:
    - Analisis dan pelaporan aktivitas pengguna
    - Konfigurasi sistem
 
-### 3.2 Use Case Diagram
+3.1.1	Use Case Diagram
 
 ![Use Case Diagram](https://via.placeholder.com/800x600?text=Use+Case+Diagram+Revalio)
 
-### 3.3 Use Case 1: Mempelajari Jenis Sampah dan Nilainya
+3.1.2	Use Case Mempelajari Jenis Sampah dan Nilainya
 
-#### 3.3.1 Skenario
+3.1.2.1	Skenario
 
 **Nama Use Case:** UC-1 Mempelajari Jenis Sampah dan Nilainya
 
@@ -374,13 +385,13 @@ Aplikasi Revalio memiliki kebutuhan fungsional sebagai berikut:
 - Pada langkah 5, pengguna dapat menggunakan fitur pencarian untuk mencari jenis sampah tertentu.
 - Pada langkah 6, jika informasi detail tidak tersedia, sistem akan menampilkan pesan dan menyarankan jenis sampah serupa.
 
-#### 3.3.2 Interaksi Objek
+3.1.2.2	Interaksi Objek
 
 ![Sequence Diagram UC-1](https://via.placeholder.com/800x400?text=Sequence+Diagram+UC-1)
 
-### 3.4 Use Case 2: Tracking Volume Sampah
+3.1.3	Use Case Tracking Volume Sampah
 
-#### 3.4.1 Skenario
+3.1.3.1	Skenario
 
 **Nama Use Case:** UC-2 Tracking Volume Sampah
 
@@ -415,13 +426,13 @@ Aplikasi Revalio memiliki kebutuhan fungsional sebagai berikut:
 - Pada langkah 2, pengguna dapat memilih untuk melihat statistik dan grafik dari data yang sudah direkam sebelumnya.
 - Pengguna dapat mengedit atau menghapus catatan sampah yang sudah diinput sebelumnya.
 
-#### 3.4.2 Interaksi Objek
+3.1.3.2	Interaksi Objek
 
 ![Sequence Diagram UC-2](https://via.placeholder.com/800x400?text=Sequence+Diagram+UC-2)
 
-### 3.5 Use Case 3: Mempelajari Panduan Daur Ulang & Reuse
+3.1.4	Use Case Mempelajari Panduan Daur Ulang & Reuse
 
-#### 3.5.1 Skenario
+3.1.4.1	Skenario
 
 **Nama Use Case:** UC-3 Mempelajari Panduan Daur Ulang & Reuse
 
@@ -456,13 +467,13 @@ Aplikasi Revalio memiliki kebutuhan fungsional sebagai berikut:
 - Pada langkah 6, pengguna dapat mengunduh panduan dalam format PDF untuk dibaca offline.
 - Pengguna dapat membagikan panduan ke media sosial atau mengirimkan kepada teman.
 
-#### 3.5.2 Interaksi Objek
+3.1.4.2	Interaksi Objek
 
 ![Sequence Diagram UC-3](https://via.placeholder.com/800x400?text=Sequence+Diagram+UC-3)
 
-### 3.6 Use Case 4: Mendapatkan Tips Monetisasi Limbah
+3.1.5	Use Case Mendapatkan Tips Monetisasi Limbah
 
-#### 3.6.1 Skenario
+3.1.5.1	Skenario
 
 **Nama Use Case:** UC-4 Mendapatkan Tips Monetisasi Limbah
 
@@ -497,11 +508,11 @@ Aplikasi Revalio memiliki kebutuhan fungsional sebagai berikut:
 - Pada langkah 6, jika tidak ada hasil yang sesuai, sistem akan menyarankan untuk memperluas area pencarian atau mengubah filter.
 - Pengguna dapat memberikan rating dan ulasan tentang pengalaman mereka dengan pembeli tertentu.
 
-#### 3.6.2 Interaksi Objek
+3.1.5.2	Interaksi Objek
 
 ![Sequence Diagram UC-4](https://via.placeholder.com/800x400?text=Sequence+Diagram+UC-4)
 
-### 3.7 Deskripsi Kebutuhan Non Fungsional
+3.2	DESKRIPSI KEBUTUHAN NON FUNGSIONAL
 
 1. **Keamanan**
    - Sistem harus mengimplementasikan autentikasi yang kuat
@@ -526,13 +537,13 @@ Aplikasi Revalio memiliki kebutuhan fungsional sebagai berikut:
    - Kompatibel dengan browser modern (Chrome, Firefox, Safari, Edge)
    - Responsif untuk perangkat dengan ukuran layar berbeda
 
-## 4. Deskripsi Kelas-Kelas
+4	DESKRIPSI KELAS-KELAS
 
-### 4.1 Class Diagram
+4.1	CLASS DIAGRAM
 
 ![Class Diagram](https://via.placeholder.com/800x600?text=Class+Diagram+Revalio)
 
-### 4.2 Class User
+4.2	CLASS USER
 
 ```java
 /**
@@ -572,7 +583,7 @@ public enum UserRole {
 }
 ```
 
-### 4.3 Class WasteItem
+4.3	CLASS WASTEITEM
 
 ```java
 /**
@@ -622,7 +633,7 @@ public enum DifficultyLevel {
 }
 ```
 
-### 4.4 Class WasteRecord
+4.4	CLASS WASTERECORD
 
 ```java
 /**
@@ -664,7 +675,7 @@ public enum ItemCondition {
 }
 ```
 
-### 4.5 Class EducationalContent
+4.5	CLASS EDUCATIONALCONTENT
 
 ```java
 /**
@@ -714,17 +725,17 @@ public enum ContentCategory {
 }
 ```
 
-### 4.6 State Machine Diagram
+4.6	STATE MACHINE DIAGRAM
 
 ![State Machine Diagram](https://via.placeholder.com/800x400?text=State+Machine+Diagram+for+WasteRecord)
 
-## 5. Deskripsi Data
+5	DESKRIPSI DATA
 
-### 5.1 Entity-Relationship Diagram
+5.1	ENTITY-RELATIONSHIP DIAGRAM
 
 ![Entity-Relationship Diagram](https://via.placeholder.com/800x600?text=ERD+Revalio)
 
-### 5.2 Daftar Tabel
+5.2	DAFTAR TABEL
 
 Aplikasi Revalio menggunakan basis data berikut:
 
@@ -743,7 +754,7 @@ Aplikasi Revalio menggunakan basis data berikut:
 13. user_completions - Menyimpan konten yang telah diselesaikan pengguna
 14. notifications - Menyimpan notifikasi pengguna
 
-### 5.3 Struktur Tabel users
+5.3	STRUKTUR TABEL USERS
 
 | Field | Tipe Data | Keterangan | Konstrain |
 |-------|-----------|------------|-----------|
@@ -760,7 +771,7 @@ Aplikasi Revalio menggunakan basis data berikut:
 | is_active | BOOLEAN | Status aktif | DEFAULT TRUE |
 | profile_picture_url | VARCHAR(255) | URL foto profil | |
 
-### 5.4 Struktur Tabel waste_items
+5.4	STRUKTUR TABEL WASTE_ITEMS
 
 | Field | Tipe Data | Keterangan | Konstrain |
 |-------|-----------|------------|-----------|
@@ -780,7 +791,7 @@ Aplikasi Revalio menggunakan basis data berikut:
 | created_at | DATETIME | Tanggal pembuatan | DEFAULT CURRENT_TIMESTAMP |
 | updated_at | DATETIME | Tanggal pembaruan | DEFAULT CURRENT_TIMESTAMP |
 
-### 5.5 Struktur Tabel waste_records
+5.5	STRUKTUR TABEL WASTE_RECORDS
 
 | Field | Tipe Data | Keterangan | Konstrain |
 |-------|-----------|------------|-----------|
@@ -795,7 +806,7 @@ Aplikasi Revalio menggunakan basis data berikut:
 | estimated_value | DECIMAL(10,2) | Estimasi nilai | |
 | record_date | DATETIME | Tanggal pencatatan | DEFAULT CURRENT_TIMESTAMP |
 
-### 5.6 Struktur Tabel educational_contents
+5.6	STRUKTUR TABEL EDUCATIONAL_CONTENTS
 
 | Field | Tipe Data | Keterangan | Konstrain |
 |-------|-----------|------------|-----------|
@@ -813,7 +824,7 @@ Aplikasi Revalio menggunakan basis data berikut:
 | content | TEXT | Konten | NOT NULL |
 | media_urls | TEXT | URL media konten | |
 
-### 5.7 Struktur Tabel recycling_guides
+5.7	STRUKTUR TABEL RECYCLING_GUIDES
 
 | Field | Tipe Data | Keterangan | Konstrain |
 |-------|-----------|------------|-----------|
@@ -828,7 +839,7 @@ Aplikasi Revalio menggunakan basis data berikut:
 | result | TEXT | Hasil akhir | NOT NULL |
 | tips | TEXT | Tips dan saran | |
 
-### 5.8 Struktur Tabel reuse_ideas
+5.8	STRUKTUR TABEL REUSE_IDEAS
 
 | Field | Tipe Data | Keterangan | Konstrain |
 |-------|-----------|------------|-----------|
@@ -844,7 +855,7 @@ Aplikasi Revalio menggunakan basis data berikut:
 | result | TEXT | Hasil akhir | NOT NULL |
 | tips | TEXT | Tips dan saran | |
 
-### 5.9 Struktur Tabel potential_buyers
+5.9	STRUKTUR TABEL POTENTIAL_BUYERS
 
 | Field | Tipe Data | Keterangan | Konstrain |
 |-------|-----------|------------|-----------|
@@ -856,7 +867,7 @@ Aplikasi Revalio menggunakan basis data berikut:
 | rating | DECIMAL(3,2) | Rating pembeli | NOT NULL |
 | notes | TEXT | Catatan tambahan | |
 
-### 5.10 Struktur Tabel price_histories
+5.10	STRUKTUR TABEL PRICE_HISTORIES
 
 | Field | Tipe Data | Keterangan | Konstrain |
 |-------|-----------|------------|-----------|
@@ -866,7 +877,7 @@ Aplikasi Revalio menggunakan basis data berikut:
 | price | DECIMAL(10,2) | Harga | NOT NULL |
 | unit | ENUM | Satuan harga | NOT NULL |
 
-### 5.11 Struktur Tabel comments
+5.11	STRUKTUR TABEL COMMENTS
 
 | Field | Tipe Data | Keterangan | Konstrain |
 |-------|-----------|------------|-----------|
@@ -876,7 +887,7 @@ Aplikasi Revalio menggunakan basis data berikut:
 | comment_text | TEXT | Teks komentar | NOT NULL |
 | comment_date | DATETIME | Tanggal komentar | NOT NULL |
 
-### 5.12 Struktur Tabel ratings
+5.12	STRUKTUR TABEL RATINGS
 
 | Field | Tipe Data | Keterangan | Konstrain |
 |-------|-----------|------------|-----------|
@@ -886,7 +897,7 @@ Aplikasi Revalio menggunakan basis data berikut:
 | rating_value | DECIMAL(3,2) | Nilai rating | NOT NULL |
 | rating_date | DATETIME | Tanggal rating | NOT NULL |
 
-### 5.13 Struktur Tabel user_favorites
+5.13	STRUKTUR TABEL USER_FAVORITES
 
 | Field | Tipe Data | Keterangan | Konstrain |
 |-------|-----------|------------|-----------|
@@ -895,7 +906,7 @@ Aplikasi Revalio menggunakan basis data berikut:
 | content_id | INT | ID konten | FK, NOT NULL |
 | favorite_date | DATETIME | Tanggal favorit | NOT NULL |
 
-### 5.14 Struktur Tabel user_completions
+5.14	STRUKTUR TABEL USER_COMPLETIONS
 
 | Field | Tipe Data | Keterangan | Konstrain |
 |-------|-----------|------------|-----------|
@@ -904,7 +915,7 @@ Aplikasi Revalio menggunakan basis data berikut:
 | content_id | INT | ID konten | FK, NOT NULL |
 | completion_date | DATETIME | Tanggal penyelesaian | NOT NULL |
 
-### 5.15 Struktur Tabel notifications
+5.15	STRUKTUR TABEL NOTIFICATIONS
 
 | Field | Tipe Data | Keterangan | Konstrain |
 |-------|-----------|------------|-----------|
@@ -915,13 +926,13 @@ Aplikasi Revalio menggunakan basis data berikut:
 | is_read | BOOLEAN | Status baca | NOT NULL |
 | created_at | DATETIME | Tanggal pembuatan | NOT NULL |
 
-### 5.16 Skema Relasi Antar Tabel
+5.16	SKEMA RELASI ANTAR TABEL
 
 ![Skema Relasi](https://via.placeholder.com/800x600?text=Skema+Relasi+Antar+Tabel)
 
-## 6. Perancangan Antarmuka
+6	PERANCANGAN ANTARMUKA
 
-### 6.1 Antarmuka Beranda
+6.1	ANTARMUKA BERANDA
 
 Halaman beranda merupakan halaman utama yang ditampilkan setelah pengguna login. Antarmuka ini menampilkan ringkasan informasi penting dan akses cepat ke fitur-fitur utama.
 
@@ -949,7 +960,7 @@ Halaman beranda merupakan halaman utama yang ditampilkan setelah pengguna login.
 - Konten edukasi terbaru dapat di-scroll horizontal
 - Pengguna dapat menyesuaikan widget yang ditampilkan di beranda
 
-### 6.2 Antarmuka Katalog Sampah Bernilai
+6.2	ANTARMUKA KATALOG SAMPAH BERNILAI
 
 Halaman ini menampilkan berbagai jenis sampah yang memiliki nilai ekonomis, dikategorikan untuk memudahkan pencarian.
 
@@ -977,7 +988,7 @@ Halaman ini menampilkan berbagai jenis sampah yang memiliki nilai ekonomis, dika
 - Menambahkan item ke favorit dengan tombol berbentuk hati
 - Sorting dan filtering diproses secara real-time
 
-### 6.3 Antarmuka Detail Sampah
+6.3	ANTARMUKA DETAIL SAMPAH
 
 Halaman ini menampilkan informasi detail tentang jenis sampah tertentu.
 
@@ -1007,7 +1018,7 @@ Halaman ini menampilkan informasi detail tentang jenis sampah tertentu.
 - Grafik trend harga dapat diinteraksi untuk melihat nilai pada periode tertentu
 - Tombol aksi memberikan feedback visual saat diklik
 
-### 6.4 Antarmuka Tracking Sampah
+6.4	ANTARMUKA TRACKING SAMPAH
 
 Halaman ini memungkinkan pengguna mencatat dan melacak sampah yang telah mereka kumpulkan.
 
@@ -1041,7 +1052,7 @@ Halaman ini memungkinkan pengguna mencatat dan melacak sampah yang telah mereka 
 - Edit dan hapus entri dengan konfirmasi
 - Upload foto dengan preview
 
-### 6.5 Antarmuka Panduan Daur Ulang & Reuse
+6.5	ANTARMUKA PANDUAN DAUR ULANG & REUSE
 
 Halaman ini menyajikan berbagai tutorial dan panduan tentang cara mendaur ulang atau menggunakan kembali sampah.
 
@@ -1070,7 +1081,7 @@ Halaman ini menyajikan berbagai tutorial dan panduan tentang cara mendaur ulang 
 - Rating dengan hover effect
 - Bookmark panduan favorit
 
-### 6.6 Antarmuka Detail Panduan
+6.6	ANTARMUKA DETAIL PANDUAN
 
 Halaman ini menampilkan langkah-langkah detail dari panduan daur ulang atau reuse.
 
@@ -1105,7 +1116,7 @@ Halaman ini menampilkan langkah-langkah detail dari panduan daur ulang atau reus
 - Gambar dapat diperbesar dengan klik
 - Pengguna dapat menandai panduan selesai dicoba dan memberikan rating
 
-## 7. Matriks Keterunutan
+7	MATRIKS KETERUNUTAN
 
 Matriks keterunutan menunjukkan hubungan antara kebutuhan fungsional, use case, class, dan antarmuka dalam aplikasi Revalio.
 

@@ -68,18 +68,18 @@ Jl. Ahmad Yani, Batam 29461
   5.1 [ENTITY-RELATIONSHIP DIAGRAM](#51-entity-relationship-diagram)<br>
   5.2 [DAFTAR TABEL](#52-daftar-tabel)<br>
   5.3 [STRUKTUR TABEL USERS](#53-struktur-tabel-users)<br>
-  5.4 [STRUKTUR TABEL WASTE_ITEMS](#54-struktur-tabel-waste_items)<br>
-  5.5 [STRUKTUR TABEL WASTE_RECORDS](#55-struktur-tabel-waste_records)<br>
-  5.6 [STRUKTUR TABEL EDUCATIONAL_CONTENTS](#56-struktur-tabel-educational_contents)<br>
-  5.7 [STRUKTUR TABEL RECYCLING_GUIDES](#57-struktur-tabel-recycling_guides)<br>
-  5.8 [STRUKTUR TABEL REUSE_IDEAS](#58-struktur-tabel-reuse_ideas)<br>
-  5.9 [STRUKTUR TABEL POTENTIAL_BUYERS](#59-struktur-tabel-potential_buyers)<br>
-  5.10 [STRUKTUR TABEL PRICE_HISTORIES](#510-struktur-tabel-price_histories)<br>
-  5.11 [STRUKTUR TABEL COMMENTS](#511-struktur-tabel-comments)<br>
-  5.12 [STRUKTUR TABEL RATINGS](#512-struktur-tabel-ratings)<br>
-  5.13 [STRUKTUR TABEL USER_FAVORITES](#513-struktur-tabel-user_favorites)<br>
-  5.14 [STRUKTUR TABEL USER_COMPLETIONS](#514-struktur-tabel-user_completions)<br>
-  5.15 [STRUKTUR TABEL NOTIFICATIONS](#515-struktur-tabel-notifications)<br>
+  5.4 [STRUKTUR TABEL WASTE_TYPES](#54-struktur-tabel-waste_types)<br>
+  5.5 [STRUKTUR TABEL WASTE_CATEGORIES](#55-struktur-tabel-waste_categories)<br>
+  5.6 [STRUKTUR TABEL WASTE_VALUES](#56-struktur-tabel-waste_values)<br>
+  5.7 [STRUKTUR TABEL TUTORIALS](#57-struktur-tabel-tutorials)<br>
+  5.8 [STRUKTUR TABEL ARTICLES](#58-struktur-tabel-articles)<br>
+  5.9 [STRUKTUR TABEL WASTE_BUYERS](#59-struktur-tabel-waste_buyers)<br>
+  5.10 [STRUKTUR TABEL WASTE_BUYER_TYPES](#510-struktur-tabel-waste_buyer_types)<br>
+  5.11 [STRUKTUR TABEL USER_WASTE_TRACKING](#511-struktur-tabel-user_waste_tracking)<br>
+  5.12 [STRUKTUR TABEL FORUM_THREADS](#512-struktur-tabel-forum_threads)<br>
+  5.13 [STRUKTUR TABEL FORUM_COMMENTS](#513-struktur-tabel-forum_comments)<br>
+  5.14 [STRUKTUR TABEL BUSINESS_OPPORTUNITIES](#514-struktur-tabel-business_opportunities)<br>
+  5.15 [STRUKTUR TABEL DELETED_RECORDS](#515-struktur-tabel-deleted_records)<br>
   5.16 [SKEMA RELASI ANTAR TABEL](#516-skema-relasi-antar-tabel)<br>
 6 [PERANCANGAN ANTARMUKA](#6-perancangan-antarmuka)<br>
   6.1 [ANTARMUKA BERANDA](#61-antarmuka-beranda)<br>
@@ -88,6 +88,8 @@ Jl. Ahmad Yani, Batam 29461
   6.4 [ANTARMUKA TRACKING SAMPAH](#64-antarmuka-tracking-sampah)<br>
   6.5 [ANTARMUKA PANDUAN DAUR ULANG & REUSE](#65-antarmuka-panduan-daur-ulang--reuse)<br>
   6.6 [ANTARMUKA DETAIL PANDUAN](#66-antarmuka-detail-panduan)<br>
+  6.7 [ANTARMUKA FORUM DISKUSI](#67-antarmuka-forum-diskusi)<br>
+  6.8 [ANTARMUKA PELUANG USAHA](#68-antarmuka-peluang-usaha)<br>
 7 [MATRIKS KETERUNUTAN](#7-matriks-keterunutan)<br>
 
  
@@ -292,71 +294,92 @@ Aplikasi Revalio akan diimplementasikan dengan lingkungan sebagai berikut:
    - Kamera (opsional, untuk fitur identifikasi sampah)
    - GPS (untuk fitur lokasi)
 
-3	Deskripsi Rinci Kebutuhan
+3	DESKRIPSI RINCI KEBUTUHAN
 
-3.1	Deskripsi Fungsional
+3.1	DESKRIPSI FUNGSIONAL
 
 Aplikasi Revalio memiliki kebutuhan fungsional sebagai berikut:
 
 1. **Manajemen Pengguna**
-   - Pendaftaran pengguna baru
-   - Login dan autentikasi
-   - Manajemen profil
-   - Reset password
-   - Penyesuaian preferensi jenis sampah yang diminati
+   - UC-01: Registrasi pengguna baru
+   - UC-02: Login dan autentikasi
+   - UC-03: Melihat dan mengedit profil
+   - UC-04: Reset password
+   - UC-05: Mengatur preferensi jenis sampah yang diminati
 
 2. **Edukasi Pengelolaan Sampah**
-   - Menampilkan materi pembelajaran tentang klasifikasi dan sortir sampah
-   - Menyediakan panduan interaktif daur ulang dan reuse
-   - Kuis dan evaluasi pemahaman
-   - Tracking progress pembelajaran
-   - Infografis dan video tutorial pengelolaan sampah
+   - UC-06: Menjelajahi katalog jenis sampah
+   - UC-07: Mempelajari cara klasifikasi dan sortir sampah
+   - UC-08: Mengakses panduan interaktif daur ulang dan reuse
 
 3. **Eksplorasi Nilai Ekonomis Sampah**
-   - Katalog jenis sampah yang memiliki nilai ekonomis
-   - Informasi detail tentang nilai ekonomis setiap jenis sampah
-   - Update berkala tentang tren harga pasaran
-   - Kalkulator estimasi nilai sampah berdasarkan jenis dan volume
+   - UC-11: Melihat informasi nilai ekonomis berbagai jenis sampah
+   - UC-12: Mencari sampah berdasarkan nilai ekonomis
+   - UC-13: Menggunakan kalkulator estimasi nilai sampah
+   - UC-14: Melihat update tren harga pasar
 
 4. **Panduan Monetisasi Sampah**
-   - Panduan cara mengemas dan menyimpan sampah dengan benar
-   - Informasi tentang pembeli potensial untuk setiap jenis sampah
-   - Tips negosiasi dan standar harga pasar
-   - Praktik terbaik dalam memasarkan sampah untuk dijual
+   - UC-15: Mempelajari cara mengemas dan menyimpan sampah
+   - UC-16: Mengakses informasi tentang pembeli potensial
+   - UC-17: Mempelajari tips negosiasi dan standar harga
+   - UC-18: Mengakses praktik terbaik pemasaran sampah
 
 5. **Tracking Volume Sampah**
-   - Pencatatan jenis dan volume sampah yang dikelola
-   - Visualisasi statistik pengelolaan sampah
-   - Perhitungan dampak lingkungan positif 
-   - Estimasi nilai ekonomi yang berpotensi diperoleh
+   - UC-19: Mencatat jenis dan volume sampah yang dikelola
+   - UC-20: Melihat statistik dan visualisasi pengelolaan sampah
+   - UC-21: Melihat estimasi dampak lingkungan positif
+   - UC-22: Melihat estimasi nilai ekonomi potensial
 
 6. **Edukasi Dampak Lingkungan & Peluang Usaha**
-   - Materi edukasi tentang dampak positif pengelolaan sampah
-   - Informasi tentang peluang usaha di bidang pengelolaan sampah
-   - Studi kasus dan sukses story pelaku usaha pengelolaan sampah
-   - Panduan memulai usaha di bidang pengelolaan sampah
+   - UC-23: Mempelajari dampak positif pengelolaan sampah
+   - UC-24: Mengeksplorasi peluang usaha terkait pengelolaan sampah
+   - UC-25: Mengakses studi kasus dan kisah sukses
+   - UC-26: Mempelajari panduan memulai usaha pengelolaan sampah
 
 7. **Komunitas dan Pembelajaran**
-   - Forum diskusi pengelolaan sampah
-   - Berbagi tips dan pengalaman
-   - Tantangan dan kampanye pengelolaan sampah
-   - Notifikasi dan update informasi terbaru
+   - UC-27: Berpartisipasi dalam forum diskusi
+   - UC-28: Berbagi tips dan pengalaman
+   - UC-29: Mengikuti tantangan dan kampanye pengelolaan sampah
+   - UC-30: Menerima notifikasi dan update informasi terbaru
 
 8. **Administrasi Sistem**
-   - Manajemen konten edukasi
-   - Moderasi komunitas
-   - Analisis dan pelaporan aktivitas pengguna
-   - Konfigurasi sistem
+   - UC-31: Mengelola konten edukasi
+   - UC-32: Moderasi komunitas dan forum
+   - UC-33: Menganalisis dan membuat laporan aktivitas pengguna
+   - UC-34: Mengkonfigurasi parameter sistem
 
 3.1.1	Use Case Diagram
 
 ![Use Case Diagram](https://via.placeholder.com/800x600?text=Use+Case+Diagram+Revalio)
 
+**Use Case Diagram Revalio mencakup:**
+1. **Aktor**:
+   - Pengguna (Masyarakat Umum)
+   - Pelaku UMKM
+   - Administrator
+   - Komunitas Peduli Lingkungan
+   - Pendidik/Peneliti
+
+2. **Use Case Utama**:
+   - UC-01: Registrasi pengguna baru
+   - UC-02: Login dan autentikasi
+   - UC-03: Melihat dan mengedit profil
+   - UC-04: Reset password
+   - UC-05: Mengatur preferensi jenis sampah
+   - UC-06: Menjelajahi katalog jenis sampah
+   - UC-07: Mempelajari cara klasifikasi dan sortir sampah
+   - UC-08: Mengakses panduan interaktif daur ulang dan reuse
+   - UC-11: Melihat informasi nilai ekonomis sampah
+   - UC-12: Mencari sampah berdasarkan nilai ekonomis
+   - UC-13: Menggunakan kalkulator estimasi nilai sampah
+   - UC-14: Melihat update tren harga pasar
+   - UC-15 sampai UC-34: (sesuai deskripsi fungsional)
+
 3.1.2	Use Case Mempelajari Jenis Sampah dan Nilainya
 
 3.1.2.1	Skenario
 
-**Nama Use Case:** UC-1 Mempelajari Jenis Sampah dan Nilainya
+**Nama Use Case:** UC-06: Menjelajahi Katalog Jenis Sampah
 
 **Aktor:** Pengguna (Masyarakat Umum, Pelaku UMKM)
 
@@ -374,8 +397,8 @@ Aplikasi Revalio memiliki kebutuhan fungsional sebagai berikut:
    - Deskripsi dan karakteristik
    - Foto/gambar contoh
    - Perkiraan nilai ekonomis per satuan berat
-   - Tingkat kesulitan pengumpulan dan pengelolaan
-   - Tips penyortiran dan penyimpanan
+   - Cara sortir dan penyimpanan
+   - Tips pengelolaan
 7. Pengguna dapat melihat grafik perubahan nilai sampah tersebut dalam beberapa periode waktu.
 8. Pengguna dapat menambahkan jenis sampah tersebut ke daftar favorit untuk akses cepat di masa mendatang.
 
@@ -387,13 +410,13 @@ Aplikasi Revalio memiliki kebutuhan fungsional sebagai berikut:
 
 3.1.2.2	Interaksi Objek
 
-![Sequence Diagram UC-1](https://via.placeholder.com/800x400?text=Sequence+Diagram+UC-1)
+![Sequence Diagram UC-06](https://via.placeholder.com/800x400?text=Sequence+Diagram+UC-06)
 
 3.1.3	Use Case Tracking Volume Sampah
 
 3.1.3.1	Skenario
 
-**Nama Use Case:** UC-2 Tracking Volume Sampah
+**Nama Use Case:** UC-19: Mencatat Jenis dan Volume Sampah yang Dikelola
 
 **Aktor:** Pengguna (Masyarakat Umum, Pelaku UMKM)
 
@@ -407,9 +430,9 @@ Aplikasi Revalio memiliki kebutuhan fungsional sebagai berikut:
 3. Pengguna memilih opsi "Catat Sampah Baru".
 4. Sistem menampilkan form dengan field:
    - Jenis sampah (dropdown atau pencarian)
-   - Berat/volume (dengan pilihan satuan: kg, gram, liter)
-   - Tanggal pengumpulan
-   - Kondisi sampah (dropdown: sangat baik, baik, cukup)
+   - Jumlah (dengan pilihan satuan: kg, gram, liter)
+   - Tanggal pencatatan
+   - Status pengelolaan (dropdown: disimpan, dijual, didaur ulang)
    - Catatan tambahan (opsional)
    - Upload foto (opsional)
 5. Pengguna mengisi formulir dan memilih "Simpan".
@@ -428,13 +451,13 @@ Aplikasi Revalio memiliki kebutuhan fungsional sebagai berikut:
 
 3.1.3.2	Interaksi Objek
 
-![Sequence Diagram UC-2](https://via.placeholder.com/800x400?text=Sequence+Diagram+UC-2)
+![Sequence Diagram UC-19](https://via.placeholder.com/800x400?text=Sequence+Diagram+UC-19)
 
 3.1.4	Use Case Mempelajari Panduan Daur Ulang & Reuse
 
 3.1.4.1	Skenario
 
-**Nama Use Case:** UC-3 Mempelajari Panduan Daur Ulang & Reuse
+**Nama Use Case:** UC-08: Mengakses Panduan Interaktif Daur Ulang dan Reuse
 
 **Aktor:** Pengguna (Masyarakat Umum, Komunitas Peduli Lingkungan, Pendidik)
 
@@ -446,9 +469,9 @@ Aplikasi Revalio memiliki kebutuhan fungsional sebagai berikut:
 1. Pengguna memilih menu "Panduan Daur Ulang & Reuse".
 2. Sistem menampilkan daftar kategori panduan (daur ulang plastik, daur ulang kertas, kerajinan dari sampah, dll).
 3. Pengguna memilih salah satu kategori.
-4. Sistem menampilkan daftar panduan dalam kategori tersebut.
-5. Pengguna memilih salah satu panduan.
-6. Sistem menampilkan detail panduan yang berisi:
+4. Sistem menampilkan daftar tutorial dalam kategori tersebut.
+5. Pengguna memilih salah satu tutorial.
+6. Sistem menampilkan detail tutorial yang berisi:
    - Judul dan deskripsi
    - Tingkat kesulitan
    - Estimasi waktu pengerjaan
@@ -457,25 +480,25 @@ Aplikasi Revalio memiliki kebutuhan fungsional sebagai berikut:
    - Langkah-langkah dengan gambar/video
    - Hasil akhir
    - Tips dan saran
-7. Pengguna dapat menandai panduan sebagai "Favorit" atau "Selesai Dicoba".
-8. Pengguna dapat memberikan rating dan komentar pada panduan.
+7. Pengguna dapat menandai tutorial sebagai "Favorit" atau "Selesai Dicoba".
+8. Pengguna dapat memberikan komentar pada tutorial.
 
 **Kondisi Akhir:** Pengguna mendapatkan informasi detail tentang cara mendaur ulang atau menggunakan kembali jenis sampah tertentu.
 
 **Alur Alternatif:**
-- Pada langkah 2, pengguna dapat menggunakan fitur pencarian untuk mencari panduan spesifik.
-- Pada langkah 6, pengguna dapat mengunduh panduan dalam format PDF untuk dibaca offline.
-- Pengguna dapat membagikan panduan ke media sosial atau mengirimkan kepada teman.
+- Pada langkah 2, pengguna dapat menggunakan fitur pencarian untuk mencari tutorial spesifik.
+- Pada langkah 6, pengguna dapat mengunduh tutorial dalam format PDF untuk dibaca offline.
+- Pengguna dapat membagikan tutorial ke media sosial atau mengirimkan kepada teman.
 
 3.1.4.2	Interaksi Objek
 
-![Sequence Diagram UC-3](https://via.placeholder.com/800x400?text=Sequence+Diagram+UC-3)
+![Sequence Diagram UC-08](https://via.placeholder.com/800x400?text=Sequence+Diagram+UC-08)
 
 3.1.5	Use Case Mendapatkan Tips Monetisasi Limbah
 
 3.1.5.1	Skenario
 
-**Nama Use Case:** UC-4 Mendapatkan Tips Monetisasi Limbah
+**Nama Use Case:** UC-16: Mengakses Informasi tentang Pembeli Potensial
 
 **Aktor:** Pengguna (Masyarakat Umum, Pelaku UMKM)
 
@@ -490,15 +513,15 @@ Aplikasi Revalio memiliki kebutuhan fungsional sebagai berikut:
 4. Sistem menampilkan form filter:
    - Jenis sampah (dropdown: plastik, kertas, logam, elektronik, dll)
    - Lokasi (input text dengan auto-complete atau pilih dari peta)
-   - Volume minimum (opsional)
+   - Jumlah minimum (opsional)
 5. Pengguna mengisi filter dan memilih "Cari".
 6. Sistem menampilkan daftar pembeli potensial yang sesuai dengan kriteria pencarian, meliputi:
    - Nama pembeli (bank sampah, pengepul, perusahaan daur ulang)
    - Jenis sampah yang dibeli
    - Kisaran harga
-   - Persyaratan (kondisi, volume minimum, dll)
+   - Persyaratan (kondisi, jumlah minimum, dll)
    - Lokasi dan kontak
-   - Rating dari pengguna lain
+   - Jam operasional
 7. Pengguna dapat menyimpan hasil pencarian atau membagikannya.
 
 **Kondisi Akhir:** Pengguna mendapatkan informasi tentang pembeli potensial untuk jenis sampah tertentu di lokasi yang diinginkan.
@@ -506,11 +529,11 @@ Aplikasi Revalio memiliki kebutuhan fungsional sebagai berikut:
 **Alur Alternatif:**
 - Pada langkah 3, pengguna dapat memilih kategori lain seperti "Cara Menjual" atau "Teknik Negosiasi".
 - Pada langkah 6, jika tidak ada hasil yang sesuai, sistem akan menyarankan untuk memperluas area pencarian atau mengubah filter.
-- Pengguna dapat memberikan rating dan ulasan tentang pengalaman mereka dengan pembeli tertentu.
+- Pengguna dapat menambahkan pembeli ke daftar favorit untuk akses cepat di kemudian hari.
 
 3.1.5.2	Interaksi Objek
 
-![Sequence Diagram UC-4](https://via.placeholder.com/800x400?text=Sequence+Diagram+UC-4)
+![Sequence Diagram UC-16](https://via.placeholder.com/800x400?text=Sequence+Diagram+UC-16)
 
 3.2	DESKRIPSI KEBUTUHAN NON FUNGSIONAL
 
@@ -552,34 +575,39 @@ Aplikasi Revalio memiliki kebutuhan fungsional sebagai berikut:
 public class User {
     // Attributes
     private int userId;
-    private String username;
+    private String namaLengkap;
     private String email;
     private String password;
-    private String fullName;
-    private String phoneNumber;
-    private String address;
-    private UserRole role;
-    private Date registrationDate;
-    private Date lastLoginDate;
-    private boolean isActive;
+    private String noTelepon;
+    private String alamat;
+    private String fotoProfil;
+    private Date tanggalRegistrasi;
+    private StatusAkun statusAkun;
+    private String preferensiSampah;
     
     // Methods
-    public boolean register(String username, String email, String password);
+    public boolean register(String namaLengkap, String email, String password);
     public boolean login(String email, String password);
     public boolean updateProfile(UserProfileDTO profileData);
     public boolean changePassword(String oldPassword, String newPassword);
-    public List<WasteRecord> getWasteRecords();
+    public List<UserWasteTracking> getWasteRecords();
     public Dashboard getDashboard();
-    public List<EducationalContent> getFavoriteContent();
-    public void addToFavorites(EducationalContent content);
-    public void removeFromFavorites(EducationalContent content);
+    public List<Tutorial> getFavoriteTutorials();
+    public void addToFavorites(Tutorial tutorial);
+    public void removeFromFavorites(Tutorial tutorial);
+    public List<WasteType> getFavoriteWasteTypes();
+    public void addToFavorites(WasteType wasteType);
+    public void removeFromFavorites(WasteType wasteType);
+    public List<Thread> getForumThreads();
+    public Thread createForumThread(ThreadDTO threadData);
+    public Comment postComment(int threadId, String content);
 }
 
-public enum UserRole {
-    REGULAR_USER,
-    PREMIUM_USER,
-    EDUCATOR,
-    ADMIN
+public enum StatusAkun {
+    AKTIF,
+    NONAKTIF,
+    SUSPENDED,
+    DELETED
 }
 ```
 
@@ -740,191 +768,181 @@ public enum ContentCategory {
 Aplikasi Revalio menggunakan basis data berikut:
 
 1. users - Menyimpan data pengguna
-2. waste_items - Menyimpan informasi jenis-jenis sampah
+2. waste_types - Menyimpan informasi jenis-jenis sampah
 3. waste_categories - Menyimpan kategori sampah
-4. waste_records - Menyimpan catatan sampah yang dikelola pengguna
-5. educational_contents - Menyimpan konten edukasi
-6. recycling_guides - Menyimpan panduan daur ulang
-7. reuse_ideas - Menyimpan ide penggunaan kembali sampah
-8. potential_buyers - Menyimpan informasi pembeli potensial
-9. price_histories - Menyimpan riwayat harga sampah
-10. comments - Menyimpan komentar pengguna
-11. ratings - Menyimpan rating pengguna
-12. user_favorites - Menyimpan konten favorit pengguna
-13. user_completions - Menyimpan konten yang telah diselesaikan pengguna
-14. notifications - Menyimpan notifikasi pengguna
+4. waste_values - Menyimpan nilai ekonomis sampah
+5. tutorials - Menyimpan panduan pengelolaan sampah
+6. articles - Menyimpan artikel edukasi
+7. waste_buyers - Menyimpan informasi pembeli sampah
+8. waste_buyer_types - Menyimpan relasi pembeli-sampah
+9. user_waste_tracking - Menyimpan catatan sampah yang dikelola pengguna
+10. forum_threads - Menyimpan thread forum diskusi
+11. forum_comments - Menyimpan komentar forum
+12. business_opportunities - Menyimpan informasi peluang usaha
+13. deleted_records - Menyimpan catatan yang telah dihapus (recycle bin)
 
 5.3	STRUKTUR TABEL USERS
 
 | Field | Tipe Data | Keterangan | Konstrain |
 |-------|-----------|------------|-----------|
 | user_id | INT | ID unik pengguna | PK, AUTO_INCREMENT |
-| username | VARCHAR(50) | Nama pengguna | UNIQUE, NOT NULL |
+| nama_lengkap | VARCHAR(100) | Nama lengkap | NOT NULL |
 | email | VARCHAR(100) | Alamat email | UNIQUE, NOT NULL |
-| password_hash | VARCHAR(255) | Hash password | NOT NULL |
-| full_name | VARCHAR(100) | Nama lengkap | NOT NULL |
-| phone_number | VARCHAR(20) | Nomor telepon | |
-| address | TEXT | Alamat lengkap | |
-| role | ENUM | Peran pengguna | DEFAULT 'REGULAR_USER' |
-| registration_date | DATETIME | Tanggal pendaftaran | DEFAULT CURRENT_TIMESTAMP |
-| last_login_date | DATETIME | Tanggal login terakhir | |
-| is_active | BOOLEAN | Status aktif | DEFAULT TRUE |
-| profile_picture_url | VARCHAR(255) | URL foto profil | |
+| password | VARCHAR(255) | Password terenkripsi | NOT NULL |
+| no_telepon | VARCHAR(20) | Nomor telepon | |
+| alamat | TEXT | Alamat lengkap | |
+| foto_profil | VARCHAR(255) | URL foto profil | |
+| tanggal_registrasi | DATETIME | Tanggal pendaftaran | DEFAULT CURRENT_TIMESTAMP |
+| status_akun | ENUM | Status akun (aktif/nonaktif) | DEFAULT 'AKTIF' |
+| preferensi_sampah | TEXT | Preferensi jenis sampah | |
 
-5.4	STRUKTUR TABEL WASTE_ITEMS
+5.4	STRUKTUR TABEL WASTE_TYPES
 
 | Field | Tipe Data | Keterangan | Konstrain |
 |-------|-----------|------------|-----------|
-| waste_item_id | INT | ID unik jenis sampah | PK, AUTO_INCREMENT |
-| name | VARCHAR(100) | Nama jenis sampah | NOT NULL |
-| description | TEXT | Deskripsi | NOT NULL |
-| category_id | INT | ID kategori sampah | FK, NOT NULL |
-| handling_instructions | TEXT | Instruksi penanganan | |
-| storage_guidelines | TEXT | Panduan penyimpanan | |
-| collection_difficulty | ENUM | Tingkat kesulitan pengumpulan | |
-| processing_difficulty | ENUM | Tingkat kesulitan pengolahan | |
-| is_recyclable | BOOLEAN | Dapat didaur ulang | DEFAULT FALSE |
-| is_reusable | BOOLEAN | Dapat digunakan kembali | DEFAULT FALSE |
-| current_value_min | DECIMAL(10,2) | Nilai minimum saat ini | |
-| current_value_max | DECIMAL(10,2) | Nilai maksimum saat ini | |
-| value_unit | VARCHAR(20) | Satuan nilai (per kg, per pcs, dll) | |
-| created_at | DATETIME | Tanggal pembuatan | DEFAULT CURRENT_TIMESTAMP |
-| updated_at | DATETIME | Tanggal pembaruan | DEFAULT CURRENT_TIMESTAMP |
+| waste_id | INT | ID unik jenis sampah | PK, AUTO_INCREMENT |
+| nama_sampah | VARCHAR(100) | Nama jenis sampah | NOT NULL |
+| kategori_id | INT | ID kategori sampah | FK, NOT NULL |
+| deskripsi | TEXT | Deskripsi | NOT NULL |
+| cara_sortir | TEXT | Cara sortir sampah | |
+| cara_penyimpanan | TEXT | Cara penyimpanan sampah | |
+| gambar | VARCHAR(255) | URL gambar sampah | |
+| status_aktif | BOOLEAN | Status aktif | DEFAULT TRUE |
 
-5.5	STRUKTUR TABEL WASTE_RECORDS
+5.5	STRUKTUR TABEL WASTE_CATEGORIES
 
 | Field | Tipe Data | Keterangan | Konstrain |
 |-------|-----------|------------|-----------|
-| record_id | INT | ID unik catatan | PK, AUTO_INCREMENT |
+| kategori_id | INT | ID unik kategori | PK, AUTO_INCREMENT |
+| nama_kategori | VARCHAR(50) | Nama kategori | NOT NULL, UNIQUE |
+| deskripsi | TEXT | Deskripsi kategori | |
+| ikon | VARCHAR(255) | URL ikon kategori | |
+
+5.6	STRUKTUR TABEL WASTE_VALUES
+
+| Field | Tipe Data | Keterangan | Konstrain |
+|-------|-----------|------------|-----------|
+| nilai_id | INT | ID unik nilai | PK, AUTO_INCREMENT |
+| waste_id | INT | ID jenis sampah | FK, NOT NULL |
+| harga_minimum | DECIMAL(10,2) | Harga minimum | NOT NULL |
+| harga_maksimum | DECIMAL(10,2) | Harga maksimum | NOT NULL |
+| satuan | VARCHAR(20) | Satuan harga (per kg, per pcs, dll) | NOT NULL |
+| tanggal_update | DATETIME | Tanggal update | DEFAULT CURRENT_TIMESTAMP |
+| sumber_data | VARCHAR(100) | Sumber data harga | |
+
+5.7	STRUKTUR TABEL TUTORIALS
+
+| Field | Tipe Data | Keterangan | Konstrain |
+|-------|-----------|------------|-----------|
+| tutorial_id | INT | ID unik tutorial | PK, AUTO_INCREMENT |
+| waste_id | INT | ID jenis sampah | FK |
+| judul | VARCHAR(100) | Judul tutorial | NOT NULL |
+| deskripsi | TEXT | Deskripsi tutorial | NOT NULL |
+| jenis_tutorial | ENUM | Jenis tutorial (daur ulang/reuse) | NOT NULL |
+| konten | TEXT | Konten tutorial | NOT NULL |
+| media | TEXT | URL media (gambar/video) | |
+| tingkat_kesulitan | ENUM | Tingkat kesulitan | NOT NULL |
+| estimasi_waktu | INT | Estimasi waktu (menit) | NOT NULL |
+
+5.8	STRUKTUR TABEL ARTICLES
+
+| Field | Tipe Data | Keterangan | Konstrain |
+|-------|-----------|------------|-----------|
+| artikel_id | INT | ID unik artikel | PK, AUTO_INCREMENT |
+| judul | VARCHAR(100) | Judul artikel | NOT NULL |
+| deskripsi_singkat | TEXT | Deskripsi singkat | NOT NULL |
+| konten | TEXT | Konten artikel | NOT NULL |
+| kategori | VARCHAR(50) | Kategori artikel | NOT NULL |
+| penulis_id | INT | ID penulis | FK, NOT NULL |
+| tanggal_publikasi | DATETIME | Tanggal publikasi | NOT NULL |
+| status | ENUM | Status artikel | DEFAULT 'PUBLISHED' |
+| gambar_utama | VARCHAR(255) | URL gambar utama | |
+| tags | TEXT | Tag artikel | |
+
+5.9	STRUKTUR TABEL WASTE_BUYERS
+
+| Field | Tipe Data | Keterangan | Konstrain |
+|-------|-----------|------------|-----------|
+| pembeli_id | INT | ID unik pembeli | PK, AUTO_INCREMENT |
+| nama_pembeli | VARCHAR(100) | Nama pembeli | NOT NULL |
+| jenis_pembeli | ENUM | Tipe pembeli (bank sampah/pengepul/pabrik) | NOT NULL |
+| alamat | TEXT | Alamat pembeli | NOT NULL |
+| kontak | VARCHAR(20) | Kontak pembeli | NOT NULL |
+| email | VARCHAR(100) | Email pembeli | |
+| website | VARCHAR(255) | Website pembeli | |
+| jam_operasional | TEXT | Jam operasional | |
+
+5.10	STRUKTUR TABEL WASTE_BUYER_TYPES
+
+| Field | Tipe Data | Keterangan | Konstrain |
+|-------|-----------|------------|-----------|
+| id | INT | ID unik relasi | PK, AUTO_INCREMENT |
+| pembeli_id | INT | ID pembeli | FK, NOT NULL |
+| waste_id | INT | ID jenis sampah | FK, NOT NULL |
+| harga_beli | DECIMAL(10,2) | Harga beli | |
+| syarat_minimum | TEXT | Syarat minimum pembelian | |
+| catatan | TEXT | Catatan tambahan | |
+
+5.11	STRUKTUR TABEL USER_WASTE_TRACKING
+
+| Field | Tipe Data | Keterangan | Konstrain |
+|-------|-----------|------------|-----------|
+| tracking_id | INT | ID unik tracking | PK, AUTO_INCREMENT |
 | user_id | INT | ID pengguna | FK, NOT NULL |
-| waste_item_id | INT | ID jenis sampah | FK, NOT NULL |
-| quantity | DECIMAL(10,2) | Jumlah | NOT NULL |
-| unit_of_measure | ENUM | Satuan ukuran | NOT NULL |
-| collection_date | DATE | Tanggal pengumpulan | NOT NULL |
-| condition | ENUM | Kondisi sampah | NOT NULL |
-| notes | TEXT | Catatan tambahan | |
-| estimated_value | DECIMAL(10,2) | Estimasi nilai | |
-| record_date | DATETIME | Tanggal pencatatan | DEFAULT CURRENT_TIMESTAMP |
+| waste_id | INT | ID jenis sampah | FK, NOT NULL |
+| jumlah | DECIMAL(10,2) | Jumlah | NOT NULL |
+| satuan | VARCHAR(20) | Satuan ukuran | NOT NULL |
+| tanggal_pencatatan | DATETIME | Tanggal pencatatan | DEFAULT CURRENT_TIMESTAMP |
+| status_pengelolaan | ENUM | Status pengelolaan | NOT NULL |
+| nilai_estimasi | DECIMAL(10,2) | Estimasi nilai | |
 
-5.6	STRUKTUR TABEL EDUCATIONAL_CONTENTS
+5.12	STRUKTUR TABEL FORUM_THREADS
 
 | Field | Tipe Data | Keterangan | Konstrain |
 |-------|-----------|------------|-----------|
-| content_id | INT | ID unik konten | PK, AUTO_INCREMENT |
-| title | VARCHAR(100) | Judul konten | NOT NULL |
-| description | TEXT | Deskripsi konten | NOT NULL |
-| type | ENUM | Tipe konten | NOT NULL |
-| category | ENUM | Kategori konten | NOT NULL |
-| author | VARCHAR(100) | Penulis konten | NOT NULL |
-| publish_date | DATETIME | Tanggal publikasi | NOT NULL |
-| last_update_date | DATETIME | Tanggal pembaruan | NOT NULL |
-| view_count | INT | Jumlah tampilan | NOT NULL |
-| average_rating | DECIMAL(3,2) | Rata-rata rating | NOT NULL |
-| tags | TEXT | Tag konten | |
-| content | TEXT | Konten | NOT NULL |
-| media_urls | TEXT | URL media konten | |
-
-5.7	STRUKTUR TABEL RECYCLING_GUIDES
-
-| Field | Tipe Data | Keterangan | Konstrain |
-|-------|-----------|------------|-----------|
-| guide_id | INT | ID unik panduan | PK, AUTO_INCREMENT |
-| title | VARCHAR(100) | Judul panduan | NOT NULL |
-| description | TEXT | Deskripsi panduan | NOT NULL |
-| difficulty | ENUM | Tingkat kesulitan | NOT NULL |
-| estimated_time | INT | Estimasi waktu | NOT NULL |
-| materials | TEXT | Bahan-bahan yang dibutuhkan | NOT NULL |
-| tools | TEXT | Alat-alat yang dibutuhkan | NOT NULL |
-| steps | TEXT | Langkah-langkah panduan | NOT NULL |
-| result | TEXT | Hasil akhir | NOT NULL |
-| tips | TEXT | Tips dan saran | |
-
-5.8	STRUKTUR TABEL REUSE_IDEAS
-
-| Field | Tipe Data | Keterangan | Konstrain |
-|-------|-----------|------------|-----------|
-| idea_id | INT | ID unik ide | PK, AUTO_INCREMENT |
-| title | VARCHAR(100) | Judul ide | NOT NULL |
-| description | TEXT | Deskripsi ide | NOT NULL |
-| category | ENUM | Kategori ide | NOT NULL |
-| difficulty | ENUM | Tingkat kesulitan | NOT NULL |
-| estimated_time | INT | Estimasi waktu | NOT NULL |
-| materials | TEXT | Bahan-bahan yang dibutuhkan | NOT NULL |
-| tools | TEXT | Alat-alat yang dibutuhkan | NOT NULL |
-| steps | TEXT | Langkah-langkah ide | NOT NULL |
-| result | TEXT | Hasil akhir | NOT NULL |
-| tips | TEXT | Tips dan saran | |
-
-5.9	STRUKTUR TABEL POTENTIAL_BUYERS
-
-| Field | Tipe Data | Keterangan | Konstrain |
-|-------|-----------|------------|-----------|
-| buyer_id | INT | ID unik pembeli | PK, AUTO_INCREMENT |
-| name | VARCHAR(100) | Nama pembeli | NOT NULL |
-| type | ENUM | Tipe pembeli | NOT NULL |
-| location | TEXT | Lokasi pembeli | NOT NULL |
-| contact_info | TEXT | Informasi kontak | NOT NULL |
-| rating | DECIMAL(3,2) | Rating pembeli | NOT NULL |
-| notes | TEXT | Catatan tambahan | |
-
-5.10	STRUKTUR TABEL PRICE_HISTORIES
-
-| Field | Tipe Data | Keterangan | Konstrain |
-|-------|-----------|------------|-----------|
-| history_id | INT | ID unik riwayat harga | PK, AUTO_INCREMENT |
-| waste_item_id | INT | ID jenis sampah | FK, NOT NULL |
-| date | DATE | Tanggal harga | NOT NULL |
-| price | DECIMAL(10,2) | Harga | NOT NULL |
-| unit | ENUM | Satuan harga | NOT NULL |
-
-5.11	STRUKTUR TABEL COMMENTS
-
-| Field | Tipe Data | Keterangan | Konstrain |
-|-------|-----------|------------|-----------|
-| comment_id | INT | ID unik komentar | PK, AUTO_INCREMENT |
-| content_id | INT | ID konten | FK, NOT NULL |
+| thread_id | INT | ID unik thread | PK, AUTO_INCREMENT |
 | user_id | INT | ID pengguna | FK, NOT NULL |
-| comment_text | TEXT | Teks komentar | NOT NULL |
-| comment_date | DATETIME | Tanggal komentar | NOT NULL |
+| judul | VARCHAR(100) | Judul thread | NOT NULL |
+| konten | TEXT | Konten thread | NOT NULL |
+| tanggal_posting | DATETIME | Tanggal posting | DEFAULT CURRENT_TIMESTAMP |
+| status | ENUM | Status thread | DEFAULT 'AKTIF' |
+| tags | TEXT | Tag thread | |
 
-5.12	STRUKTUR TABEL RATINGS
-
-| Field | Tipe Data | Keterangan | Konstrain |
-|-------|-----------|------------|-----------|
-| rating_id | INT | ID unik rating | PK, AUTO_INCREMENT |
-| content_id | INT | ID konten | FK, NOT NULL |
-| user_id | INT | ID pengguna | FK, NOT NULL |
-| rating_value | DECIMAL(3,2) | Nilai rating | NOT NULL |
-| rating_date | DATETIME | Tanggal rating | NOT NULL |
-
-5.13	STRUKTUR TABEL USER_FAVORITES
+5.13	STRUKTUR TABEL FORUM_COMMENTS
 
 | Field | Tipe Data | Keterangan | Konstrain |
 |-------|-----------|------------|-----------|
-| favorite_id | INT | ID unik favorit | PK, AUTO_INCREMENT |
+| komentar_id | INT | ID unik komentar | PK, AUTO_INCREMENT |
+| thread_id | INT | ID thread | FK, NOT NULL |
 | user_id | INT | ID pengguna | FK, NOT NULL |
-| content_id | INT | ID konten | FK, NOT NULL |
-| favorite_date | DATETIME | Tanggal favorit | NOT NULL |
+| konten | TEXT | Konten komentar | NOT NULL |
+| tanggal_komentar | DATETIME | Tanggal komentar | DEFAULT CURRENT_TIMESTAMP |
+| parent_komentar_id | INT | ID komentar induk | FK |
 
-5.14	STRUKTUR TABEL USER_COMPLETIONS
+5.14	STRUKTUR TABEL BUSINESS_OPPORTUNITIES
 
 | Field | Tipe Data | Keterangan | Konstrain |
 |-------|-----------|------------|-----------|
-| completion_id | INT | ID unik penyelesaian | PK, AUTO_INCREMENT |
-| user_id | INT | ID pengguna | FK, NOT NULL |
-| content_id | INT | ID konten | FK, NOT NULL |
-| completion_date | DATETIME | Tanggal penyelesaian | NOT NULL |
+| peluang_id | INT | ID unik peluang | PK, AUTO_INCREMENT |
+| judul | VARCHAR(100) | Judul peluang | NOT NULL |
+| deskripsi | TEXT | Deskripsi peluang | NOT NULL |
+| kategori | VARCHAR(50) | Kategori peluang | NOT NULL |
+| investasi_awal | DECIMAL(12,2) | Investasi awal | |
+| potensi_pendapatan | TEXT | Potensi pendapatan | |
+| tantangan | TEXT | Tantangan implementasi | |
+| saran_implementasi | TEXT | Saran implementasi | |
 
-5.15	STRUKTUR TABEL NOTIFICATIONS
+5.15	STRUKTUR TABEL DELETED_RECORDS
 
 | Field | Tipe Data | Keterangan | Konstrain |
 |-------|-----------|------------|-----------|
-| notification_id | INT | ID unik notifikasi | PK, AUTO_INCREMENT |
-| user_id | INT | ID pengguna | FK, NOT NULL |
-| title | VARCHAR(100) | Judul notifikasi | NOT NULL |
-| message | TEXT | Pesan notifikasi | NOT NULL |
-| is_read | BOOLEAN | Status baca | NOT NULL |
-| created_at | DATETIME | Tanggal pembuatan | NOT NULL |
+| deletion_id | INT | ID unik deletion | PK, AUTO_INCREMENT |
+| table_name | VARCHAR(50) | Nama tabel | NOT NULL |
+| record_id | INT | ID record | NOT NULL |
+| record_data | JSON | Data record (JSON) | NOT NULL |
+| deletion_date | DATETIME | Tanggal penghapusan | DEFAULT CURRENT_TIMESTAMP |
+| user_id | INT | ID pengguna yang menghapus | FK |
+| restoration_status | ENUM | Status restorasi | DEFAULT 'NOT_RESTORED' |
 
 5.16	SKEMA RELASI ANTAR TABEL
 
@@ -1116,25 +1134,76 @@ Halaman ini menampilkan langkah-langkah detail dari panduan daur ulang atau reus
 - Gambar dapat diperbesar dengan klik
 - Pengguna dapat menandai panduan selesai dicoba dan memberikan rating
 
+6.7	ANTARMUKA FORUM DISKUSI
+
+Halaman ini menyediakan forum diskusi untuk pengguna berinteraksi dan berbagi pengalaman.
+
+![Mockup Forum Diskusi](https://via.placeholder.com/800x600?text=Mockup+Forum+Diskusi)
+
+**Komponen Utama:**
+1. Header dengan judul forum
+2. Panel filter dan pencarian:
+   - Dropdown kategori diskusi
+   - Filter berdasarkan popularitas/terbaru
+   - Field pencarian
+3. Daftar topik diskusi dengan:
+   - Judul topik
+   - Penulis
+   - Jumlah balasan
+   - Waktu posting terakhir
+   - Tag kategori
+4. Tombol "Buat Topik Baru"
+5. Sidebar dengan topik populer dan statistik forum
+
+**Interaksi:**
+- Pengguna dapat membuat topik baru
+- Mengklik topik untuk melihat diskusi lengkap
+- Filter dan pencarian untuk menemukan topik spesifik
+- Notifikasi untuk balasan baru pada topik yang diikuti
+
+6.8	ANTARMUKA PELUANG USAHA
+
+Halaman ini menampilkan informasi tentang peluang usaha dari pengelolaan sampah.
+
+![Mockup Peluang Usaha](https://via.placeholder.com/800x600?text=Mockup+Peluang+Usaha)
+
+**Komponen Utama:**
+1. Header dengan judul halaman
+2. Panel filter:
+   - Kategori peluang usaha
+   - Range investasi awal
+   - Tingkat kesulitan
+3. Grid peluang usaha dengan card:
+   - Judul peluang
+   - Gambar ilustrasi
+   - Estimasi investasi awal
+   - Potensi pendapatan
+   - Kategori usaha
+4. Pagination
+
+**Interaksi:**
+- Filter berdasarkan berbagai kriteria
+- Mengklik card untuk melihat detail peluang usaha
+- Bookmark peluang yang diminati
+
 7	MATRIKS KETERUNUTAN
 
 Matriks keterunutan menunjukkan hubungan antara kebutuhan fungsional, use case, class, dan antarmuka dalam aplikasi Revalio.
 
-| ID | Kebutuhan Fungsional | Use Case | Class | Antarmuka |
-|----|---------------------|----------|-------|-----------|
-| F1 | Pendaftaran dan otentikasi pengguna | UC-Login, UC-Register | User | Halaman Login, Halaman Register |
-| F2 | Mempelajari jenis sampah dan nilai ekonomisnya | UC-1: Mempelajari Jenis Sampah dan Nilainya | WasteItem, PriceHistory | Antarmuka Katalog Sampah Bernilai, Antarmuka Detail Sampah |
-| F3 | Tracking volume sampah yang dikelola | UC-2: Tracking Volume Sampah | WasteRecord, EnvironmentalImpact | Antarmuka Tracking Sampah |
-| F4 | Mempelajari panduan daur ulang dan reuse | UC-3: Mempelajari Panduan Daur Ulang & Reuse | EducationalContent, RecyclingGuide, ReuseIdea | Antarmuka Panduan Daur Ulang & Reuse, Antarmuka Detail Panduan |
-| F5 | Mendapatkan tips monetisasi limbah | UC-4: Mendapatkan Tips Monetisasi Limbah | PotentialBuyer, MonetizationTip | Antarmuka Tips Monetisasi |
-| F6 | Mengelola konten favorit | UC-SaveFavorite | User, UserFavorite | Bagian Favorit di berbagai antarmuka |
-| F7 | Berpartisipasi dalam komunitas | UC-Community | Comment, Rating, ForumPost | Antarmuka Komunitas (belum didetailkan) |
-| F8 | Menerima notifikasi dan update | UC-Notification | Notification | Pop-up Notifikasi, Halaman Notifikasi |
-| F9 | Mendapatkan edukasi tentang dampak lingkungan | UC-Environmental | EducationalContent, EnvironmentalImpact | Bagian Dampak Lingkungan di Dashboard |
-| F10 | Mempelajari peluang usaha dari pengelolaan sampah | UC-BusinessOpportunity | EducationalContent, BusinessOpportunity | Halaman Peluang Usaha (belum didetailkan) |
+| ID | Kebutuhan Fungsional | Use Case | Tabel Database | Antarmuka |
+|----|---------------------|----------|---------------|-----------|
+| F1 | Pendaftaran dan otentikasi pengguna | UC-01, UC-02, UC-03, UC-04, UC-05 | users | Halaman Login, Register, Profil |
+| F2 | Mempelajari jenis sampah dan nilai ekonomisnya | UC-06, UC-07, UC-11, UC-12, UC-13, UC-14 | waste_types, waste_categories, waste_values | Katalog Sampah Bernilai, Detail Sampah |
+| F3 | Tracking volume sampah yang dikelola | UC-19, UC-20, UC-21, UC-22 | user_waste_tracking | Tracking Sampah |
+| F4 | Mempelajari panduan daur ulang dan reuse | UC-08 | tutorials, articles | Panduan Daur Ulang & Reuse, Detail Panduan |
+| F5 | Mendapatkan tips monetisasi limbah | UC-15, UC-16, UC-17, UC-18 | waste_buyers, waste_buyer_types | Tips Monetisasi |
+| F6 | Edukasi dampak lingkungan & peluang usaha | UC-23, UC-24, UC-25, UC-26 | articles, business_opportunities | Peluang Usaha |
+| F7 | Berpartisipasi dalam komunitas | UC-27, UC-28, UC-29 | forum_threads, forum_comments | Forum Diskusi |
+| F8 | Menerima notifikasi dan update | UC-30 | - | Notifikasi |
+| F9 | Administrasi sistem | UC-31, UC-32, UC-33, UC-34 | deleted_records | Admin Dashboard |
 
 ### Diagram Keterunutan
 
 ![Diagram Keterunutan](https://via.placeholder.com/800x600?text=Diagram+Keterunutan+Revalio)
 
-Matriks keterunutan ini membantu memastikan bahwa semua kebutuhan fungsional terpenuhi oleh use case, class, dan antarmuka yang dirancang, serta mengidentifikasi ketergantungan dan relasi antar komponen sistem.
+Matriks keterunutan ini membantu memastikan bahwa semua kebutuhan fungsional terpenuhi oleh use case, tabel database, dan antarmuka yang dirancang, serta mengidentifikasi ketergantungan dan relasi antar komponen sistem.

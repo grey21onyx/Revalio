@@ -1,0 +1,96 @@
+# Product Requirements Document - Revalio App
+
+## Deskripsi Produk
+Revalio adalah platform edukasi digital yang bertujuan untuk memberdayakan masyarakat dalam mengelola sampah rumah tangga dan industri ringan menjadi sumber penghasilan. Aplikasi ini menyediakan informasi komprehensif tentang jenis-jenis sampah yang memiliki nilai ekonomis (seperti besi tua, kardus, kaleng, botol plastik), cara pengelolaannya, dan potensi nilainya di pasaran.
+
+## Lingkup Masalah
+Revalio berfokus pada pemberdayaan masyarakat untuk mengelola sampah dengan lebih baik dan mendapatkan nilai ekonomis dari sampah. Lingkup dari aplikasi Revalio meliputi:
+
+- Edukasi mengenai jenis-jenis sampah yang bisa diolah dan dijual
+- Panduan klasifikasi dan sortir sampah yang interaktif
+- Informasi tentang nilai ekonomis dari berbagai jenis sampah
+- Panduan daur ulang dan reuse untuk berbagai jenis sampah
+- Tips monetisasi limbah
+- Sistem tracking volume sampah yang dikelola pengguna
+- Edukasi tentang dampak lingkungan dari pengelolaan sampah dan peluang usaha
+
+## Teknologi
+- Frontend: React.js, Material-UI, Redux, Tailwind CSS, GSAP
+- Backend: Laravel, MySQL, Laravel Sanctum, Eloquent
+- Deployment: AWS / Google Cloud, GitHub Actions, Sentry
+
+## Fitur Utama
+
+### 1. Manajemen Pengguna
+- Registrasi pengguna baru
+- Login dan autentikasi
+- Melihat dan mengedit profil
+- Reset password
+- Mengatur preferensi jenis sampah yang diminati
+
+### 2. Edukasi Pengelolaan Sampah
+- Menjelajahi katalog jenis sampah
+- Mempelajari cara klasifikasi dan sortir sampah
+- Mengakses panduan interaktif daur ulang dan reuse
+
+### 3. Eksplorasi Nilai Ekonomis Sampah
+- Melihat informasi nilai ekonomis berbagai jenis sampah
+- Mencari sampah berdasarkan nilai ekonomis
+- Menggunakan kalkulator estimasi nilai sampah
+- Melihat update tren harga pasar
+
+### 4. Panduan Monetisasi Sampah
+- Mempelajari cara mengemas dan menyimpan sampah
+- Mengakses informasi tentang pembeli potensial
+- Mempelajari tips negosiasi dan standar harga
+- Mengakses praktik terbaik pemasaran sampah
+
+### 5. Tracking Volume Sampah
+- Mencatat jenis dan volume sampah yang dikelola
+- Melihat statistik dan visualisasi pengelolaan sampah
+- Melihat estimasi dampak lingkungan positif
+- Melihat estimasi nilai ekonomi potensial
+
+### 6. Edukasi Dampak Lingkungan & Peluang Usaha
+- Mempelajari dampak positif pengelolaan sampah
+- Mengeksplorasi peluang usaha terkait pengelolaan sampah
+- Mengakses studi kasus dan kisah sukses
+- Mempelajari panduan memulai usaha pengelolaan sampah
+
+### 7. Komunitas dan Pembelajaran
+- Berpartisipasi dalam forum diskusi
+- Berbagi tips dan pengalaman
+- Mengikuti tantangan dan kampanye pengelolaan sampah
+- Menerima notifikasi dan update informasi terbaru
+
+### 8. Administrasi Sistem
+- Mengelola konten edukasi
+- Moderasi komunitas
+- Analisis dan pelaporan aktivitas pengguna
+- Konfigurasi sistem
+
+## Perancangan Antarmuka Utama
+1. Beranda
+2. Katalog Sampah Bernilai
+3. Detail Sampah
+4. Tracking Sampah
+5. Panduan Daur Ulang & Reuse
+6. Detail Panduan
+7. Forum Diskusi
+8. Peluang Usaha
+
+## Persyaratan Database
+Aplikasi Revalio membutuhkan 13 tabel:
+1. users
+2. waste_categories
+3. waste_types
+4. waste_values
+5. tutorials
+6. articles
+7. waste_buyers
+8. waste_buyer_types
+9. user_waste_tracking
+10. forum_threads
+11. forum_comments
+12. business_opportunities
+13. deleted_records 

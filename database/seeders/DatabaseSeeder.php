@@ -18,5 +18,18 @@ class DatabaseSeeder extends Seeder
         //     'name' => 'Test User',
         //     'email' => 'test@example.com',
         // ]);
+
+        $this->call([
+            // Jalankan seeder dalam urutan yang memperhatikan dependensi antar tabel
+            UsersSeeder::class,
+            WasteCategorySeeder::class,
+            WasteTypeSeeder::class,
+            WasteValueSeeder::class,
+            WasteBuyerSeeder::class,
+            TutorialAndArticleSeeder::class,
+            BusinessOpportunitySeeder::class,
+            ForumSeeder::class,
+            UserWasteTrackingSeeder::class,
+        ]);
     }
 }

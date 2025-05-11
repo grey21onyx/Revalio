@@ -14,10 +14,20 @@
         "vite": "^5.0.0"
     },
     "dependencies": {
+        "@emotion/react": "^11.14.0",
+        "@emotion/styled": "^11.14.0",
+        "@gsap/react": "^2.1.2",
+        "@mui/icons-material": "^7.1.0",
+        "@mui/material": "^7.1.0",
+        "@reduxjs/toolkit": "^2.8.1",
         "@tailwindcss/vite": "^4.1.6",
+        "gsap": "^3.13.0",
+        "prop-types": "^15.8.1",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
-        "tailwindcss": "^4.1.6",
-        "react-router-dom": "^6.14.1"
+        "react-redux": "^9.2.0",
+        "react-router-dom": "^6.14.1",
+        "scrolltrigger": "^1.0.1",
+        "tailwindcss": "^4.1.6"
     }
 }

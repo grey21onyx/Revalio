@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\CommonScopes;
+use App\Traits\RecyclableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class BusinessOpportunity extends Model
 {
-    use HasFactory;
+    use HasFactory, CommonScopes, RecyclableTrait;
     
     /**
      * Nama tabel yang terkait dengan model.
@@ -53,4 +55,11 @@ class BusinessOpportunity extends Model
      * @var bool
      */
     public $timestamps = false;
+    
+    /**
+     * Field yang dapat dicari
+     *
+     * @var array<string>
+     */
+    protected $searchableFields = ['judul', 'deskripsi', 'kategori', 'potensi_pendapatan', 'tantangan'];
 } 

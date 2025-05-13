@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\API\v1\OpenAPIController;
 
 /*
 |--------------------------------------------------------------------------
@@ -12,6 +13,13 @@ use Illuminate\Support\Facades\Route;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
+
+Route::get('/', function () {
+    return view('react-main');
+});
+
+// API Documentation
+Route::get('/api-docs', [OpenAPIController::class, 'swaggerUI']);
 
 // Route untuk menangani semua URL lainnya
 Route::get('/{any}', function () {

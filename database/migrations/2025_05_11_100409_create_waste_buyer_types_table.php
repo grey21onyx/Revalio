@@ -23,6 +23,8 @@ return new class extends Migration
             
             $table->index('pembeli_id', 'idx_pembeli_id');
             $table->index('waste_id', 'idx_waste_id');
+            $table->timestamps();
+            $table->softDeletes();
         });
     }
 

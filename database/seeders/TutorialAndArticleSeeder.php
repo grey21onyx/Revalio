@@ -16,6 +16,12 @@ class TutorialAndArticleSeeder extends Seeder
      */
     public function run(): void
     {
+        // Periksa apakah data sudah ada
+        if (Tutorial::count() > 0 && Article::count() > 0) {
+            $this->command->info('Tutorial and Article data already exists. Skipping seeding.');
+            return;
+        }
+        
         // Buat tutorial sampel
         $tutorials = [
             [
@@ -89,14 +95,23 @@ class TutorialAndArticleSeeder extends Seeder
         ];
         
         foreach ($tutorials as $tutorial) {
-            Tutorial::create($tutorial);
+            Tutorial::firstOrCreate(
+                ['judul' => $tutorial['judul']],
+                $tutorial
+            );
         }
         
-        // Buat tutorial tambahan secara acak
-        Tutorial::factory(10)->create();
+        // Buat tutorial tambahan secara acak jika jumlahnya masih kurang
+        $targetTutorialCount = 13;
+        $currentTutorialCount = Tutorial::count();
+        
+        if ($currentTutorialCount < $targetTutorialCount) {
+            $tutorialsToCreate = $targetTutorialCount - $currentTutorialCount;
+            Tutorial::factory($tutorialsToCreate)->create();
+        }
         
         // Buat artikel sampel
-        $admin = User::where('role', 'ADMIN')->first();
+        $admin = User::where('role', 'admin')->first();
         $articles = [
             [
                 'judul' => 'Mengenal Jenis-jenis Plastik dan Cara Pengolahannya',
@@ -147,10 +162,19 @@ class TutorialAndArticleSeeder extends Seeder
         ];
         
         foreach ($articles as $article) {
-            Article::create($article);
+            Article::firstOrCreate(
+                ['judul' => $article['judul']],
+                $article
+            );
         }
         
-        // Buat artikel tambahan secara acak
-        Article::factory(8)->create();
+        // Buat artikel tambahan secara acak jika jumlahnya masih kurang
+        $targetArticleCount = 10;
+        $currentArticleCount = Article::count();
+        
+        if ($currentArticleCount < $targetArticleCount) {
+            $articlesToCreate = $targetArticleCount - $currentArticleCount;
+            Article::factory($articlesToCreate)->create();
+        }
     }
 } 

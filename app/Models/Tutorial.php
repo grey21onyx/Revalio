@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use App\Traits\CommonScopes;
+use App\Traits\RecyclableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Tutorial extends Model
 {
-    use HasFactory;
+    use HasFactory, CommonScopes, RecyclableTrait;
     
     /**
      * Nama tabel yang terkait dengan model.
@@ -55,6 +57,37 @@ class Tutorial extends Model
      * @var bool
      */
     public $timestamps = false;
+    
+    /**
+     * Field yang dapat dicari
+     *
+     * @var array<string>
+     */
+    protected $searchableFields = ['judul', 'deskripsi', 'konten', 'jenis_tutorial'];
+    
+    /**
+     * Method tambahan untuk memfilter tutorial berdasarkan tingkat kesulitan
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $difficulty
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeWithDifficulty($query, $difficulty)
+    {
+        return $query->where('tingkat_kesulitan', $difficulty);
+    }
+    
+    /**
+     * Method tambahan untuk memfilter tutorial berdasarkan jenis
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $type
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeOfType($query, $type)
+    {
+        return $query->where('jenis_tutorial', $type);
+    }
     
     /**
      * Relasi ke model WasteType (jenis sampah).

@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\CommonScopes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class DeletedRecord extends Model
 {
-    use HasFactory;
+    use HasFactory, CommonScopes;
     
     /**
      * Nama tabel yang terkait dengan model.
@@ -54,6 +55,46 @@ class DeletedRecord extends Model
      * @var bool
      */
     public $timestamps = false;
+    
+    /**
+     * Field yang dapat dicari
+     *
+     * @var array<string>
+     */
+    protected $searchableFields = ['table_name'];
+    
+    /**
+     * Kolom tanggal untuk pengurutan data terbaru
+     *
+     * @var string
+     */
+    protected $dateColumn = 'deletion_date';
+    
+    /**
+     * Kolom status untuk menentukan status aktif
+     *
+     * @var string
+     */
+    protected $statusColumn = 'restoration_status';
+    
+    /**
+     * Nilai yang menunjukkan status aktif
+     *
+     * @var string
+     */
+    protected $activeStatusValue = 'NOT_RESTORED';
+    
+    /**
+     * Method tambahan untuk memfilter berdasarkan nama tabel
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $tableName
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeFromTable($query, $tableName)
+    {
+        return $query->where('table_name', $tableName);
+    }
     
     /**
      * Relasi ke model User (penghapus record).

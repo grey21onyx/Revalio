@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Traits\CommonScopes;
+use App\Traits\RecyclableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ForumThread extends Model
 {
-    use HasFactory;
+    use HasFactory, CommonScopes, RecyclableTrait;
     
     /**
      * Nama tabel yang terkait dengan model.
@@ -54,6 +56,58 @@ class ForumThread extends Model
      * @var bool
      */
     public $timestamps = false;
+    
+    /**
+     * Field yang dapat dicari
+     *
+     * @var array<string>
+     */
+    protected $searchableFields = ['judul', 'konten', 'tags'];
+    
+    /**
+     * Kolom tanggal untuk pengurutan data terbaru
+     *
+     * @var string
+     */
+    protected $dateColumn = 'tanggal_posting';
+    
+    /**
+     * Method tambahan untuk memfilter thread berdasarkan tag
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $tag
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeWithTag($query, $tag)
+    {
+        return $query->where('tags', 'LIKE', "%{$tag}%");
+    }
+    
+    /**
+     * Method tambahan untuk memfilter thread yang aktif
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeAktif($query)
+    {
+        return $query->where('status', 'AKTIF');
+    }
+    
+    /**
+     * Method tambahan untuk mendapatkan thread yang populer
+     * berdasarkan jumlah komentar
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param int $limit
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopePopular($query, $limit = 5)
+    {
+        return $query->withCount('comments')
+            ->orderBy('comments_count', 'desc')
+            ->limit($limit);
+    }
     
     /**
      * Relasi ke model User (pembuat thread).

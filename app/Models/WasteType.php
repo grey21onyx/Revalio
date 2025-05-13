@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Traits\CommonScopes;
+use App\Traits\RecyclableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class WasteType extends Model
 {
-    use HasFactory;
+    use HasFactory, CommonScopes, RecyclableTrait;
     
     /**
      * Nama tabel yang terkait dengan model.
@@ -51,11 +53,25 @@ class WasteType extends Model
     ];
     
     /**
-     * Menentukan bahwa model hanya menggunakan timestamp updated_at.
+     * Field yang dapat dicari
      *
-     * @var bool
+     * @var array<string>
      */
-    public $timestamps = false;
+    protected $searchableFields = ['nama_sampah', 'deskripsi', 'cara_sortir', 'cara_penyimpanan'];
+    
+    /**
+     * Kolom status untuk menentukan status aktif
+     *
+     * @var string
+     */
+    protected $statusColumn = 'status_aktif';
+    
+    /**
+     * Nilai yang menunjukkan status aktif
+     *
+     * @var mixed
+     */
+    protected $activeStatusValue = true;
     
     /**
      * Relasi ke model WasteCategory (kategori sampah).
@@ -75,6 +91,17 @@ class WasteType extends Model
     public function value(): HasOne
     {
         return $this->hasOne(WasteValue::class, 'waste_id', 'waste_id');
+    }
+    
+    /**
+     * Relasi ke model WasteValue (nilai ekonomis sampah).
+     * Mendapatkan semua nilai ekonomis yang tercatat untuk jenis sampah ini
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function wasteValues(): HasMany
+    {
+        return $this->hasMany(WasteValue::class, 'waste_id', 'waste_id');
     }
     
     /**

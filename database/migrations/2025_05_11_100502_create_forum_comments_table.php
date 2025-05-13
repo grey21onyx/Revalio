@@ -19,7 +19,9 @@ return new class extends Migration
             $table->text('konten');
             $table->dateTime('tanggal_komentar')->default(now());
             $table->unsignedBigInteger('parent_komentar_id')->nullable();
+            $table->enum('status', ['AKTIF', 'NONAKTIF', 'DILAPORKAN'])->default('AKTIF');
             $table->timestamp('updated_at')->nullable();
+            $table->softDeletes();
             
             $table->index('thread_id', 'idx_thread_id');
             $table->index('user_id', 'idx_user_id');

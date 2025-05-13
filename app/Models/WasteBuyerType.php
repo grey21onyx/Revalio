@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use App\Traits\CommonScopes;
+use App\Traits\RecyclableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class WasteBuyerType extends Model
 {
-    use HasFactory;
+    use HasFactory, CommonScopes, RecyclableTrait;
     
     /**
      * Nama tabel yang terkait dengan model.
@@ -31,13 +33,6 @@ class WasteBuyerType extends Model
     ];
     
     /**
-     * Menentukan bahwa model ini tidak menggunakan timestamp.
-     *
-     * @var bool
-     */
-    public $timestamps = false;
-    
-    /**
      * Kolom-kolom yang harus di-cast ke tipe tertentu.
      *
      * @var array<string, string>
@@ -45,6 +40,25 @@ class WasteBuyerType extends Model
     protected $casts = [
         'harga_beli' => 'decimal:2',
     ];
+    
+    /**
+     * Field yang dapat dicari
+     *
+     * @var array<string>
+     */
+    protected $searchableFields = ['syarat_minimum', 'catatan'];
+    
+    /**
+     * Method tambahan untuk memfilter berdasarkan harga
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param float $minPrice
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeMinimumPrice($query, $minPrice)
+    {
+        return $query->where('harga_beli', '>=', $minPrice);
+    }
     
     /**
      * Relasi ke model WasteBuyer (pembeli sampah).

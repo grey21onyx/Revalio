@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use App\Traits\CommonScopes;
+use App\Traits\RecyclableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class WasteValue extends Model
 {
-    use HasFactory;
+    use HasFactory, CommonScopes, RecyclableTrait;
     
     /**
      * Nama tabel yang terkait dengan model.
@@ -50,11 +52,32 @@ class WasteValue extends Model
     ];
     
     /**
-     * Menentukan bahwa model ini tidak menggunakan timestamp.
+     * Field yang dapat dicari
      *
-     * @var bool
+     * @var array<string>
      */
-    public $timestamps = false;
+    protected $searchableFields = ['sumber_data', 'satuan'];
+    
+    /**
+     * Kolom tanggal untuk pengurutan data terbaru
+     *
+     * @var string
+     */
+    protected $dateColumn = 'tanggal_update';
+    
+    /**
+     * Method tambahan untuk memfilter berdasarkan range harga
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param float $min
+     * @param float $max
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopePriceRange($query, $min, $max)
+    {
+        return $query->where('harga_minimum', '>=', $min)
+                     ->where('harga_maksimum', '<=', $max);
+    }
     
     /**
      * Relasi ke model WasteType (jenis sampah).

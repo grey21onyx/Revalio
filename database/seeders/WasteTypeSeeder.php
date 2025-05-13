@@ -141,10 +141,17 @@ class WasteTypeSeeder extends Seeder
         ];
         
         foreach ($wasteTypes as $wasteType) {
-            WasteType::create($wasteType);
+            // Menggunakan firstOrCreate untuk mencegah duplikasi
+            WasteType::firstOrCreate(
+                ['nama_sampah' => $wasteType['nama_sampah'], 'kategori_id' => $wasteType['kategori_id']],
+                $wasteType
+            );
         }
         
-        // Tambahkan beberapa data acak menggunakan factory
-        WasteType::factory(15)->create();
+        // Tambahkan data acak hanya jika jumlah data kurang dari yang diharapkan
+        if (WasteType::count() < 29) {
+            $remaining = 29 - WasteType::count();
+            WasteType::factory($remaining)->create();
+        }
     }
 } 

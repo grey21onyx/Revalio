@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use App\Traits\CommonScopes;
+use App\Traits\RecyclableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Article extends Model
 {
-    use HasFactory;
+    use HasFactory, CommonScopes, RecyclableTrait;
     
     /**
      * Nama tabel yang terkait dengan model.
@@ -56,6 +58,27 @@ class Article extends Model
      * @var bool
      */
     public $timestamps = false;
+    
+    /**
+     * Field yang dapat dicari
+     *
+     * @var array<string>
+     */
+    protected $searchableFields = ['judul', 'deskripsi_singkat', 'konten', 'kategori', 'tags'];
+    
+    /**
+     * Kolom tanggal untuk pengurutan data terbaru
+     *
+     * @var string
+     */
+    protected $dateColumn = 'tanggal_publikasi';
+    
+    /**
+     * Nilai yang menunjukkan status aktif
+     *
+     * @var string
+     */
+    protected $activeStatusValue = 'PUBLISHED';
     
     /**
      * Relasi ke model User (penulis artikel).

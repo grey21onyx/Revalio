@@ -20,6 +20,7 @@ return new class extends Migration
             $table->enum('status', ['AKTIF', 'NONAKTIF'])->default('AKTIF');
             $table->text('tags')->nullable();
             $table->timestamp('updated_at')->nullable();
+            $table->softDeletes();
             
             $table->fullText(['judul', 'konten'], 'ft_thread_content');
             $table->index('user_id', 'idx_user_id');

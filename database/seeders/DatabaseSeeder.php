@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             // Jalankan seeder dalam urutan yang memperhatikan dependensi antar tabel
             UsersSeeder::class,
+            RolesAndPermissionsSeeder::class,
             WasteCategorySeeder::class,
             WasteTypeSeeder::class,
             WasteValueSeeder::class,

@@ -21,6 +21,8 @@ return new class extends Migration
             $table->string('sumber_data', 100)->nullable();
             
             $table->index('waste_id', 'idx_waste_id');
+            $table->timestamps();
+            $table->softDeletes();
         });
     }
 

@@ -79,7 +79,11 @@ class WasteValueSeeder extends Seeder
         ];
         
         foreach ($wasteValues as $value) {
-            WasteValue::create($value);
+            // Menggunakan firstOrCreate untuk mencegah duplikasi
+            WasteValue::firstOrCreate(
+                ['waste_id' => $value['waste_id']],
+                $value
+            );
         }
         
         // Dapatkan semua jenis sampah yang belum memiliki nilai
@@ -88,7 +92,10 @@ class WasteValueSeeder extends Seeder
         
         // Buat nilai untuk setiap jenis sampah yang belum memiliki nilai
         foreach ($wasteTypesWithoutValues as $wasteType) {
-            WasteValue::factory()->create(['waste_id' => $wasteType->waste_id]);
+            // Periksa lagi untuk memastikan tidak ada nilai yang dibuat secara bersamaan
+            if (!WasteValue::where('waste_id', $wasteType->waste_id)->exists()) {
+                WasteValue::factory()->create(['waste_id' => $wasteType->waste_id]);
+            }
         }
     }
 }

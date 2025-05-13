@@ -15,6 +15,12 @@ class WasteBuyerSeeder extends Seeder
      */
     public function run(): void
     {
+        // Cek apakah data sudah ada
+        if (WasteBuyer::count() > 0 && WasteBuyerType::count() > 0) {
+            $this->command->info('Waste Buyer data already exists. Skipping seeding.');
+            return;
+        }
+        
         // Membuat data pembeli sampah
         $wasteBuyers = [
             [
@@ -66,11 +72,17 @@ class WasteBuyerSeeder extends Seeder
         
         // Membuat pembeli sampah
         foreach ($wasteBuyers as $buyer) {
-            WasteBuyer::create($buyer);
+            WasteBuyer::firstOrCreate(
+                ['nama_pembeli' => $buyer['nama_pembeli']],
+                $buyer
+            );
         }
         
-        // Tambah beberapa pembeli sampah secara acak
-        WasteBuyer::factory(5)->create();
+        // Tambah beberapa pembeli sampah secara acak jika jumlahnya masih kurang
+        $remainingCount = 10 - WasteBuyer::count();
+        if ($remainingCount > 0) {
+            WasteBuyer::factory($remainingCount)->create();
+        }
         
         // Buat relasi antara pembeli sampah dan jenis sampah yang mereka beli
         $wasteBuyers = WasteBuyer::all();
@@ -80,52 +92,87 @@ class WasteBuyerSeeder extends Seeder
         $buyer = $wasteBuyers->where('nama_pembeli', 'Bank Sampah Bersih')->first();
         if ($buyer) {
             // Beli plastik dengan harga relatif rendah
-            WasteBuyerType::create([
-                'pembeli_id' => $buyer->pembeli_id,
-                'waste_id' => $wasteTypes->where('nama_sampah', 'Botol PET')->first()->waste_id ?? 1,
-                'harga_beli' => 5000,
-                'syarat_minimum' => 'Minimal 5 kg',
-                'catatan' => 'Botol harus bersih dan dipisahkan berdasarkan warna',
-            ]);
+            $wasteType = $wasteTypes->where('nama_sampah', 'Botol PET')->first();
+            if ($wasteType) {
+                WasteBuyerType::firstOrCreate(
+                    [
+                        'pembeli_id' => $buyer->pembeli_id,
+                        'waste_id' => $wasteType->waste_id
+                    ],
+                    [
+                        'harga_beli' => 5000,
+                        'syarat_minimum' => 'Minimal 5 kg',
+                        'catatan' => 'Botol harus bersih dan dipisahkan berdasarkan warna',
+                    ]
+                );
+            }
             
             // Beli kertas
-            WasteBuyerType::create([
-                'pembeli_id' => $buyer->pembeli_id,
-                'waste_id' => $wasteTypes->where('nama_sampah', 'Kardus')->first()->waste_id ?? 4,
-                'harga_beli' => 3000,
-                'syarat_minimum' => 'Minimal 10 kg',
-                'catatan' => 'Kardus harus kering dan dilipat rapi',
-            ]);
+            $wasteType = $wasteTypes->where('nama_sampah', 'Kardus')->first();
+            if ($wasteType) {
+                WasteBuyerType::firstOrCreate(
+                    [
+                        'pembeli_id' => $buyer->pembeli_id,
+                        'waste_id' => $wasteType->waste_id
+                    ],
+                    [
+                        'harga_beli' => 3000,
+                        'syarat_minimum' => 'Minimal 10 kg',
+                        'catatan' => 'Kardus harus kering dan dilipat rapi',
+                    ]
+                );
+            }
             
             // Beli logam
-            WasteBuyerType::create([
-                'pembeli_id' => $buyer->pembeli_id,
-                'waste_id' => $wasteTypes->where('nama_sampah', 'Kaleng Aluminium')->first()->waste_id ?? 7,
-                'harga_beli' => 12000,
-                'syarat_minimum' => 'Minimal 2 kg',
-                'catatan' => 'Kaleng harus bersih dan diremukkan',
-            ]);
+            $wasteType = $wasteTypes->where('nama_sampah', 'Kaleng Aluminium')->first();
+            if ($wasteType) {
+                WasteBuyerType::firstOrCreate(
+                    [
+                        'pembeli_id' => $buyer->pembeli_id,
+                        'waste_id' => $wasteType->waste_id
+                    ],
+                    [
+                        'harga_beli' => 12000,
+                        'syarat_minimum' => 'Minimal 2 kg',
+                        'catatan' => 'Kaleng harus bersih dan diremukkan',
+                    ]
+                );
+            }
         }
         
         // Pembeli 2 (PT Daur Ulang Plastik Indonesia) - fokus pada plastik dengan harga yang lebih tinggi
         $buyer = $wasteBuyers->where('nama_pembeli', 'PT Daur Ulang Plastik Indonesia')->first();
         if ($buyer) {
             // Beli plastik dengan harga tinggi
-            WasteBuyerType::create([
-                'pembeli_id' => $buyer->pembeli_id,
-                'waste_id' => $wasteTypes->where('nama_sampah', 'Botol PET')->first()->waste_id ?? 1,
-                'harga_beli' => 5500,
-                'syarat_minimum' => 'Minimal 100 kg',
-                'catatan' => 'Pembelian dalam jumlah besar, perlu konfirmasi terlebih dahulu',
-            ]);
+            $wasteType = $wasteTypes->where('nama_sampah', 'Botol PET')->first();
+            if ($wasteType) {
+                WasteBuyerType::firstOrCreate(
+                    [
+                        'pembeli_id' => $buyer->pembeli_id,
+                        'waste_id' => $wasteType->waste_id
+                    ],
+                    [
+                        'harga_beli' => 5500,
+                        'syarat_minimum' => 'Minimal 100 kg',
+                        'catatan' => 'Pembelian dalam jumlah besar, perlu konfirmasi terlebih dahulu',
+                    ]
+                );
+            }
             
-            WasteBuyerType::create([
-                'pembeli_id' => $buyer->pembeli_id,
-                'waste_id' => $wasteTypes->where('nama_sampah', 'Plastik PP')->first()->waste_id ?? 3,
-                'harga_beli' => 4500,
-                'syarat_minimum' => 'Minimal 50 kg',
-                'catatan' => 'Hanya untuk plastik bersih dan tidak tercampur',
-            ]);
+            $wasteType = $wasteTypes->where('nama_sampah', 'Plastik PP')->first();
+            if ($wasteType) {
+                WasteBuyerType::firstOrCreate(
+                    [
+                        'pembeli_id' => $buyer->pembeli_id,
+                        'waste_id' => $wasteType->waste_id
+                    ],
+                    [
+                        'harga_beli' => 4500,
+                        'syarat_minimum' => 'Minimal 50 kg',
+                        'catatan' => 'Hanya untuk plastik bersih dan tidak tercampur',
+                    ]
+                );
+            }
         }
         
         // Pembeli 3 (Pengepul Karya Mandiri) - membeli berbagai jenis dengan syarat minimum rendah
@@ -135,13 +182,17 @@ class WasteBuyerSeeder extends Seeder
             $randomWasteTypes = $wasteTypes->random(5);
             
             foreach ($randomWasteTypes as $wasteType) {
-                WasteBuyerType::create([
-                    'pembeli_id' => $buyer->pembeli_id,
-                    'waste_id' => $wasteType->waste_id,
-                    'harga_beli' => rand(2000, 10000),
-                    'syarat_minimum' => 'Minimal 1 kg',
-                    'catatan' => 'Bisa dijemput untuk pembelian di atas 20 kg',
-                ]);
+                WasteBuyerType::firstOrCreate(
+                    [
+                        'pembeli_id' => $buyer->pembeli_id,
+                        'waste_id' => $wasteType->waste_id
+                    ],
+                    [
+                        'harga_beli' => rand(2000, 10000),
+                        'syarat_minimum' => 'Minimal 1 kg',
+                        'catatan' => 'Bisa dijemput untuk pembelian di atas 20 kg',
+                    ]
+                );
             }
         }
         
@@ -154,13 +205,17 @@ class WasteBuyerSeeder extends Seeder
             })->take(3);
             
             foreach ($logamTypes as $wasteType) {
-                WasteBuyerType::create([
-                    'pembeli_id' => $buyer->pembeli_id,
-                    'waste_id' => $wasteType->waste_id,
-                    'harga_beli' => rand(8000, 15000),
-                    'syarat_minimum' => 'Minimal 20 kg',
-                    'catatan' => 'Harga dapat berubah tergantung kualitas dan kondisi pasar',
-                ]);
+                WasteBuyerType::firstOrCreate(
+                    [
+                        'pembeli_id' => $buyer->pembeli_id,
+                        'waste_id' => $wasteType->waste_id
+                    ],
+                    [
+                        'harga_beli' => rand(8000, 15000),
+                        'syarat_minimum' => 'Minimal 20 kg',
+                        'catatan' => 'Harga dapat berubah tergantung kualitas dan kondisi pasar',
+                    ]
+                );
             }
         }
         
@@ -176,10 +231,17 @@ class WasteBuyerSeeder extends Seeder
             $randomWasteTypes = $wasteTypes->random($buyWasteCount);
             
             foreach ($randomWasteTypes as $wasteType) {
-                WasteBuyerType::factory()->create([
-                    'pembeli_id' => $buyer->pembeli_id,
-                    'waste_id' => $wasteType->waste_id,
-                ]);
+                WasteBuyerType::firstOrCreate(
+                    [
+                        'pembeli_id' => $buyer->pembeli_id,
+                        'waste_id' => $wasteType->waste_id
+                    ],
+                    [
+                        'harga_beli' => rand(2000, 10000),
+                        'syarat_minimum' => 'Minimal 1 kg',
+                        'catatan' => 'Bisa dijemput untuk pembelian di atas 20 kg',
+                    ]
+                );
             }
         }
     }

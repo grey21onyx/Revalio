@@ -20,9 +20,11 @@ return new class extends Migration
             $table->text('alamat')->nullable();
             $table->string('foto_profil', 255)->nullable();
             $table->datetime('tanggal_registrasi')->default(now());
-            $table->enum('status_akun', ['AKTIF', 'NONAKTIF'])->default('AKTIF');
+            $table->enum('status_akun', ['AKTIF', 'NONAKTIF', 'BLOKIR'])->default('AKTIF');
+            $table->string('role', 20)->default('user');
             $table->text('preferensi_sampah')->nullable();
-            $table->timestamp('updated_at')->nullable();
+            $table->timestamps();
+            $table->softDeletes();
             $table->rememberToken();
             $table->index('email', 'idx_email');
         });

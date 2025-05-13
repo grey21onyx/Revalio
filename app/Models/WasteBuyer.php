@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use App\Traits\CommonScopes;
+use App\Traits\RecyclableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class WasteBuyer extends Model
 {
-    use HasFactory;
+    use HasFactory, CommonScopes, RecyclableTrait;
     
     /**
      * Nama tabel yang terkait dengan model.
@@ -40,11 +42,23 @@ class WasteBuyer extends Model
     ];
     
     /**
-     * Menentukan bahwa model ini tidak menggunakan timestamp.
+     * Field yang dapat dicari
      *
-     * @var bool
+     * @var array<string>
      */
-    public $timestamps = false;
+    protected $searchableFields = ['nama_pembeli', 'alamat', 'email', 'jenis_pembeli'];
+    
+    /**
+     * Method tambahan untuk memfilter berdasarkan jenis pembeli
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $type
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeOfType($query, $type)
+    {
+        return $query->where('jenis_pembeli', $type);
+    }
     
     /**
      * Relasi ke model WasteBuyerType (jenis sampah yang dibeli).

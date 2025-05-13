@@ -15,6 +15,13 @@ class ForumSeeder extends Seeder
      */
     public function run(): void
     {
+        // Periksa apakah sudah ada data forum
+        if (ForumThread::count() > 0 && ForumComment::count() > 0) {
+            // Jika sudah ada data, tidak perlu menjalankan seeder lagi
+            $this->command->info('Forum data already exists. Skipping seeding.');
+            return;
+        }
+        
         // Ambil beberapa user untuk membuat thread dan komentar
         $users = User::all();
         
@@ -62,80 +69,101 @@ class ForumSeeder extends Seeder
         // Buat thread forum
         $createdThreads = [];
         foreach ($threads as $thread) {
-            $createdThreads[] = ForumThread::create($thread);
+            // Menggunakan firstOrCreate untuk mencegah duplikasi
+            $createdThreads[] = ForumThread::firstOrCreate(
+                ['judul' => $thread['judul']],
+                $thread
+            );
         }
         
-        // Buat thread tambahan secara acak
-        $randomThreads = ForumThread::factory(7)->create();
-        $allThreads = array_merge($createdThreads, $randomThreads->all());
+        // Periksa jumlah thread yang sudah ada
+        $threadCount = ForumThread::count();
+        if ($threadCount < 10) {
+            // Buat thread tambahan secara acak jika jumlahnya kurang dari target
+            $randomThreads = ForumThread::factory(10 - $threadCount)->create();
+            $allThreads = array_merge($createdThreads, $randomThreads->all());
+        } else {
+            $allThreads = ForumThread::all();
+        }
         
         // Buat komentar untuk thread pertama (cara mendaur ulang botol plastik)
         if (!empty($createdThreads)) {
             $thread1 = $createdThreads[0];
             
-            $comments = [
-                [
-                    'thread_id' => $thread1->thread_id,
-                    'user_id' => $users->random()->user_id,
-                    'konten' => "<p>Hai! Saya sudah beberapa bulan mendaur ulang botol plastik. Beberapa ide sederhana yang bisa kamu coba:</p>
-                                <ul>
-                                    <li>Potong bagian bawah botol untuk dijadikan pot kecil untuk tanaman</li>
-                                    <li>Buat tempat pensil dari botol yang dipotong dan dihias</li>
-                                    <li>Gunakan sebagai wadah untuk menyimpan biji-bijian atau rempah di dapur</li>
-                                </ul>
-                                <p>Semoga membantu!</p>",
-                    'tanggal_komentar' => now()->subDays(29),
-                    'parent_komentar_id' => null,
-                ],
-                [
-                    'thread_id' => $thread1->thread_id,
-                    'user_id' => $users->random()->user_id,
-                    'konten' => "<p>Kalau mau lebih canggih, coba cari tutorial di YouTube untuk membuat sapu atau kerajinan yang lebih kompleks dari botol plastik. Ada banyak video yang menjelaskan langkah-langkahnya dengan detail.</p>",
-                    'tanggal_komentar' => now()->subDays(28),
-                    'parent_komentar_id' => null,
-                ],
-            ];
-            
-            $parentComment1 = ForumComment::create($comments[0]);
-            $parentComment2 = ForumComment::create($comments[1]);
-            
-            // Buat balasan untuk komentar pertama
-            $replies = [
-                [
-                    'thread_id' => $thread1->thread_id,
-                    'user_id' => $thread1->user_id, // OP merespon
-                    'konten' => "<p>Terima kasih atas sarannya! Saya akan mencoba membuat pot tanaman dulu karena sepertinya paling mudah.</p>",
-                    'tanggal_komentar' => now()->subDays(28)->addHours(2),
-                    'parent_komentar_id' => $parentComment1->komentar_id,
-                ],
-                [
-                    'thread_id' => $thread1->thread_id,
-                    'user_id' => $users->random()->user_id,
-                    'konten' => "<p>Saya juga suka ide pot tanaman ini. Sudah saya coba dan hasilnya cukup bagus. Kuncinya adalah membuat lubang kecil di bagian bawah untuk drainase.</p>",
-                    'tanggal_komentar' => now()->subDays(27),
-                    'parent_komentar_id' => $parentComment1->komentar_id,
-                ],
-            ];
-            
-            foreach ($replies as $reply) {
-                ForumComment::create($reply);
+            // Periksa apakah thread sudah memiliki komentar
+            if ($thread1->comments()->count() === 0) {
+                $comments = [
+                    [
+                        'thread_id' => $thread1->thread_id,
+                        'user_id' => $users->random()->user_id,
+                        'konten' => "<p>Hai! Saya sudah beberapa bulan mendaur ulang botol plastik. Beberapa ide sederhana yang bisa kamu coba:</p>
+                                    <ul>
+                                        <li>Potong bagian bawah botol untuk dijadikan pot kecil untuk tanaman</li>
+                                        <li>Buat tempat pensil dari botol yang dipotong dan dihias</li>
+                                        <li>Gunakan sebagai wadah untuk menyimpan biji-bijian atau rempah di dapur</li>
+                                    </ul>
+                                    <p>Semoga membantu!</p>",
+                        'tanggal_komentar' => now()->subDays(29),
+                        'parent_komentar_id' => null,
+                    ],
+                    [
+                        'thread_id' => $thread1->thread_id,
+                        'user_id' => $users->random()->user_id,
+                        'konten' => "<p>Kalau mau lebih canggih, coba cari tutorial di YouTube untuk membuat sapu atau kerajinan yang lebih kompleks dari botol plastik. Ada banyak video yang menjelaskan langkah-langkahnya dengan detail.</p>",
+                        'tanggal_komentar' => now()->subDays(28),
+                        'parent_komentar_id' => null,
+                    ],
+                ];
+                
+                $parentComment1 = ForumComment::create($comments[0]);
+                $parentComment2 = ForumComment::create($comments[1]);
+                
+                // Buat balasan untuk komentar pertama
+                $replies = [
+                    [
+                        'thread_id' => $thread1->thread_id,
+                        'user_id' => $thread1->user_id, // OP merespon
+                        'konten' => "<p>Terima kasih atas sarannya! Saya akan mencoba membuat pot tanaman dulu karena sepertinya paling mudah.</p>",
+                        'tanggal_komentar' => now()->subDays(28)->addHours(2),
+                        'parent_komentar_id' => $parentComment1->komentar_id,
+                    ],
+                    [
+                        'thread_id' => $thread1->thread_id,
+                        'user_id' => $users->random()->user_id,
+                        'konten' => "<p>Saya juga suka ide pot tanaman ini. Sudah saya coba dan hasilnya cukup bagus. Kuncinya adalah membuat lubang kecil di bagian bawah untuk drainase.</p>",
+                        'tanggal_komentar' => now()->subDays(27),
+                        'parent_komentar_id' => $parentComment1->komentar_id,
+                    ],
+                ];
+                
+                foreach ($replies as $reply) {
+                    ForumComment::create($reply);
+                }
             }
         }
         
-        // Buat komentar acak untuk semua thread
+        // Periksa setiap thread untuk melihat apakah memerlukan komentar tambahan
         foreach ($allThreads as $thread) {
-            // Buat 3-8 komentar per thread secara acak
-            $commentCount = rand(3, 8);
-            $comments = ForumComment::factory($commentCount)->create([
-                'thread_id' => $thread->thread_id
-            ]);
+            // Hitung komentar yang sudah ada
+            $existingCommentCount = ForumComment::where('thread_id', $thread->thread_id)->count();
             
-            // Buat 1-3 balasan untuk beberapa komentar
-            foreach ($comments->random(min(2, $commentCount)) as $comment) {
-                ForumComment::factory(rand(1, 3))->asReply()->create([
-                    'thread_id' => $thread->thread_id,
-                    'parent_komentar_id' => $comment->komentar_id
-                ]);
+            // Jika komentar kurang, tambahkan komentar baru
+            if ($existingCommentCount < 3) { // Minimal 3 komentar per thread
+                // Tentukan berapa komentar yang perlu ditambahkan
+                $commentCount = rand(3, 8) - $existingCommentCount;
+                if ($commentCount > 0) {
+                    $comments = ForumComment::factory($commentCount)->create([
+                        'thread_id' => $thread->thread_id
+                    ]);
+                    
+                    // Buat 1-3 balasan untuk beberapa komentar
+                    foreach ($comments->random(min(2, $commentCount)) as $comment) {
+                        ForumComment::factory(rand(1, 3))->asReply()->create([
+                            'thread_id' => $thread->thread_id,
+                            'parent_komentar_id' => $comment->komentar_id
+                        ]);
+                    }
+                }
             }
         }
     }

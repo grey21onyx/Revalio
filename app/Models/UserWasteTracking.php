@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use App\Traits\CommonScopes;
+use App\Traits\RecyclableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class UserWasteTracking extends Model
 {
-    use HasFactory;
+    use HasFactory, CommonScopes, RecyclableTrait;
     
     /**
      * Nama tabel yang terkait dengan model.
@@ -58,6 +60,32 @@ class UserWasteTracking extends Model
      * @var bool
      */
     public $timestamps = false;
+    
+    /**
+     * Field yang dapat dicari
+     *
+     * @var array<string>
+     */
+    protected $searchableFields = ['catatan', 'status_pengelolaan'];
+    
+    /**
+     * Kolom tanggal untuk pengurutan data terbaru
+     *
+     * @var string
+     */
+    protected $dateColumn = 'tanggal_pencatatan';
+    
+    /**
+     * Method tambahan untuk memfilter berdasarkan status pengelolaan
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $status
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeWithStatus($query, $status)
+    {
+        return $query->where('status_pengelolaan', $status);
+    }
     
     /**
      * Relasi ke model User.

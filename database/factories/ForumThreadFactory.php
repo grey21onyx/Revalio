@@ -25,7 +25,7 @@ class ForumThreadFactory extends Factory
         
         return [
             'user_id' => User::inRandomOrder()->first()->user_id ?? 1,
-            'judul' => $this->faker->sentence(8),
+            'judul' => substr($this->faker->sentence(4), 0, 90),
             'konten' => $this->faker->paragraphs(4, true),
             'tanggal_posting' => $this->faker->dateTimeBetween('-6 months', 'now'),
             'status' => $this->faker->randomElement(['AKTIF', 'NONAKTIF']),

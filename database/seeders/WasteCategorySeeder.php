@@ -67,7 +67,10 @@ class WasteCategorySeeder extends Seeder
         ];
         
         foreach ($categories as $category) {
-            WasteCategory::create($category);
+            WasteCategory::firstOrCreate(
+                ['nama_kategori' => $category['nama_kategori']],
+                $category
+            );
         }
     }
 }

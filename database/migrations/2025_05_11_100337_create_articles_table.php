@@ -22,7 +22,8 @@ return new class extends Migration
             $table->enum('status', ['PUBLISHED', 'DRAFT'])->default('PUBLISHED');
             $table->string('gambar_utama', 255)->nullable();
             $table->text('tags')->nullable();
-            $table->timestamp('updated_at')->nullable();
+            $table->timestamps();
+            $table->softDeletes();
             
             $table->index('penulis_id', 'idx_penulis_id');
             $table->index('kategori', 'idx_kategori');

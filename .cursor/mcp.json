@@ -18,6 +18,32 @@
                 "AZURE_OPENAI_API_KEY": "AZURE_OPENAI_API_KEY_HERE",
                 "OLLAMA_API_KEY": "OLLAMA_API_KEY_HERE"
             }
+        },
+        "playwright-mcp": {
+            "command": "cmd",
+            "args": [
+                "/c",
+                "npx",
+                "-y",
+                "@smithery/cli@latest",
+                "run",
+                "@microsoft/playwright-mcp",
+                "--key",
+                "d3975d32-80f3-4e0f-954a-d45e1b2ee938"
+            ]
+        },
+        "context7-mcp": {
+            "command": "cmd",
+            "args": [
+                "/c",
+                "npx",
+                "-y",
+                "@smithery/cli@latest",
+                "run",
+                "@upstash/context7-mcp",
+                "--key",
+                "d3975d32-80f3-4e0f-954a-d45e1b2ee938"
+            ]
         }
     }
 }

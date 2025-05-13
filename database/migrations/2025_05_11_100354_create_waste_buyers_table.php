@@ -20,6 +20,8 @@ return new class extends Migration
             $table->string('email', 100)->nullable();
             $table->string('website', 255)->nullable();
             $table->text('jam_operasional')->nullable();
+            $table->timestamps();
+            $table->softDeletes();
         });
     }
 

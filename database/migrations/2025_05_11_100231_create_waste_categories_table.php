@@ -16,6 +16,8 @@ return new class extends Migration
             $table->string('nama_kategori', 50)->unique();
             $table->text('deskripsi')->nullable();
             $table->string('ikon', 255)->nullable();
+            $table->timestamps();
+            $table->softDeletes();
         });
     }
 

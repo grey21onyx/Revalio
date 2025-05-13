@@ -23,16 +23,21 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+        $preferensiSampah = ['Plastik', 'Kertas', 'Organik', 'Logam', 'Kaca'];
+        $randomPreferensi = $this->faker->randomElements($preferensiSampah, $this->faker->numberBetween(1, 3));
+        
         return [
-            'nama_lengkap' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'password' => static::$password ??= Hash::make('password'),
-            'no_telepon' => fake()->phoneNumber(),
-            'alamat' => fake()->address(),
-            'foto_profil' => null,
-            'tanggal_registrasi' => now(),
+            'nama_lengkap' => $this->faker->name(),
+            'email' => $this->faker->unique()->safeEmail(),
+            'role' => $this->faker->randomElement(['user', 'user', 'user', 'user', 'moderator']), // 80% user, 20% moderator
+            'password' => static::$password ??= Hash::make('password123'),
+            'no_telepon' => $this->faker->phoneNumber(),
+            'alamat' => $this->faker->address(),
+            'foto_profil' => 'profiles/default.jpg',
             'status_akun' => 'AKTIF',
-            'preferensi_sampah' => null,
+            'preferensi_sampah' => implode(', ', $randomPreferensi),
+            'tanggal_registrasi' => $this->faker->dateTimeBetween('-1 year', 'now'),
+            'updated_at' => now(),
             'remember_token' => Str::random(10),
         ];
     }

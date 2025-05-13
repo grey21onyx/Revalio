@@ -20,7 +20,8 @@ return new class extends Migration
             $table->text('cara_penyimpanan')->nullable();
             $table->string('gambar', 255)->nullable();
             $table->boolean('status_aktif')->default(true);
-            $table->timestamp('updated_at')->nullable();
+            $table->timestamps();
+            $table->softDeletes();
             
             $table->index('kategori_id', 'idx_kategori_id');
         });

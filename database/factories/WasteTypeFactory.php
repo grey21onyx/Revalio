@@ -17,39 +17,25 @@ class WasteTypeFactory extends Factory
      */
     public function definition(): array
     {
-        // Sampel nama sampah berdasarkan kategori
-        $wasteTypes = [
-            // Plastik
-            ['Botol PET', 'Plastik HDPE', 'Kantong Kresek', 'Plastik PP', 'Plastik PVC', 'Sterofoam'],
-            // Kertas
-            ['Kardus', 'Koran', 'Buku', 'Kertas HVS', 'Majalah', 'Kertas Berwarna'],
-            // Logam
-            ['Kaleng Aluminium', 'Besi', 'Tembaga', 'Seng', 'Paku Bekas', 'Kawat'],
-            // Kaca
-            ['Botol Kaca', 'Gelas Kaca', 'Pecahan Kaca', 'Lampu Neon', 'Cermin Bekas'],
-            // Tekstil
-            ['Pakaian Bekas', 'Kain Perca', 'Sepatu Bekas', 'Tas Bekas', 'Handuk Bekas'],
-            // Elektronik
-            ['HP Bekas', 'Laptop Rusak', 'Kabel', 'Charger', 'Baterai', 'PCB'],
-            // Organik
-            ['Sisa Makanan', 'Daun Kering', 'Ranting', 'Buah Busuk', 'Ampas Kopi'],
-            // Kayu
-            ['Kayu Bekas', 'Furnitur Rusak', 'Potongan Kayu', 'Triplek Bekas'],
-            // Karet
-            ['Ban Bekas', 'Sandal Karet', 'Karet Gelang', 'Sarung Tangan Karet'],
-            // Minyak Bekas
-            ['Minyak Goreng Bekas', 'Oli Bekas', 'Minyak Pelumas']
+        // Sampel nama sampah
+        $wasteNames = [
+            'Botol PET', 'Plastik HDPE', 'Kantong Kresek', 'Kardus', 'Koran', 
+            'Kaleng Aluminium', 'Besi', 'Botol Kaca', 'Pakaian Bekas', 
+            'HP Bekas', 'Sisa Makanan', 'Kayu Bekas', 'Ban Bekas', 'Minyak Goreng Bekas'
         ];
-
-        $kategoriId = $this->faker->numberBetween(1, 10);
-        $kategoriIndex = $kategoriId - 1;
         
-        // Pastikan indeks kategori tidak melebihi array
-        $typeIndex = $this->faker->numberBetween(0, count($wasteTypes[$kategoriIndex]) - 1);
+        // Pastikan ada kategori sampah dulu sebelum membuat jenis sampah
+        if (WasteCategory::count() === 0) {
+            // Buat kategori baru jika tidak ada
+            $category = WasteCategory::factory()->create();
+        } else {
+            // Gunakan kategori yang sudah ada
+            $category = WasteCategory::inRandomOrder()->first();
+        }
 
         return [
-            'nama_sampah' => $wasteTypes[$kategoriIndex][$typeIndex],
-            'kategori_id' => $kategoriId,
+            'nama_sampah' => $this->faker->randomElement($wasteNames),
+            'kategori_id' => $category->kategori_id,
             'deskripsi' => $this->faker->paragraph(),
             'cara_sortir' => $this->faker->text(),
             'cara_penyimpanan' => $this->faker->text(),

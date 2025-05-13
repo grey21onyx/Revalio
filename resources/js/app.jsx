@@ -12,6 +12,12 @@ import theme from './theme/theme';
 // Import komponen halaman
 import Home from './pages/Home';
 import About from './pages/About';
+import Katalog from './pages/Katalog';
+import DaurUlang from './pages/DaurUlang';
+import Tracking from './pages/Tracking';
+import Forum from './pages/Forum';
+import Login from './pages/Login';
+import Register from './pages/Register';
 import Navbar from './components/Navbar';
 
 // Import CSS
@@ -28,6 +34,12 @@ function App() {
                     <Routes>
                         <Route path="/" element={<Home />} />
                         <Route path="/about" element={<About />} />
+                        <Route path="/katalog" element={<Katalog />} />
+                        <Route path="/daur-ulang" element={<DaurUlang />} />
+                        <Route path="/tracking" element={<Tracking />} />
+                        <Route path="/forum" element={<Forum />} />
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/register" element={<Register />} />
                     </Routes>
                 </BrowserRouter>
             </ThemeProvider>

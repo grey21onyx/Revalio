@@ -22,7 +22,8 @@ return new class extends Migration
             $table->text('media')->nullable();
             $table->enum('tingkat_kesulitan', ['VERY_EASY', 'EASY', 'MODERATE', 'DIFFICULT', 'VERY_DIFFICULT']);
             $table->integer('estimasi_waktu'); // dalam menit
-            $table->timestamp('updated_at')->nullable();
+            $table->timestamps();
+            $table->softDeletes();
             
             $table->index('waste_id', 'idx_waste_id');
         });

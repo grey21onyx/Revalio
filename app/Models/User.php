@@ -2,7 +2,11 @@
 
 namespace App\Models;
 
+use App\Traits\CommonScopes;
+use App\Traits\HasUuid;
+use App\Traits\RecyclableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -10,7 +14,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, CommonScopes, RecyclableTrait;
 
     /**
      * Primary key yang digunakan oleh tabel.
@@ -18,13 +22,6 @@ class User extends Authenticatable
      * @var string
      */
     protected $primaryKey = 'user_id';
-
-    /**
-     * Timestamp diabaikan, karena tabel tidak memiliki kolom created_at dan updated_at
-     *
-     * @var bool
-     */
-    public $timestamps = false;
 
     /**
      * The attributes that are mass assignable.
@@ -40,8 +37,16 @@ class User extends Authenticatable
         'foto_profil',
         'tanggal_registrasi',
         'status_akun',
-        'preferensi_sampah',
-        'updated_at'
+        'preferensi_sampah'
+    ];
+
+    /**
+     * The attributes that should be guarded from mass assignment.
+     *
+     * @var array<int, string>
+     */
+    protected $guarded = [
+        'role'
     ];
 
     /**
@@ -62,7 +67,38 @@ class User extends Authenticatable
     protected $casts = [
         'password' => 'hashed',
         'tanggal_registrasi' => 'datetime',
+        'role' => 'string',
     ];
+    
+    /**
+     * The model's default values for attributes.
+     *
+     * @var array
+     */
+    protected $attributes = [
+        'role' => 'USER',
+    ];
+    
+    /**
+     * Field yang dapat dicari
+     *
+     * @var array<string>
+     */
+    protected $searchableFields = ['nama_lengkap', 'email', 'alamat'];
+    
+    /**
+     * Kolom status untuk menentukan status aktif
+     *
+     * @var string
+     */
+    protected $statusColumn = 'status_akun';
+    
+    /**
+     * Nilai yang menunjukkan status aktif
+     *
+     * @var string
+     */
+    protected $activeStatusValue = 'AKTIF';
     
     /**
      * Kolom tanggal otomatis yang akan di-manage.
@@ -71,7 +107,6 @@ class User extends Authenticatable
      */
     protected $dates = [
         'tanggal_registrasi',
-        'updated_at',
     ];
     
     /**
@@ -112,5 +147,156 @@ class User extends Authenticatable
     public function forumComments(): HasMany
     {
         return $this->hasMany(ForumComment::class, 'user_id', 'user_id');
+    }
+
+    /**
+     * Relasi ke model Role melalui tabel pivot role_user
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function roles(): BelongsToMany
+    {
+        return $this->belongsToMany(Role::class, 'role_user', 'user_id', 'role_id');
+    }
+
+    /**
+     * Memeriksa apakah user memiliki role tertentu
+     *
+     * @param string|array $roles
+     * @return bool
+     */
+    public function hasRole($roles): bool
+    {
+        if (is_string($roles)) {
+            return $this->roles->contains('slug', $roles);
+        }
+
+        foreach ($roles as $role) {
+            if ($this->roles->contains('slug', $role)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Memeriksa apakah user memiliki permission tertentu
+     * 
+     * @param string|array $permissions
+     * @return bool
+     */
+    public function hasPermission($permissions): bool
+    {
+        $userPermissions = $this->getAllPermissions();
+        
+        if (is_string($permissions)) {
+            return $userPermissions->contains('slug', $permissions);
+        }
+        
+        foreach ($permissions as $permission) {
+            if ($userPermissions->contains('slug', $permission)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * Memeriksa apakah user memiliki role admin
+     *
+     * @return bool
+     */
+    public function isAdmin(): bool
+    {
+        return $this->hasRole('admin');
+    }
+
+    /**
+     * Assign role ke user
+     *
+     * @param string|Role $role
+     * @return void
+     */
+    public function assignRole($role): void
+    {
+        if (is_string($role)) {
+            $role = Role::where('slug', $role)->firstOrFail();
+        }
+
+        $this->roles()->syncWithoutDetaching([$role->role_id]);
+    }
+
+    /**
+     * Hapus role dari user
+     *
+     * @param string|Role $role
+     * @return void
+     */
+    public function removeRole($role): void
+    {
+        if (is_string($role)) {
+            $role = Role::where('slug', $role)->firstOrFail();
+        }
+
+        $this->roles()->detach($role->role_id);
+    }
+
+    /**
+     * Mendapatkan semua permissions yang dimiliki user dari semua roles.
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    public function getAllPermissions()
+    {
+        return $this->roles->flatMap(function ($role) {
+            return $role->permissions;
+        })->unique('permission_id');
+    }
+    
+    /**
+     * Relasi ke model SocialIdentity.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function socialIdentities(): HasMany
+    {
+        return $this->hasMany(SocialIdentity::class, 'user_id', 'user_id');
+    }
+
+    /**
+     * Memeriksa apakah user memiliki role admin berdasarkan kolom role
+     * 
+     * @return bool
+     */
+    public function isAdminByRole(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    /**
+     * Memeriksa apakah user memiliki role moderator berdasarkan kolom role
+     * 
+     * @return bool
+     */
+    public function isModeratorByRole(): bool
+    {
+        return $this->role === 'moderator';
+    }
+
+    /**
+     * Memeriksa apakah user memiliki peran tertentu berdasarkan kolom role
+     * 
+     * @param string|array $roles
+     * @return bool
+     */
+    public function hasRoleByAttribute($roles): bool
+    {
+        if (is_string($roles)) {
+            return $this->role === $roles;
+        }
+
+        return in_array($this->role, (array) $roles);
     }
 }

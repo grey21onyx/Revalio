@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use App\Traits\CommonScopes;
+use App\Traits\RecyclableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class WasteCategory extends Model
 {
-    use HasFactory;
+    use HasFactory, CommonScopes, RecyclableTrait;
     
     /**
      * Nama tabel yang terkait dengan model.
@@ -36,11 +38,11 @@ class WasteCategory extends Model
     ];
     
     /**
-     * Menentukan bahwa model ini tidak menggunakan timestamp.
+     * Field yang dapat dicari
      *
-     * @var bool
+     * @var array<string>
      */
-    public $timestamps = false;
+    protected $searchableFields = ['nama_kategori', 'deskripsi'];
     
     /**
      * Relasi ke model WasteType (jenis sampah).

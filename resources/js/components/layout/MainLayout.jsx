@@ -7,6 +7,8 @@ import Header from './Header';
 import Sidebar from './Sidebar';
 import Footer from './Footer';
 
+const drawerWidth = 240;
+
 const MainLayout = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -21,14 +23,25 @@ const MainLayout = () => {
       <Header toggleSidebar={toggleSidebar} />
       
       <Box sx={{ display: 'flex', flex: 1 }}>
-        <Sidebar open={sidebarOpen} onClose={toggleSidebar} />
+        <Box
+          sx={{
+            width: sidebarOpen && !isMobile ? drawerWidth : 0,
+            transition: theme.transitions.create('width', {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.leavingScreen,
+            }),
+            overflowX: 'hidden',
+          }}
+        >
+          <Sidebar open={sidebarOpen} onClose={toggleSidebar} />
+        </Box>
         
         <Box 
           component="main" 
           sx={{ 
             flexGrow: 1,
             p: { xs: 2, md: 3 },
-            marginLeft: sidebarOpen && !isMobile ? '240px' : 0,
+            marginLeft: 0,
             transition: theme.transitions.create('margin', {
               easing: theme.transitions.easing.sharp,
               duration: theme.transitions.duration.leavingScreen,
@@ -46,4 +59,4 @@ const MainLayout = () => {
   );
 };
 
-export default MainLayout; 
+export default MainLayout;

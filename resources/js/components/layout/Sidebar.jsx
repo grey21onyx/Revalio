@@ -152,7 +152,9 @@ const Sidebar = ({ open, onClose }) => {
               width: drawerWidth,
               marginTop: '64px',
               height: 'calc(100% - 64px)',
-              borderRight: '1px solid rgba(0, 0, 0, 0.12)'
+              borderRight: '1px solid rgba(0, 0, 0, 0.12)',
+              transition: 'transform 0.3s ease-in-out',
+              transform: open ? 'translateX(0)' : `translateX(-${drawerWidth}px)`,
             },
           }}
         >

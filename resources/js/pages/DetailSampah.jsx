@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Forum = () => {
+const DetailSampah = () => {
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6" role="alert">
@@ -18,4 +18,4 @@ const Forum = () => {
   );
 };
 
-export default Forum;
+export default DetailSampah;

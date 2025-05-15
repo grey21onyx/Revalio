@@ -1,45 +1,21 @@
 import React from 'react';
-import { Container, Typography, Box, Paper, Grid } from '@mui/material';
 
 const Tracking = () => {
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-        <Typography variant="h3" component="h1" gutterBottom>
-          Tracking Sampah
-        </Typography>
-        <Typography variant="body1" paragraph>
-          Halaman ini akan menampilkan sistem pelacakan dan monitoring sampah yang Anda daur ulang.
-        </Typography>
-      </Paper>
+    <div className="container mx-auto py-8 px-4">
+      <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6" role="alert">
+        <p className="font-bold">Perhatian!</p>
+        <p>Halaman sedang dalam pengembangan. Mohon maaf atas ketidaknyamanannya.</p>
+        <p>This page is under development. We apologize for the inconvenience.</p>
+      </div>
       
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
-          <Paper elevation={2} sx={{ p: 3, height: '100%' }}>
-            <Typography variant="h5" component="h2" gutterBottom>
-              Segera Hadir
-            </Typography>
-            <Typography variant="body1">
-              Sistem tracking sampah sedang dalam pengembangan. Silakan kembali lagi nanti.
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Paper elevation={2} sx={{ p: 3, height: '100%' }}>
-            <Typography variant="h5" component="h2" gutterBottom>
-              Fitur Mendatang
-            </Typography>
-            <Typography variant="body1">
-              • Pelacakan jumlah sampah yang telah didaur ulang<br />
-              • Statistik dan grafik pengurangan sampah<br />
-              • Penghargaan dan pencapaian<br />
-              • Dampak lingkungan yang dihasilkan
-            </Typography>
-          </Paper>
-        </Grid>
-      </Grid>
-    </Container>
+      {/* Placeholder untuk konten yang akan datang */}
+      <h1 className="text-3xl font-bold mb-4">Tentang Kami</h1>
+      <p className="text-gray-700">
+        Konten halaman Tentang Kami akan segera hadir. Silakan kunjungi kembali nanti.
+      </p>
+    </div>
   );
 };
 
-export default Tracking; 
+export default Tracking;

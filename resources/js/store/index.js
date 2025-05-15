@@ -1,15 +1,27 @@
 import { configureStore } from '@reduxjs/toolkit';
-import authReducer from './slices/authSlice';
 
-// Konfigurasi Redux Store
-export const store = configureStore({
+// Temporary reducer untuk mengatasi error "Store does not have a valid reducer"
+const initialState = {
+  // Tambahkan initial state di sini sesuai kebutuhan
+};
+
+function dummyReducer(state = initialState, action) {
+  switch (action.type) {
+    default:
+      return state;
+  }
+}
+
+// Configure store
+const store = configureStore({
   reducer: {
-    auth: authReducer,
-    // Tambahkan reducer lainnya di sini ketika diperlukan
+    dummy: dummyReducer,
+    // Tambahkan reducers lain jika sudah ada
   },
-  // Middleware dan enhancer tambahan dapat dikonfigurasi di sini
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: false,
+    }),
 });
 
-// Export type RootState dan AppDispatch untuk penggunaan dengan TypeScript
-export const RootState = store.getState;
-export const AppDispatch = store.dispatch; 
+export default store;

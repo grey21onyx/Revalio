@@ -1,211 +1,322 @@
 import React, { useState } from 'react';
-import { 
-  Container, 
-  Typography, 
-  Box, 
-  Paper, 
-  TextField, 
-  Button, 
-  Grid, 
-  Link as MuiLink,
+import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import {
+  Box,
+  Typography,
   Divider,
-  IconButton,
   InputAdornment,
+  IconButton,
+  Alert,
   Checkbox,
-  FormControlLabel
+  FormControlLabel,
+  Grid
 } from '@mui/material';
-import { Link } from 'react-router-dom';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import GoogleIcon from '@mui/icons-material/Google';
-import FacebookIcon from '@mui/icons-material/Facebook';
+import {
+  Email as EmailIcon,
+  Lock as LockIcon,
+  Visibility as VisibilityIcon,
+  VisibilityOff as VisibilityOffIcon,
+  Google as GoogleIcon,
+  Person as PersonIcon
+} from '@mui/icons-material';
+
+// Import komponen yang sudah dibuat
+import Input from '../components/common/Input';
+import Button from '../components/common/Button';
+
+// Import action untuk register (akan diimplementasikan nanti)
+// import { register } from '../store/slices/authSlice';
 
 const Register = () => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  
+  // State untuk form
   const [formData, setFormData] = useState({
-    name: '',
+    nama: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    agreeTerms: false
   });
+  
+  // State untuk error dan loading
+  const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [agreeTerms, setAgreeTerms] = useState(false);
-  
+  const [isLoading, setIsLoading] = useState(false);
+  const [registerError, setRegisterError] = useState('');
+
+  // Handle perubahan input
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    const { name, value, checked } = e.target;
+    setFormData({
+      ...formData,
+      [name]: name === 'agreeTerms' ? checked : value
+    });
+    
+    // Reset error untuk field ini jika ada
+    if (errors[name]) {
+      setErrors({
+        ...errors,
+        [name]: ''
+      });
+    }
   };
-  
-  const handleTogglePassword = () => {
-    setShowPassword(!showPassword);
+
+  // Validasi form
+  const validateForm = () => {
+    const newErrors = {};
+    
+    // Validasi nama
+    if (!formData.nama) {
+      newErrors.nama = 'Nama tidak boleh kosong';
+    }
+    
+    // Validasi email
+    if (!formData.email) {
+      newErrors.email = 'Email tidak boleh kosong';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Format email tidak valid';
+    }
+    
+    // Validasi password
+    if (!formData.password) {
+      newErrors.password = 'Password tidak boleh kosong';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password minimal 6 karakter';
+    }
+    
+    // Validasi confirm password
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Konfirmasi password tidak boleh kosong';
+    } else if (formData.confirmPassword !== formData.password) {
+      newErrors.confirmPassword = 'Password tidak cocok';
+    }
+    
+    // Validasi terms
+    if (!formData.agreeTerms) {
+      newErrors.agreeTerms = 'Anda harus menyetujui syarat dan ketentuan';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
-  
-  const handleToggleConfirmPassword = () => {
-    setShowConfirmPassword(!showConfirmPassword);
+
+  // Handle submit form
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Reset error
+    setRegisterError('');
+    
+    // Validasi form
+    if (!validateForm()) return;
+    
+    setIsLoading(true);
+    
+    try {
+      // Simulasi register (ganti dengan dispatch ke redux action nanti)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Sukses register, navigate ke login page
+      navigate('/login');
+      
+    } catch (error) {
+      // Handle error register
+      setRegisterError(
+        error.response?.data?.message || 
+        'Terjadi kesalahan saat mendaftar. Silakan coba lagi.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
-  
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    // TODO: Implementasi pendaftaran actual
-    console.log('Register attempt with:', formData);
-  };
-  
+
   return (
-    <Container maxWidth="sm" sx={{ mt: 8, mb: 4 }}>
-      <Paper elevation={3} sx={{ p: 4 }}>
-        <Box textAlign="center" mb={3}>
-          <Typography variant="h4" component="h1" gutterBottom>
-            Daftar
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Buat akun Revalio baru
-          </Typography>
-        </Box>
+    <Box>
+      <Typography variant="h5" fontWeight={700} gutterBottom>
+        Daftar Akun Baru
+      </Typography>
+      
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+        Isi data berikut untuk mendaftar di platform Revalio
+      </Typography>
+      
+      {registerError && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {registerError}
+        </Alert>
+      )}
+      
+      <Box component="form" onSubmit={handleSubmit}>
+        <Input
+          id="nama"
+          name="nama"
+          label="Nama Lengkap"
+          value={formData.nama}
+          onChange={handleChange}
+          error={errors.nama}
+          helperText={errors.nama}
+          startIcon={<PersonIcon />}
+          required
+          sx={{ mb: 2 }}
+        />
         
-        <Box component="form" onSubmit={handleSubmit} noValidate>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="name"
-            label="Nama Lengkap"
-            name="name"
-            autoComplete="name"
-            autoFocus
-            value={formData.name}
-            onChange={handleChange}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="email"
-            label="Email"
-            name="email"
-            autoComplete="email"
-            value={formData.email}
-            onChange={handleChange}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            name="password"
-            label="Password"
-            type={showPassword ? "text" : "password"}
-            id="password"
-            value={formData.password}
-            onChange={handleChange}
-            InputProps={{
-              endAdornment: (
+        <Input
+          id="email"
+          name="email"
+          label="Email"
+          value={formData.email}
+          onChange={handleChange}
+          error={errors.email}
+          helperText={errors.email}
+          startIcon={<EmailIcon />}
+          required
+          sx={{ mb: 2 }}
+        />
+        
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6}>
+            <Input
+              id="password"
+              name="password"
+              label="Password"
+              type={showPassword ? 'text' : 'password'}
+              value={formData.password}
+              onChange={handleChange}
+              error={errors.password}
+              helperText={errors.password}
+              startIcon={<LockIcon />}
+              endIcon={
                 <InputAdornment position="end">
                   <IconButton
-                    aria-label="toggle password visibility"
-                    onClick={handleTogglePassword}
+                    onClick={() => setShowPassword(!showPassword)}
                     edge="end"
+                    size="small"
                   >
                     {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
                   </IconButton>
                 </InputAdornment>
-              ),
-            }}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            name="confirmPassword"
-            label="Konfirmasi Password"
-            type={showConfirmPassword ? "text" : "password"}
-            id="confirmPassword"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            InputProps={{
-              endAdornment: (
+              }
+              required
+              sx={{ mb: 2 }}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <Input
+              id="confirmPassword"
+              name="confirmPassword"
+              label="Konfirmasi Password"
+              type={showConfirmPassword ? 'text' : 'password'}
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              error={errors.confirmPassword}
+              helperText={errors.confirmPassword}
+              startIcon={<LockIcon />}
+              endIcon={
                 <InputAdornment position="end">
                   <IconButton
-                    aria-label="toggle password visibility"
-                    onClick={handleToggleConfirmPassword}
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     edge="end"
+                    size="small"
                   >
                     {showConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
                   </IconButton>
                 </InputAdornment>
-              ),
-            }}
-          />
-          
+              }
+              required
+              sx={{ mb: 2 }}
+            />
+          </Grid>
+        </Grid>
+        
+        <Box sx={{ mb: 2 }}>
           <FormControlLabel
             control={
               <Checkbox 
-                checked={agreeTerms} 
-                onChange={(e) => setAgreeTerms(e.target.checked)}
+                name="agreeTerms" 
+                checked={formData.agreeTerms}
+                onChange={handleChange}
                 color="primary"
+                size="small"
               />
             }
             label={
               <Typography variant="body2">
-                Saya setuju dengan{' '}
-                <MuiLink component={Link} to="/terms">
-                  Ketentuan Layanan
-                </MuiLink>
-                {' '}dan{' '}
-                <MuiLink component={Link} to="/privacy">
-                  Kebijakan Privasi
-                </MuiLink>
+                Saya setuju dengan {' '}
+                <Link 
+                  to="/terms" 
+                  style={{ textDecoration: 'none', color: 'inherit' }}
+                >
+                  <Typography 
+                    component="span" 
+                    variant="body2" 
+                    color="primary"
+                    fontWeight={600}
+                    sx={{ '&:hover': { textDecoration: 'underline' } }}
+                  >
+                    syarat dan ketentuan
+                  </Typography>
+                </Link>
               </Typography>
             }
-            sx={{ mt: 2 }}
           />
-          
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            color="primary"
-            sx={{ mt: 3, mb: 2 }}
-            disabled={!agreeTerms}
-          >
-            Daftar
-          </Button>
-          
-          <Box sx={{ textAlign: 'center', mt: 2, mb: 2 }}>
-            <Typography variant="body2">
-              Sudah punya akun?{' '}
-              <MuiLink component={Link} to="/login">
-                Login di sini
-              </MuiLink>
+          {errors.agreeTerms && (
+            <Typography variant="caption" color="error">
+              {errors.agreeTerms}
             </Typography>
-          </Box>
-          
-          <Divider sx={{ my: 3 }}>atau</Divider>
-          
-          <Grid container spacing={2}>
-            <Grid item xs={6}>
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<GoogleIcon />}
-                sx={{ textTransform: 'none' }}
-              >
-                Daftar dengan Google
-              </Button>
-            </Grid>
-            <Grid item xs={6}>
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<FacebookIcon />}
-                sx={{ textTransform: 'none' }}
-              >
-                Daftar dengan Facebook
-              </Button>
-            </Grid>
-          </Grid>
+          )}
         </Box>
-      </Paper>
-    </Container>
+        
+        <Button
+          type="submit"
+          fullWidth
+          loading={isLoading}
+          sx={{ mb: 2 }}
+        >
+          Daftar
+        </Button>
+        
+        <Divider sx={{ my: 2 }}>
+          <Typography variant="body2" color="text.secondary">
+            ATAU
+          </Typography>
+        </Divider>
+        
+        <Button
+          variant="outlined"
+          fullWidth
+          startIcon={<GoogleIcon />}
+          onClick={() => {/* Google register implementation */}}
+          sx={{ mb: 3 }}
+        >
+          Daftar dengan Google
+        </Button>
+        
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="body2">
+            Sudah memiliki akun?{' '}
+            <Link 
+              to="/login" 
+              style={{ textDecoration: 'none', color: 'inherit' }}
+            >
+              <Typography 
+                component="span" 
+                variant="body2" 
+                color="primary"
+                fontWeight={600}
+                sx={{ '&:hover': { textDecoration: 'underline' } }}
+              >
+                Masuk sekarang
+              </Typography>
+            </Link>
+          </Typography>
+        </Box>
+      </Box>
+    </Box>
   );
 };
 
-export default Register; 
+export default Register;

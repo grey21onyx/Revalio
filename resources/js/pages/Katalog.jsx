@@ -35,22 +35,22 @@ import { gsap } from 'gsap';
 const wasteCategories = [
   { id: 1, name: 'Plastik', count: 15, color: '#2196F3', icon: '🥤' },
   { id: 2, name: 'Kertas', count: 8, color: '#FF9800', icon: '📄' },
-  { id: 3, name: 'Logam', count: 12, color: '#607D8B', icon: '🔧' },
-  { id: 4, name: 'Kaca', count: 6, color: '#4CAF50', icon: '🍾' },
+  { id: 3, name: 'Besi', count: 12, color: '#607D8B', icon: '🔧' },
+  { id: 4, name: 'Allumunium', count: 6, color: '#4CAF50', icon: '🍾' },
   { id: 5, name: 'Elektronik', count: 9, color: '#9C27B0', icon: '💻' },
-  { id: 6, name: 'Tekstil', count: 4, color: '#E91E63', icon: '👕' },
+  // { id: 6, name: 'Tekstil', count: 4, color: '#E91E63', icon: '👕' },
 ];
 
 // Data dummy untuk sampah bernilai
 const wasteItems = [
   {
     id: 1,
-    name: 'Botol Plastik PET',
+    name: 'Botol Plastik',
     description: 'Botol plastik minuman bekas yang dapat didaur ulang menjadi berbagai produk baru. Termasuk kategori plastik yang paling banyak dicari oleh pengepul.',
-    imageUrl: '/assets/images/waste/botol-pet.jpg',
+    imageUrl: '/assets/images/waste/botol-plastik.jpeg',
     category: 'Plastik',
     categoryId: 1,
-    priceRange: { min: 8000, max: 10000 },
+    priceRange: { min: 1000, max: 4000 },
     unit: 'kg'
   },
   {
@@ -60,17 +60,17 @@ const wasteItems = [
     imageUrl: '/assets/images/waste/kardus.jpg',
     category: 'Kertas',
     categoryId: 2,
-    priceRange: { min: 2000, max: 3000 },
+    priceRange: { min: 800, max: 2000 },
     unit: 'kg'
   },
   {
     id: 3,
     name: 'Kaleng Aluminium',
     description: 'Kaleng minuman aluminium yang memiliki nilai ekonomis tinggi dan mudah didaur ulang. Logam aluminium dapat didaur ulang berkali-kali tanpa menurunkan kualitasnya.',
-    imageUrl: '/assets/images/waste/kaleng.jpg',
-    category: 'Logam',
-    categoryId: 3,
-    priceRange: { min: 11000, max: 14000 },
+    imageUrl: '/assets/images/waste/kaleng.jpeg',
+    category: 'Alumunium',
+    categoryId: 4,
+    priceRange: { min: 12000, max: 18000 },
     unit: 'kg'
   }
 ];

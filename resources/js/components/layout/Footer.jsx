@@ -161,7 +161,7 @@ const Footer = ({ sidebarOpen, isMobile, drawerWidth }) => {
         </Grid>
         
         <Divider sx={{ mt: 4, mb: 2, borderColor: theme.palette.grey[800] }} />
-        
+        {/* Copyright Mark */}
         <Box sx={{ textAlign: 'center' }}>
           <Typography variant="body2" color="text.secondary">
             &copy; {currentYear} Revalio. Hak Cipta Dilindungi.

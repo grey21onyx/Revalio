@@ -28,7 +28,7 @@ import {
 const menuItems = [
   { name: 'Beranda', path: '/', icon: <HomeIcon /> },
   { name: 'Katalog Sampah', path: '/katalog', icon: <KatalogIcon /> },
-  { name: 'Panduan Daur Ulang', path: '/daur-ulang', icon: <DaurUlangIcon /> },
+  { name: 'Daur Ulang', path: '/daur-ulang', icon: <DaurUlangIcon /> },
   { name: 'Tracking Sampah', path: '/tracking', icon: <TrackingIcon /> },
   { name: 'Tips Monetisasi', path: '/monetisasi', icon: <MonetisasiIcon /> },
   { name: 'Forum Diskusi', path: '/forum', icon: <ForumIcon /> },

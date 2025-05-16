@@ -34,7 +34,7 @@
         "@tailwindcss/vite": "^4.1.6",
         "@waldzellai/clear-thought": "^0.0.3",
         "chart.js": "^4.4.9",
-        "date-fns": "^4.1.0",
+        "date-fns": "^2.30.0",
         "gsap": "^3.13.0",
         "prop-types": "^15.8.1",
         "react": "^18.2.0",

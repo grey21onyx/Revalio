@@ -5,6 +5,9 @@ import tailwindcss from '@tailwindcss/vite'
 
 
 export default defineConfig({
+    optimizeDeps: {
+        include: ['date-fns', 'date-fns/locale/id'],
+    },
     plugins: [
         laravel({
             input: ['resources/js/app.jsx'],

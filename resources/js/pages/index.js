@@ -1,0 +1,15 @@
+export { default as Home } from './Home';
+export { default as Katalog } from './Katalog';
+export { default as DetailSampah } from './DetailSampah';
+export { default as Tracking } from './Tracking';
+export { default as DaurUlang } from './DaurUlang';
+export { default as DetailPanduan } from './DetailPanduan';
+export { default as Forum } from './Forum';
+export { default as ThreadDetail } from './ThreadDetail';
+export { default as PeluangUsaha } from './PeluangUsaha';
+export { default as Monetisasi } from './Monetisasi';
+export { default as Profile } from './profile';
+export { default as Login } from './Login';
+export { default as Register } from './Register';
+export { default as NotFound } from './NotFound';
+export { default as About } from './About';

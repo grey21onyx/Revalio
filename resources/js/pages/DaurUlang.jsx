@@ -129,6 +129,42 @@ const wasteItems = [
         image: '/assets/images/guide/simpan-kaleng.jpg'
       }
     ]
+  },
+  {
+    id: 4,
+    name: 'Tutup & Cincin Botol',
+    description: '#',
+    imageUrl: '/assets/images/waste/tutup-cincin-botol.jpg',
+    category: 'Plastik',
+    categoryId: 1,
+    priceRange: { min: 1000, max: 3000 },
+    unit: 'kg',
+    guide: [
+      { 
+        step: 1, 
+        title: 'Pengemasan', 
+        description: 'Masukkan dalam karung yang memiliki daya tahan yang kuat, karena tumpukan barang ini sangat berat',
+        image: '/assets/images/guide/simpan-tutup-cincin.jpg'
+      }
+    ]
+  },
+  {
+    id: 5,
+    name: 'Besi campur (besi ringan)',
+    description: '#',
+    imageUrl: '/assets/images/waste/besi-campur.jpg',
+    category: 'Besi',
+    categoryId: 3,
+    priceRange: { min: 1000, max: 2500 },
+    unit: 'kg',
+    guide: [
+      { 
+        step: 1, 
+        title: 'Pengemasan', 
+        description: 'Masukkan dalam karung yang memiliki daya tahan yang kuat, karena tumpukan barang ini sangat berat',
+        image: '/assets/images/guide/simpan-tutup-cincin.jpg'
+      }
+    ]
   }
 ];
 

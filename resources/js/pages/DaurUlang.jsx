@@ -5,7 +5,6 @@ import {
   Grid, 
   Container, 
   TextField, 
-  InputAdornment,
   Card,
   CardContent,
   CardMedia,
@@ -20,16 +19,20 @@ import {
   useTheme,
   Paper,
   IconButton,
-  Avatar
+  Modal,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  MobileStepper
 } from '@mui/material';
 import { 
   Search as SearchIcon, 
-  FilterList as FilterListIcon,
   Clear as ClearIcon,
-  CategoryOutlined as CategoryIcon,
-  LocalOffer as PriceIcon
+  Close as CloseIcon,
+  KeyboardArrowLeft,
+  KeyboardArrowRight
 } from '@mui/icons-material';
-import SwipeableViews from 'react-swipeable-views';
 import { gsap } from 'gsap';
 
 // Data dummy untuk kategori sampah
@@ -37,12 +40,11 @@ const wasteCategories = [
   { id: 1, name: 'Plastik', count: 15, color: '#2196F3', icon: '🥤' },
   { id: 2, name: 'Kertas', count: 8, color: '#FF9800', icon: '📄' },
   { id: 3, name: 'Besi', count: 12, color: '#607D8B', icon: '🔧' },
-  { id: 4, name: 'Allumunium', count: 6, color: '#4CAF50', icon: '💿' },
+  { id: 4, name: 'Aluminium', count: 6, color: '#4CAF50', icon: '💿' },
   { id: 5, name: 'Elektronik', count: 9, color: '#9C27B0', icon: '💻' },
-  // { id: 6, name: 'Tekstil', count: 4, color: '#E91E63', icon: '👕' },
 ];
 
-// Data dummy untuk sampah bernilai
+// Data dummy untuk sampah bernilai dengan panduan langkah demi langkah
 const wasteItems = [
   {
     id: 1,
@@ -52,7 +54,27 @@ const wasteItems = [
     category: 'Plastik',
     categoryId: 1,
     priceRange: { min: 1000, max: 4000 },
-    unit: 'kg'
+    unit: 'kg',
+    guide: [
+      { 
+        step: 1, 
+        title: 'Tutup dan cincin botol', 
+        description: 'Buka tutup dan cincin botol menggunakan Cutter, pisahkan dalam satu wadah. Tutup dan cincin botol juga memiliki nilai jual.',
+        image: '/assets/images/guide/buka-tutup-botol.jpg'
+      },
+      { 
+        step: 2, 
+        title: 'Label', 
+        description: 'Bersihkan atau lepas label botol, label ini termasuk dalam sampah.',
+        image: '/assets/images/guide/botol-tanpa-label.jpg'
+      },
+      { 
+        step: 3, 
+        title: 'Pengemasan', 
+        description: 'Remas Botol hingga gepeng untuk menghemat ruang dan masukkan kedalam karung secara paksa agar padat lalu karungnya diikat.',
+        image: '/assets/images/guide/remas-botol.jpg'
+      }
+    ]
   },
   {
     id: 2,
@@ -62,17 +84,51 @@ const wasteItems = [
     category: 'Kertas',
     categoryId: 2,
     priceRange: { min: 800, max: 2000 },
-    unit: 'kg'
+    unit: 'kg',
+    guide: [
+      { 
+        step: 1, 
+        title: 'Membuka', 
+        description: 'Lepaskan semua lakban yang merekat pada kardus',
+        image: '/assets/images/guide/membuka-kardus.jpg'
+      },
+      { 
+        step: 2, 
+        title: 'Pengikatan', 
+        description: 'Susun tumpukan lipatan kardus lalu ikat dengan metode silang(atas bawah kanan kiri) agar kardus tidak berantakan.',
+        image: '/assets/images/guide/ikat-kardus.jpg'
+      }
+    ]
   },
   {
     id: 3,
     name: 'Kaleng Aluminium',
     description: 'Kaleng minuman aluminium yang memiliki nilai ekonomis tinggi dan mudah didaur ulang. Logam aluminium dapat didaur ulang berkali-kali tanpa menurunkan kualitasnya.',
     imageUrl: '/assets/images/waste/kaleng.jpeg',
-    category: 'Alumunium',
+    category: 'Aluminium',
     categoryId: 4,
     priceRange: { min: 12000, max: 18000 },
-    unit: 'kg'
+    unit: 'kg',
+    guide: [
+      { 
+        step: 1, 
+        title: 'Pembersihan', 
+        description: 'Bersihkan kaleng dari sisa minuman dan kotoran.',
+        image: '/assets/images/guide/bersihkan-kaleng.jpg'
+      },
+      { 
+        step: 2, 
+        title: 'Pemadatan', 
+        description: 'Tekan kaleng untuk mengurangi volume sebelum dijual. bisa dengan cara dipijak (pakai alas kaki seperti sendal atau sepatu)',
+        image: '/assets/images/guide/injak-kaleng.jpg'
+      },
+      { 
+        step: 3, 
+        title: 'Penyimpanan', 
+        description: 'ALKA (aluminium kaleng) yang sudah padat dimasukkan ke karung dan diikat. simpan diarea yang tidak mengakibatkan kaleng basah.',
+        image: '/assets/images/guide/simpan-kaleng.jpg'
+      }
+    ]
   }
 ];
 
@@ -181,7 +237,7 @@ const CategoryCard = ({ category, isSelected, onClick }) => {
 };
 
 // Komponen untuk tampilan grid
-const GridItemCard = ({ item, index }) => {
+const GridItemCard = ({ item, index, onDetailClick }) => {
   const cardRef = useRef(null);
   const theme = useTheme();
   
@@ -211,7 +267,6 @@ const GridItemCard = ({ item, index }) => {
         ease: "power2.out" 
       });
       
-      // Animate image zoom
       const imageElement = element.querySelector('.card-image');
       gsap.to(imageElement, {
         scale: 1.05,
@@ -228,7 +283,6 @@ const GridItemCard = ({ item, index }) => {
         ease: "power1.out" 
       });
       
-      // Reset image zoom
       const imageElement = element.querySelector('.card-image');
       gsap.to(imageElement, {
         scale: 1,
@@ -248,7 +302,6 @@ const GridItemCard = ({ item, index }) => {
     }
   }, [index]);
 
-  // Find category color
   const categoryData = wasteCategories.find(cat => cat.name === item.category);
   const categoryColor = categoryData ? categoryData.color : theme.palette.primary.main;
 
@@ -300,17 +353,6 @@ const GridItemCard = ({ item, index }) => {
           {item.name}
         </Typography>
         
-        {/* <Typography 
-          variant="body2" 
-          color="text.secondary" 
-          sx={{ mb: 2, flexGrow: 1 }}
-        >
-          {item.description.length > 120 
-            ? `${item.description.substring(0, 120)}...` 
-            : item.description
-          }
-        </Typography> */}
-        
         <Box sx={{ mt: 'auto' }}>
           <Divider sx={{ my: 1.5 }} />
 
@@ -322,8 +364,17 @@ const GridItemCard = ({ item, index }) => {
               </Typography>
             </Typography>
 
-            <Button variant="outlined" size="small" onClick={() => handleDetailClick(item.id)}>
-              Detail Panduan
+            <Button 
+              variant="outlined" 
+              size="small" 
+              onClick={() => onDetailClick(item)}
+              sx={{
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 600
+              }}
+            >
+              Detail
             </Button>
           </Box>
         </Box>
@@ -332,51 +383,231 @@ const GridItemCard = ({ item, index }) => {
   );
 };
 
+// Komponen Modal untuk Panduan
+const GuideModal = ({ open, onClose, item }) => {
+  const [activeStep, setActiveStep] = useState(0);
+  const [direction, setDirection] = useState('right');
+  const maxSteps = item?.guide?.length || 0;
+  const imageContainerRef = useRef(null);
+
+  const handleNext = () => {
+    setDirection('right');
+    setActiveStep((prevActiveStep) => prevActiveStep + 1);
+  };
+
+  const handleBack = () => {
+    setDirection('left');
+    setActiveStep((prevActiveStep) => prevActiveStep - 1);
+  };
+
+  const handleStepChange = (step) => {
+    setDirection(step > activeStep ? 'right' : 'left');
+    setActiveStep(step);
+  };
+
+  // Animation effect for image transition
+  useEffect(() => {
+    if (!imageContainerRef.current) return;
+
+    const container = imageContainerRef.current;
+    const images = container.querySelectorAll('img');
+    
+    // Reset all images to their initial state
+    gsap.set(images, {
+      x: 0,
+      opacity: 1
+    });
+
+    // Animate the transition
+    if (direction === 'right') {
+      gsap.fromTo(images[activeStep],
+        { x: '100%', opacity: 0 },
+        { x: '0%', opacity: 1, duration: 0.5, ease: "power2.out" }
+      );
+      if (activeStep > 0) {
+        gsap.to(images[activeStep - 1],
+          { x: '-100%', opacity: 0, duration: 0.5, ease: "power2.out" }
+        );
+      }
+    } else {
+      gsap.fromTo(images[activeStep],
+        { x: '-100%', opacity: 0 },
+        { x: '0%', opacity: 1, duration: 0.5, ease: "power2.out" }
+      );
+      if (activeStep < maxSteps - 1) {
+        gsap.to(images[activeStep + 1],
+          { x: '100%', opacity: 0, duration: 0.5, ease: "power2.out" }
+        );
+      }
+    }
+  }, [activeStep, direction, maxSteps]);
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: 3,
+          overflow: 'hidden'
+        }
+      }}
+    >
+      <DialogTitle sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        backgroundColor: 'primary.main',
+        color: 'white',
+        py: 2,
+        px: 3
+      }}>
+        <Typography variant="h6" fontWeight={600}>
+          Panduan Pengelolaan {item?.name}
+        </Typography>
+        <IconButton onClick={onClose} sx={{ color: 'white' }}>
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+      
+      <DialogContent sx={{ p: 0 }}>
+        {item?.guide && (
+          <Box 
+            ref={imageContainerRef}
+            sx={{ 
+              position: 'relative', 
+              height: { xs: 300, sm: 400 },
+              overflow: 'hidden'
+            }}
+          >
+            {item.guide.map((step, index) => (
+              <Box
+                key={index}
+                component="img"
+                src={step.image}
+                alt={`Step ${index + 1}`}
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  display: 'block',
+                  willChange: 'transform, opacity' // Optimize for animations
+                }}
+                style={{
+                  zIndex: index === activeStep ? 1 : 0,
+                  visibility: index === activeStep ? 'visible' : 'hidden'
+                }}
+              />
+            ))}
+            
+            <Box sx={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              backgroundColor: 'rgba(0,0,0,0.5)',
+              color: 'white',
+              p: 3,
+              zIndex: 2
+            }}>
+              <Typography variant="h6" gutterBottom>
+                Langkah {activeStep + 1}: {item.guide[activeStep].title}
+              </Typography>
+              <Typography variant="body1">
+                {item.guide[activeStep].description}
+              </Typography>
+            </Box>
+          </Box>
+        )}
+      </DialogContent>
+      
+      <MobileStepper
+        steps={maxSteps}
+        position="static"
+        activeStep={activeStep}
+        nextButton={
+          <Button
+            size="small"
+            onClick={handleNext}
+            disabled={activeStep === maxSteps - 1}
+            startIcon={<KeyboardArrowRight />}
+          >
+            Next
+          </Button>
+        }
+        backButton={
+          <Button
+            size="small"
+            onClick={handleBack}
+            disabled={activeStep === 0}
+            endIcon={<KeyboardArrowLeft />}
+          >
+            Back
+          </Button>
+        }
+        sx={{
+          justifyContent: 'center',
+          py: 2,
+          px: 3,
+          borderTop: '1px solid',
+          borderColor: 'divider'
+        }}
+      />
+    </Dialog>
+  );
+};
+
 // Komponen utama halaman DaurUlang
 const DaurUlang = () => {
   const theme = useTheme();
-  // State untuk tampilan dan filter
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('name_asc');
   const [isSearchActive, setIsSearchActive] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
   
-  // Handle pencarian
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
     setIsSearchActive(!!event.target.value);
   };
   
-  // Handle clear search
   const handleClearSearch = () => {
     setSearchQuery('');
     setIsSearchActive(false);
   };
   
-  // Handle perubahan kategori
   const handleCategoryChange = (categoryId) => {
     setSelectedCategory(categoryId === selectedCategory ? 'all' : categoryId);
   };
   
-  // Handle pengurutan
   const handleSortChange = (event) => {
     setSortBy(event.target.value);
   };
   
-  // Filter dan sort data
+  const handleDetailClick = (item) => {
+    setSelectedItem(item);
+    setModalOpen(true);
+  };
+  
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setSelectedItem(null);
+  };
+  
   const filteredAndSortedItems = wasteItems
     .filter(item => {
-      // Filter by search query
       const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            item.description.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      // Filter by category
       const matchesCategory = selectedCategory === 'all' || item.categoryId === parseInt(selectedCategory);
-      
       return matchesSearch && matchesCategory;
     })
     .sort((a, b) => {
-      // Sort based on selected option
       switch(sortBy) {
         case 'name_asc':
           return a.name.localeCompare(b.name);
@@ -544,7 +775,11 @@ const DaurUlang = () => {
             <Grid container spacing={3}>
               {filteredAndSortedItems.map((item, index) => (
                 <Grid item xs={12} sm={6} md={4} key={item.id}>
-                  <GridItemCard item={item} index={index} />
+                  <GridItemCard 
+                    item={item} 
+                    index={index} 
+                    onDetailClick={handleDetailClick}
+                  />
                 </Grid>
               ))}
             </Grid>
@@ -594,6 +829,13 @@ const DaurUlang = () => {
           )}
         </Box>
       </Container>
+      
+      {/* Modal Panduan */}
+      <GuideModal 
+        open={modalOpen} 
+        onClose={handleCloseModal} 
+        item={selectedItem} 
+      />
     </Box>
   );
 };

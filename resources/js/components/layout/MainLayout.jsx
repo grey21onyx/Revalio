@@ -22,39 +22,41 @@ const MainLayout = () => {
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Header toggleSidebar={toggleSidebar} />
       
-      <Box sx={{ display: 'flex', flex: 1 }}>
-        <Box
-          sx={{
-            width: sidebarOpen && !isMobile ? drawerWidth : 0,
-            transition: theme.transitions.create('width', {
-              easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.leavingScreen,
-            }),
-            overflowX: 'hidden',
-          }}
-        >
-          <Sidebar open={sidebarOpen} onClose={toggleSidebar} />
+      <Box sx={{ display: 'flex', flex: 1, flexDirection: 'column' }}>
+        <Box sx={{ display: 'flex', flex: 1 }}>
+          <Box
+            sx={{
+              width: sidebarOpen && !isMobile ? drawerWidth : 0,
+              transition: theme.transitions.create('width', {
+                easing: theme.transitions.easing.sharp,
+                duration: theme.transitions.duration.leavingScreen,
+              }),
+              overflowX: 'hidden',
+            }}
+          >
+            <Sidebar open={sidebarOpen} onClose={toggleSidebar} />
+          </Box>
+          
+          <Box 
+            component="main" 
+            sx={{ 
+              flexGrow: 1,
+              p: { xs: 2, md: 3 },
+              marginLeft: 0,
+              transition: theme.transitions.create('margin', {
+                easing: theme.transitions.easing.sharp,
+                duration: theme.transitions.duration.leavingScreen,
+              }),
+            }}
+          >
+            <Container maxWidth="lg" sx={{ mt: '70px' }}>
+              <Outlet />
+            </Container>
+          </Box>
         </Box>
         
-        <Box 
-          component="main" 
-          sx={{ 
-            flexGrow: 1,
-            p: { xs: 2, md: 3 },
-            marginLeft: 0,
-            transition: theme.transitions.create('margin', {
-              easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.leavingScreen,
-            }),
-          }}
-        >
-          <Container maxWidth="lg" sx={{ mt: '70px' }}>
-            <Outlet />
-          </Container>
-        </Box>
+        <Footer sidebarOpen={sidebarOpen} isMobile={isMobile} drawerWidth={drawerWidth} />
       </Box>
-      
-      <Footer />
     </Box>
   );
 };

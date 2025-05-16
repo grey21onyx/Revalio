@@ -38,7 +38,7 @@ const resourceItems = [
   { title: 'Syarat dan Ketentuan', path: '/syarat-ketentuan' },
 ];
 
-const Footer = () => {
+const Footer = ({ sidebarOpen, isMobile, drawerWidth }) => {
   const theme = useTheme();
   const currentYear = new Date().getFullYear();
 
@@ -50,10 +50,17 @@ const Footer = () => {
         color: theme.palette.common.white,
         pt: 6,
         pb: 3,
-        mt: 'auto'
+        mt: 'auto',
+        flexShrink: 0,
+        transition: !isMobile ? theme.transitions.create(['margin-left', 'width'], {
+          easing: theme.transitions.easing.sharp,
+          duration: theme.transitions.duration.leavingScreen,
+        }) : 'none',
+        marginLeft: !isMobile && sidebarOpen ? `${drawerWidth}px` : 0,
+        width: !isMobile && sidebarOpen ? `calc(100% - ${drawerWidth}px)` : '100%',
       }}
     >
-      <Container maxWidth="lg">
+      <Container maxWidth={isMobile ? false : "lg"}>
         <Grid container spacing={4}>
           {/* Company Info */}
           <Grid item xs={12} md={4}>

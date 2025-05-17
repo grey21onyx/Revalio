@@ -39,7 +39,7 @@ const featuredWasteItems = [
     id: 1,
     name: 'Botol Plastik PET',
     description: 'Botol plastik minuman bekas yang dapat didaur ulang menjadi berbagai produk baru',
-    imageUrl: '/assets/images/waste/botol-pet.jpg',
+    imageUrl: '/assets/images/waste/botol-plastik.jpg',
     category: 'Plastik',
     categoryId: 1,
     priceRange: { min: 8000, max: 10000 },
@@ -63,7 +63,7 @@ const featuredWasteItems = [
     id: 3,
     name: 'Kaleng Aluminium',
     description: 'Kaleng minuman aluminium yang memiliki nilai ekonomis tinggi',
-    imageUrl: '/assets/images/waste/kaleng.jpg',
+    imageUrl: '/assets/images/waste/kaleng.jpeg',
     category: 'Logam',
     categoryId: 3,
     priceRange: { min: 11000, max: 14000 },
@@ -78,7 +78,7 @@ const featuredTutorials = [
     id: 1,
     title: 'Ecobrick dari Botol Plastik',
     description: 'Membuat ecobrick dari botol plastik bekas untuk konstruksi ramah lingkungan',
-    imageUrl: '/assets/images/tutorials/ecobrick.jpg',
+    imageUrl: '/assets/images/tutorials/ecobrick.png',
     difficulty: 'EASY',
     estimasiWaktu: 45,
     rating: 4.5,
@@ -436,7 +436,7 @@ const Home = () => {
                       borderRadius: 8,
                       px: { xs: 3, md: 5 },
                       py: 1.75,
-                      fontSize: '1.1rem',
+                      fontSize: '1 rem',
                       fontWeight: 600,
                       boxShadow: '0 4px 15px rgba(0,0,0,0.25)',
                       transition: 'all 0.3s',
@@ -458,7 +458,7 @@ const Home = () => {
                       borderRadius: 8,
                       px: { xs: 3, md: 5 },
                       py: 1.75,
-                      fontSize: '1.1rem',
+                      fontSize: '1 rem',
                       fontWeight: 600,
                       borderColor: 'white',
                       borderWidth: 2,
@@ -567,43 +567,74 @@ const Home = () => {
             subtitle="Revalio adalah platform edukasi digital yang bertujuan untuk memberdayakan masyarakat dalam mengelola sampah menjadi sumber penghasilan yang berkelanjutan"
           />
           
-          <Grid container spacing={4} alignItems="center">
+          <Grid container spacing={4} alignItems="stretch">
+            {/* Image and Description Column */}
             <Grid item xs={12} md={6}>
-              <Box sx={{ position: 'relative', borderRadius: 4, overflow: 'hidden', boxShadow: '0 12px 24px rgba(0,0,0,0.12)' }}>
-                <img 
-                  src="/assets/images/bg1.jpeg" 
-                  alt="Revalio Background" 
-                  style={{ 
-                    width: '100%', 
-                    height: 'auto',
-                    display: 'block'
-                  }} 
-                />
+              <Box sx={{ 
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%'
+              }}>
+                {/* Image with Overlay */}
                 <Box sx={{ 
-                  position: 'absolute', 
-                  bottom: 0, 
-                  left: 0, 
-                  width: '100%', 
-                  background: 'linear-gradient(transparent, rgba(0,0,0,0.8))',
-                  p: 3,
-                  color: 'white'
+                  position: 'relative', 
+                  borderRadius: 4, 
+                  overflow: 'hidden', 
+                  boxShadow: '0 12px 24px rgba(0,0,0,0.12)',
+                  mb: 3
                 }}>
-                  <Typography variant="h6" fontWeight={700}>
-                    Ubah Limbah Menjadi Peluang
-                  </Typography>
+                  <img 
+                    src="/assets/images/ubah-limbah-menjadi-peluang.jpeg" 
+                    alt="Revalio Background" 
+                    style={{ 
+                      width: '100%', 
+                      height: 'auto',
+                      display: 'block'
+                    }} 
+                  />
+                  <Box sx={{ 
+                    position: 'absolute', 
+                    bottom: 0, 
+                    left: 0, 
+                    width: '100%', 
+                    background: 'linear-gradient(transparent, rgba(0,0,0,0.8))',
+                    p: 3,
+                    color: 'white'
+                  }}>
+                    <Typography variant="h6" fontWeight={700} align="left">
+                      Ubah Limbah Menjadi Peluang
+                    </Typography>
+                  </Box>
                 </Box>
+                
+                {/* Description Text */}
+                <Typography 
+                  variant="body1" 
+                  paragraph 
+                  sx={{ 
+                    mb: 2, 
+                    fontSize: '1.05rem',
+                    textAlign: 'justify'
+                  }}
+                >
+                  Revalio berfokus pada pemberdayaan masyarakat untuk mengelola sampah dengan lebih baik dan mendapatkan nilai ekonomis darinya. Aplikasi ini membantu Anda mengidentifikasi sampah bernilai, mempelajari cara pengelolaannya, dan menemukan peluang monetisasi.
+                </Typography>
               </Box>
             </Grid>
             
+            {/* Features Column */}
             <Grid item xs={12} md={6}>
-              <Box>
-                <Typography variant="body1" paragraph sx={{ mb: 2, fontSize: '1.05rem' }}>
-                  Revalio berfokus pada pemberdayaan masyarakat untuk mengelola sampah dengan lebih baik dan mendapatkan nilai ekonomis darinya. Aplikasi ini membantu Anda mengidentifikasi sampah bernilai, mempelajari cara pengelolaannya, dan menemukan peluang monetisasi.
-                </Typography>
-                
+              <Box sx={{ height: '100%' }}>
                 <Grid container spacing={2} sx={{ mb: 3 }}>
+                  {/* Feature 1 */}
                   <Grid item xs={12} sm={6}>
-                    <Paper sx={{ p: 2, height: '100%', borderLeft: '4px solid', borderColor: 'primary.main' }}>
+                    <Paper sx={{ 
+                      p: 2, 
+                      height: '100%', 
+                      borderLeft: '4px solid', 
+                      borderColor: 'primary.main',
+                      textAlign: 'left'
+                    }}>
                       <Typography variant="subtitle1" fontWeight={600} gutterBottom>
                         Edukasi Jenis Sampah
                       </Typography>
@@ -613,8 +644,15 @@ const Home = () => {
                     </Paper>
                   </Grid>
                   
+                  {/* Feature 2 */}
                   <Grid item xs={12} sm={6}>
-                    <Paper sx={{ p: 2, height: '100%', borderLeft: '4px solid', borderColor: 'secondary.main' }}>
+                    <Paper sx={{ 
+                      p: 2, 
+                      height: '100%', 
+                      borderLeft: '4px solid', 
+                      borderColor: 'secondary.main',
+                      textAlign: 'left'
+                    }}>
                       <Typography variant="subtitle1" fontWeight={600} gutterBottom>
                         Panduan Interaktif
                       </Typography>
@@ -624,8 +662,15 @@ const Home = () => {
                     </Paper>
                   </Grid>
                   
+                  {/* Feature 3 */}
                   <Grid item xs={12} sm={6}>
-                    <Paper sx={{ p: 2, height: '100%', borderLeft: '4px solid', borderColor: 'success.main' }}>
+                    <Paper sx={{ 
+                      p: 2, 
+                      height: '100%', 
+                      borderLeft: '4px solid', 
+                      borderColor: 'success.main',
+                      textAlign: 'left'
+                    }}>
                       <Typography variant="subtitle1" fontWeight={600} gutterBottom>
                         Tracking & Monetisasi
                       </Typography>
@@ -635,8 +680,15 @@ const Home = () => {
                     </Paper>
                   </Grid>
                   
+                  {/* Feature 4 */}
                   <Grid item xs={12} sm={6}>
-                    <Paper sx={{ p: 2, height: '100%', borderLeft: '4px solid', borderColor: 'warning.main' }}>
+                    <Paper sx={{ 
+                      p: 2, 
+                      height: '100%', 
+                      borderLeft: '4px solid', 
+                      borderColor: 'warning.main',
+                      textAlign: 'left'
+                    }}>
                       <Typography variant="subtitle1" fontWeight={600} gutterBottom>
                         Komunitas & Edukasi
                       </Typography>
@@ -647,21 +699,24 @@ const Home = () => {
                   </Grid>
                 </Grid>
                 
-                <Button 
-                  variant="contained" 
-                  color="primary"
-                  endIcon={<ArrowForwardIcon />}
-                  component={Link}
-                  to="/tentang"
-                  sx={{ 
-                    borderRadius: 8,
-                    px: 3,
-                    py: 1.25,
-                    fontWeight: 600
-                  }}
-                >
-                  Pelajari Selengkapnya
-                </Button>
+                {/* Learn More Button - left Aligned */}
+                <Box sx={{ textAlign: 'left' }}>
+                  <Button 
+                    variant="contained" 
+                    color="primary"
+                    endIcon={<ArrowForwardIcon />}
+                    component={Link}
+                    to="/tentang"
+                    sx={{ 
+                      borderRadius: 8,
+                      px: 3,
+                      py: 1.25,
+                      fontWeight: 600
+                    }}
+                  >
+                    Pelajari Selengkapnya
+                  </Button>
+                </Box>
               </Box>
             </Grid>
           </Grid>
@@ -1085,7 +1140,7 @@ const Home = () => {
                   >
                     <Box 
                       component="img"
-                      src="/assets/images/bg1.jpeg"
+                      src="/assets/images/kelola-sampah.png"
                       alt="Revalio App"
                       sx={{ 
                         width: '90%',

@@ -1,10 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Box, 
   Typography, 
   Grid, 
   Container, 
-  TextField, 
   Card,
   CardContent,
   CardMedia,
@@ -19,261 +18,142 @@ import {
   useTheme,
   Paper,
   IconButton,
-  Modal,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  MobileStepper
+  MobileStepper,
+  Breadcrumbs,
+  Link,
+  Checkbox,
+  FormControlLabel,
+  Pagination,
+  Rating,
+  Skeleton,
+  TextField
 } from '@mui/material';
 import { 
   Search as SearchIcon, 
   Clear as ClearIcon,
   Close as CloseIcon,
   KeyboardArrowLeft,
-  KeyboardArrowRight
+  KeyboardArrowRight,
+  AddCircleOutline,
+  CheckCircle,
+  CircleOutlined
 } from '@mui/icons-material';
 import { gsap } from 'gsap';
+import { useNavigate } from 'react-router-dom';
 
-// Data dummy untuk kategori sampah
-const wasteCategories = [
-  { id: 1, name: 'Plastik', count: 15, color: '#2196F3', icon: '🥤' },
-  { id: 2, name: 'Kertas', count: 8, color: '#FF9800', icon: '📄' },
-  { id: 3, name: 'Besi', count: 12, color: '#607D8B', icon: '🔧' },
-  { id: 4, name: 'Aluminium', count: 6, color: '#4CAF50', icon: '💿' },
-  { id: 5, name: 'Elektronik', count: 9, color: '#9C27B0', icon: '💻' },
+// Mock data for tutorials (should be replaced with actual API calls)
+const tutorials = [
+  {
+    tutorial_id: 1,
+    judul: 'Membuat Pot dari Botol Plastik',
+    deskripsi: 'Panduan lengkap membuat pot tanaman dari botol plastik bekas dengan berbagai desain kreatif.',
+    jenis_tutorial: 'daur_ulang',
+    waste_id: 1, // relates to plastic
+    media: '/assets/images/tutorials/pot-botol.jpg',
+    tingkat_kesulitan: 'EASY',
+    estimasi_waktu: 30,
+    rating: 4.5,
+    tried: false
+  },
+  {
+    tutorial_id: 2,
+    judul: 'Dompet dari Kemasan Kopi',
+    deskripsi: 'Mengubah kemasan kopi sachet menjadi dompet yang stylish dan tahan lama.',
+    jenis_tutorial: 'reuse',
+    waste_id: 1, // relates to plastic
+    media: '/assets/images/tutorials/dompet-kopi.jpg',
+    tingkat_kesulitan: 'MEDIUM',
+    estimasi_waktu: 60,
+    rating: 4.2,
+    tried: true
+  },
+  {
+    tutorial_id: 3,
+    judul: 'Lampu Hias dari Kaleng Bekas',
+    deskripsi: 'Membuat lampu hias dengan pola unik dari kaleng minuman bekas.',
+    jenis_tutorial: 'daur_ulang',
+    waste_id: 4, // relates to aluminium
+    media: '/assets/images/tutorials/lampu-kaleng.jpg',
+    tingkat_kesulitan: 'HARD',
+    estimasi_waktu: 90,
+    rating: 4.8,
+    tried: false
+  },
+  {
+    tutorial_id: 4,
+    judul: 'Rak Buku dari Kardus',
+    deskripsi: 'Membuat rak buku sederhana namun kuat dari kardus bekas.',
+    jenis_tutorial: 'reuse',
+    waste_id: 2, // relates to paper
+    media: '/assets/images/tutorials/rak-kardus.jpg',
+    tingkat_kesulitan: 'EASY',
+    estimasi_waktu: 45,
+    rating: 3.9,
+    tried: false
+  },
+  {
+    tutorial_id: 5,
+    judul: 'Mainan Robot dari Komponen Elektronik',
+    deskripsi: 'Memanfaatkan komponen elektronik bekas untuk membuat mainan robot sederhana.',
+    jenis_tutorial: 'daur_ulang',
+    waste_id: 5, // relates to electronic
+    media: '/assets/images/tutorials/robot-elektronik.jpg',
+    tingkat_kesulitan: 'VERY_HARD',
+    estimasi_waktu: 120,
+    rating: 4.7,
+    tried: false
+  },
+  {
+    tutorial_id: 6,
+    judul: 'Tas dari Kaos Bekas',
+    deskripsi: 'Mengubah kaos bekas menjadi tas yang berguna tanpa perlu menjahit.',
+    jenis_tutorial: 'reuse',
+    waste_id: null,
+    media: '/assets/images/tutorials/tas-kaos.jpg',
+    tingkat_kesulitan: 'MEDIUM',
+    estimasi_waktu: 50,
+    rating: 4.1,
+    tried: true
+  },
 ];
 
-// Data dummy untuk sampah bernilai dengan panduan langkah demi langkah
-const wasteItems = [
-  {
-    id: 1,
-    name: 'Botol Plastik',
-    description: 'Botol plastik minuman bekas yang dapat didaur ulang menjadi berbagai produk baru. Termasuk kategori plastik yang paling banyak dicari oleh pengepul.',
-    imageUrl: '/assets/images/waste/botol-plastik.jpg',
-    category: 'Plastik',
-    categoryId: 1,
-    priceRange: { min: 1000, max: 4000 },
-    unit: 'kg',
-    guide: [
-      { 
-        step: 1, 
-        title: 'Tutup dan cincin botol', 
-        description: 'Buka tutup dan cincin botol menggunakan Cutter, pisahkan dalam satu wadah. Tutup dan cincin botol juga memiliki nilai jual.',
-        image: '/assets/images/guide/buka-tutup-botol.jpg'
-      },
-      { 
-        step: 2, 
-        title: 'Label', 
-        description: 'Bersihkan atau lepas label botol, label ini termasuk dalam sampah.',
-        image: '/assets/images/guide/botol-tanpa-label.jpg'
-      },
-      { 
-        step: 3, 
-        title: 'Pengemasan', 
-        description: 'Remas Botol hingga gepeng untuk menghemat ruang dan masukkan kedalam karung secara paksa agar padat lalu karungnya diikat.',
-        image: '/assets/images/guide/remas-botol.jpg'
-      }
-    ]
-  },
-  {
-    id: 2,
-    name: 'Kardus Bekas',
-    description: 'Kardus bekas packaging yang dapat didaur ulang atau digunakan kembali untuk berbagai keperluan. Sangat diminati oleh industri daur ulang kertas.',
-    imageUrl: '/assets/images/waste/kardus.jpg',
-    category: 'Kertas',
-    categoryId: 2,
-    priceRange: { min: 800, max: 2000 },
-    unit: 'kg',
-    guide: [
-      { 
-        step: 1, 
-        title: 'Membuka', 
-        description: 'Lepaskan semua lakban yang merekat pada kardus',
-        image: '/assets/images/guide/membuka-kardus.jpg'
-      },
-      { 
-        step: 2, 
-        title: 'Pengikatan', 
-        description: 'Susun tumpukan lipatan kardus lalu ikat dengan metode silang(atas bawah kanan kiri) agar kardus tidak berantakan.',
-        image: '/assets/images/guide/ikat-kardus.jpg'
-      }
-    ]
-  },
-  {
-    id: 3,
-    name: 'Kaleng Aluminium',
-    description: 'Kaleng minuman aluminium yang memiliki nilai ekonomis tinggi dan mudah didaur ulang. Logam aluminium dapat didaur ulang berkali-kali tanpa menurunkan kualitasnya.',
-    imageUrl: '/assets/images/waste/kaleng.jpeg',
-    category: 'Aluminium',
-    categoryId: 4,
-    priceRange: { min: 12000, max: 18000 },
-    unit: 'kg',
-    guide: [
-      { 
-        step: 1, 
-        title: 'Pembersihan', 
-        description: 'Bersihkan kaleng dari sisa minuman dan kotoran.',
-        image: '/assets/images/guide/bersihkan-kaleng.jpg'
-      },
-      { 
-        step: 2, 
-        title: 'Pemadatan', 
-        description: 'Tekan kaleng untuk mengurangi volume sebelum dijual. bisa dengan cara dipijak (pakai alas kaki seperti sendal atau sepatu)',
-        image: '/assets/images/guide/injak-kaleng.jpg'
-      },
-      { 
-        step: 3, 
-        title: 'Penyimpanan', 
-        description: 'ALKA (aluminium kaleng) yang sudah padat dimasukkan ke karung dan diikat. simpan diarea yang tidak mengakibatkan kaleng basah.',
-        image: '/assets/images/guide/simpan-kaleng.jpg'
-      }
-    ]
-  },
-  {
-    id: 4,
-    name: 'Tutup & Cincin Botol',
-    description: '#',
-    imageUrl: '/assets/images/waste/tutup-cincin-botol.jpg',
-    category: 'Plastik',
-    categoryId: 1,
-    priceRange: { min: 1000, max: 3000 },
-    unit: 'kg',
-    guide: [
-      { 
-        step: 1, 
-        title: 'Pengemasan', 
-        description: 'Masukkan dalam karung yang memiliki daya tahan yang kuat, karena tumpukan barang ini sangat berat',
-        image: '/assets/images/guide/simpan-tutup-cincin.jpg'
-      }
-    ]
-  },
-  {
-    id: 5,
-    name: 'Besi campur (besi ringan)',
-    description: '#',
-    imageUrl: '/assets/images/waste/besi-campur.jpg',
-    category: 'Besi',
-    categoryId: 3,
-    priceRange: { min: 1000, max: 2500 },
-    unit: 'kg',
-    guide: [
-      { 
-        step: 1, 
-        title: 'Pengemasan', 
-        description: 'Masukkan dalam karung yang memiliki daya tahan yang kuat, karena tumpukan barang ini sangat berat',
-        image: '/assets/images/guide/simpan-tutup-cincin.jpg'
-      }
-    ]
-  }
+// Mock data for waste types (should be replaced with actual API calls)
+const wasteTypes = [
+  { waste_id: 1, nama: 'Plastik', kategori_id: 1 },
+  { waste_id: 2, nama: 'Kertas', kategori_id: 2 },
+  { waste_id: 3, nama: 'Besi', kategori_id: 3 },
+  { waste_id: 4, nama: 'Aluminium', kategori_id: 4 },
+  { waste_id: 5, nama: 'Elektronik', kategori_id: 5 },
 ];
 
-// Komponen untuk card kategori
-const CategoryCard = ({ category, isSelected, onClick }) => {
-  const cardRef = useRef(null);
-  
-  useEffect(() => {
-    const element = cardRef.current;
-    
-    const handleMouseEnter = () => {
-      if (!isSelected) {
-        gsap.to(element, { 
-          y: -5, 
-          boxShadow: '0 8px 15px rgba(0,0,0,0.08)', 
-          duration: 0.3, 
-          ease: "power2.out" 
-        });
-      }
-    };
-    
-    const handleMouseLeave = () => {
-      if (!isSelected) {
-        gsap.to(element, { 
-          y: 0, 
-          boxShadow: '0 2px 8px rgba(0,0,0,0.05)', 
-          duration: 0.3, 
-          ease: "power1.out" 
-        });
-      }
-    };
-
-    if (element) {
-      element.addEventListener('mouseenter', handleMouseEnter);
-      element.addEventListener('mouseleave', handleMouseLeave);
-      
-      return () => {
-        element.removeEventListener('mouseenter', handleMouseEnter);
-        element.removeEventListener('mouseleave', handleMouseLeave);
-      };
-    }
-  }, [isSelected]);
-  
-  return (
-    <Card
-      ref={cardRef}
-      onClick={() => onClick(category.id)}
-      sx={{
-        cursor: 'pointer',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        p: 2.5,
-        borderRadius: 3,
-        boxShadow: isSelected 
-          ? `0 0 0 2px ${category.color}, 0 4px 12px rgba(0,0,0,0.1)` 
-          : '0 2px 8px rgba(0,0,0,0.05)',
-        bgcolor: isSelected ? `${category.color}10` : 'background.paper',
-        transition: 'all 0.2s ease',
-        transform: isSelected ? 'translateY(-5px)' : 'none',
-        border: '1px solid',
-        borderColor: isSelected ? category.color : 'grey.200',
-        position: 'relative',
-        overflow: 'hidden',
-        '&::after': {
-          content: '""',
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          width: '100%',
-          height: '3px',
-          backgroundColor: category.color,
-          transform: isSelected ? 'scaleX(1)' : 'scaleX(0)',
-          transition: 'transform 0.3s ease',
-          transformOrigin: 'left'
-        },
-      }}
-    >
-      <Box 
-        sx={{ 
-          width: 60, 
-          height: 60, 
-          borderRadius: '50%', 
-          bgcolor: `${category.color}15`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          mb: 2,
-          border: '2px solid',
-          borderColor: category.color,
-          fontSize: '1.8rem'
-        }}
-      >
-        {category.icon}
-      </Box>
-      <Typography variant="subtitle1" fontWeight={600} textAlign="center">
-        {category.name}
-      </Typography>
-      <Typography variant="body2" color="text.secondary" textAlign="center">
-        {category.count} jenis
-      </Typography>
-    </Card>
-  );
+// Difficulty level mapping
+const difficultyLevels = {
+  VERY_EASY: 'Sangat Mudah',
+  EASY: 'Mudah',
+  MEDIUM: 'Sedang',
+  HARD: 'Sulit',
+  VERY_HARD: 'Sangat Sulit'
 };
 
-// Komponen untuk tampilan grid
-const GridItemCard = ({ item, index, onDetailClick }) => {
+// Time estimate mapping
+const timeEstimates = [
+  { label: '< 30 menit', value: '0-30' },
+  { label: '30-60 menit', value: '30-60' },
+  { label: '> 60 menit', value: '60-999' }
+];
+
+// Tutorial type mapping
+const tutorialTypes = {
+  daur_ulang: 'Daur Ulang',
+  reuse: 'Reuse'
+};
+
+// Komponen untuk card tutorial
+const TutorialCard = ({ tutorial, index, onClick }) => {
   const cardRef = useRef(null);
   const theme = useTheme();
   
@@ -338,12 +218,14 @@ const GridItemCard = ({ item, index, onDetailClick }) => {
     }
   }, [index]);
 
-  const categoryData = wasteCategories.find(cat => cat.name === item.category);
-  const categoryColor = categoryData ? categoryData.color : theme.palette.primary.main;
+  const wasteType = tutorial.waste_id 
+    ? wasteTypes.find(w => w.waste_id === tutorial.waste_id) 
+    : null;
 
   return (
     <Card 
       ref={cardRef}
+      onClick={() => onClick(tutorial)}
       sx={{ 
         height: '100%', 
         display: 'flex', 
@@ -354,64 +236,103 @@ const GridItemCard = ({ item, index, onDetailClick }) => {
         transition: 'all 0.3s ease',
         border: '1px solid',
         borderColor: 'grey.100',
+        cursor: 'pointer',
+        position: 'relative'
       }}
     >
-      <Box sx={{ position: 'relative', overflow: 'hidden', height: 220 }}>
+      {/* Tried indicator */}
+      {tutorial.tried && (
+        <Box sx={{
+          position: 'absolute',
+          top: 12,
+          right: 12,
+          zIndex: 1,
+          backgroundColor: theme.palette.success.main,
+          color: 'white',
+          borderRadius: '50%',
+          width: 32,
+          height: 32,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+        }}>
+          <CheckCircle fontSize="small" />
+        </Box>
+      )}
+      
+      <Box sx={{ position: 'relative', overflow: 'hidden', height: 200 }}>
         <CardMedia
           className="card-image"
           component="img"
           height="100%"
-          image={item.imageUrl}
-          alt={item.name}
+          image={tutorial.media}
+          alt={tutorial.judul}
           sx={{ 
             transition: 'transform 0.5s ease',
             objectFit: 'cover',
           }}
         />
-        <Chip 
-          label={item.category} 
-          size="small" 
-          sx={{ 
-            position: 'absolute', 
-            top: 12, 
-            left: 12,
-            fontWeight: 600,
-            backgroundColor: categoryColor,
-            color: 'white',
-            px: 1,
-            borderRadius: '12px'
-          }} 
-        />
+        {wasteType && (
+          <Chip 
+            label={wasteType.nama} 
+            size="small" 
+            sx={{ 
+              position: 'absolute', 
+              top: 12, 
+              left: 12,
+              fontWeight: 600,
+              backgroundColor: theme.palette.primary.main,
+              color: 'white',
+              px: 1,
+              borderRadius: '12px'
+            }} 
+          />
+        )}
       </Box>
       
       <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 3 }}>
         <Typography variant="h6" component="h3" gutterBottom fontWeight={700} sx={{ mb: 1 }}>
-          {item.name}
+          {tutorial.judul}
+        </Typography>
+        
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          {tutorial.deskripsi.length > 80 
+            ? `${tutorial.deskripsi.substring(0, 80)}...` 
+            : tutorial.deskripsi}
         </Typography>
         
         <Box sx={{ mt: 'auto' }}>
           <Divider sx={{ my: 1.5 }} />
-
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Typography variant="caption" color="success.main" fontWeight={700}>
-              Rp {item.priceRange.min.toLocaleString()} - {item.priceRange.max.toLocaleString()}
-              <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
-                /{item.unit}
-              </Typography>
-            </Typography>
-
-            <Button 
-              variant="outlined" 
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+            <Rating 
+              value={tutorial.rating} 
+              precision={0.5} 
+              readOnly 
               size="small" 
-              onClick={() => onDetailClick(item)}
-              sx={{
-                borderRadius: 2,
-                textTransform: 'none',
-                fontWeight: 600
+              sx={{ mr: 1 }}
+            />
+            <Typography variant="caption" color="text.secondary">
+              {tutorial.rating.toFixed(1)}
+            </Typography>
+          </Box>
+          
+          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Chip 
+              label={difficultyLevels[tutorial.tingkat_kesulitan]} 
+              size="small" 
+              variant="outlined"
+              sx={{ 
+                borderRadius: 1,
+                borderColor: theme.palette.primary.main,
+                color: theme.palette.primary.main
               }}
-            >
-              Detail
-            </Button>
+            />
+            
+            <Typography variant="caption" color="text.secondary">
+              {tutorial.estimasi_waktu} menit
+            </Typography>
           </Box>
         </Box>
       </CardContent>
@@ -419,363 +340,305 @@ const GridItemCard = ({ item, index, onDetailClick }) => {
   );
 };
 
-// Komponen Modal untuk Panduan
-const GuideModal = ({ open, onClose, item }) => {
-  const [activeStep, setActiveStep] = useState(0);
-  const [direction, setDirection] = useState('right');
-  const maxSteps = item?.guide?.length || 0;
-  const imageContainerRef = useRef(null);
-
-  const handleNext = () => {
-    setDirection('right');
-    setActiveStep((prevActiveStep) => prevActiveStep + 1);
-  };
-
-  const handleBack = () => {
-    setDirection('left');
-    setActiveStep((prevActiveStep) => prevActiveStep - 1);
-  };
-
-  const handleStepChange = (step) => {
-    setDirection(step > activeStep ? 'right' : 'left');
-    setActiveStep(step);
-  };
-
-  // Animation effect for image transition
-  useEffect(() => {
-    if (!imageContainerRef.current) return;
-
-    const container = imageContainerRef.current;
-    const images = container.querySelectorAll('img');
-    
-    // Reset all images to their initial state
-    gsap.set(images, {
-      x: 0,
-      opacity: 1
-    });
-
-    // Animate the transition
-    if (direction === 'right') {
-      gsap.fromTo(images[activeStep],
-        { x: '100%', opacity: 0 },
-        { x: '0%', opacity: 1, duration: 0.5, ease: "power2.out" }
-      );
-      if (activeStep > 0) {
-        gsap.to(images[activeStep - 1],
-          { x: '-100%', opacity: 0, duration: 0.5, ease: "power2.out" }
-        );
-      }
-    } else {
-      gsap.fromTo(images[activeStep],
-        { x: '-100%', opacity: 0 },
-        { x: '0%', opacity: 1, duration: 0.5, ease: "power2.out" }
-      );
-      if (activeStep < maxSteps - 1) {
-        gsap.to(images[activeStep + 1],
-          { x: '100%', opacity: 0, duration: 0.5, ease: "power2.out" }
-        );
-      }
-    }
-  }, [activeStep, direction, maxSteps]);
-
-  return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="md"
-      fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 3,
-          overflow: 'hidden'
-        }
-      }}
-    >
-      <DialogTitle sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        backgroundColor: 'primary.main',
-        color: 'white',
-        py: 2,
-        px: 3
-      }}>
-        <Typography variant="h6" fontWeight={600}>
-          Panduan Pengelolaan {item?.name}
-        </Typography>
-        <IconButton onClick={onClose} sx={{ color: 'white' }}>
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-      
-      <DialogContent sx={{ p: 0 }}>
-        {item?.guide && (
-          <Box 
-            ref={imageContainerRef}
-            sx={{ 
-              position: 'relative', 
-              height: { xs: 300, sm: 400 },
-              overflow: 'hidden'
-            }}
-          >
-            {item.guide.map((step, index) => (
-              <Box
-                key={index}
-                component="img"
-                src={step.image}
-                alt={`Step ${index + 1}`}
-                sx={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  display: 'block',
-                  willChange: 'transform, opacity' // Optimize for animations
-                }}
-                style={{
-                  zIndex: index === activeStep ? 1 : 0,
-                  visibility: index === activeStep ? 'visible' : 'hidden'
-                }}
-              />
-            ))}
-            
-            <Box sx={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              backgroundColor: 'rgba(0,0,0,0.5)',
-              color: 'white',
-              p: 3,
-              zIndex: 2
-            }}>
-              <Typography variant="h6" gutterBottom>
-                Langkah {activeStep + 1}: {item.guide[activeStep].title}
-              </Typography>
-              <Typography variant="body1">
-                {item.guide[activeStep].description}
-              </Typography>
-            </Box>
-          </Box>
-        )}
-      </DialogContent>
-      
-      <MobileStepper
-        steps={maxSteps}
-        position="static"
-        activeStep={activeStep}
-        nextButton={
-          <Button
-            size="small"
-            onClick={handleNext}
-            disabled={activeStep === maxSteps - 1}
-            startIcon={<KeyboardArrowRight />}
-          >
-            Next
-          </Button>
-        }
-        backButton={
-          <Button
-            size="small"
-            onClick={handleBack}
-            disabled={activeStep === 0}
-            endIcon={<KeyboardArrowLeft />}
-          >
-            Back
-          </Button>
-        }
-        sx={{
-          justifyContent: 'center',
-          py: 2,
-          px: 3,
-          borderTop: '1px solid',
-          borderColor: 'divider'
-        }}
-      />
-    </Dialog>
-  );
-};
-
-// Komponen utama halaman DaurUlang
+// Komponen utama halaman Panduan Daur Ulang
 const DaurUlang = () => {
   const theme = useTheme();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [sortBy, setSortBy] = useState('name_asc');
-  const [isSearchActive, setIsSearchActive] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedType, setSelectedType] = useState('all');
+  const [selectedDifficulty, setSelectedDifficulty] = useState('all');
+  const [selectedTime, setSelectedTime] = useState('all');
+  const [showUntriedOnly, setShowUntriedOnly] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const itemsPerPage = 6;
+  
+  // Simulate loading data
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
   
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
-    setIsSearchActive(!!event.target.value);
+    setCurrentPage(1); // Reset to first page when search changes
   };
   
   const handleClearSearch = () => {
     setSearchQuery('');
-    setIsSearchActive(false);
   };
   
-  const handleCategoryChange = (categoryId) => {
-    setSelectedCategory(categoryId === selectedCategory ? 'all' : categoryId);
+  const handleTypeChange = (event) => {
+    setSelectedType(event.target.value);
+    setCurrentPage(1);
   };
   
-  const handleSortChange = (event) => {
-    setSortBy(event.target.value);
+  const handleDifficultyChange = (event) => {
+    setSelectedDifficulty(event.target.value);
+    setCurrentPage(1);
   };
   
-  const handleDetailClick = (item) => {
-    setSelectedItem(item);
-    setModalOpen(true);
+  const handleTimeChange = (event) => {
+    setSelectedTime(event.target.value);
+    setCurrentPage(1);
   };
   
-  const handleCloseModal = () => {
-    setModalOpen(false);
-    setSelectedItem(null);
+  const handleTriedFilterChange = (event) => {
+    setShowUntriedOnly(event.target.checked);
+    setCurrentPage(1);
   };
   
-  const filteredAndSortedItems = wasteItems
-    .filter(item => {
-      const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           item.description.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = selectedCategory === 'all' || item.categoryId === parseInt(selectedCategory);
-      return matchesSearch && matchesCategory;
-    })
-    .sort((a, b) => {
-      switch(sortBy) {
-        case 'name_asc':
-          return a.name.localeCompare(b.name);
-        case 'name_desc':
-          return b.name.localeCompare(a.name);
-        case 'price_asc':
-          return a.priceRange.min - b.priceRange.min;
-        case 'price_desc':
-          return b.priceRange.min - a.priceRange.min;
-        default:
-          return 0;
-      }
+  const handlePageChange = (event, value) => {
+    setCurrentPage(value);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  
+  const handleTutorialClick = (tutorial) => {
+    navigate(`/daur-ulang/${tutorial.tutorial_id}`);
+  };
+  
+  const handleCreateNew = () => {
+    navigate('/daur-ulang/baru');
+  };
+  
+  const filteredTutorials = tutorials
+    .filter(tutorial => {
+      // Search filter
+      const matchesSearch = tutorial.judul.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           tutorial.deskripsi.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Type filter
+      const matchesType = selectedType === 'all' || tutorial.jenis_tutorial === selectedType;
+      
+      // Difficulty filter
+      const matchesDifficulty = selectedDifficulty === 'all' || 
+                               tutorial.tingkat_kesulitan === selectedDifficulty;
+      
+      // Time filter
+      const matchesTime = selectedTime === 'all' || 
+        (selectedTime === '0-30' && tutorial.estimasi_waktu < 30) ||
+        (selectedTime === '30-60' && tutorial.estimasi_waktu >= 30 && tutorial.estimasi_waktu <= 60) ||
+        (selectedTime === '60-999' && tutorial.estimasi_waktu > 60);
+      
+      // Tried filter
+      const matchesTried = !showUntriedOnly || !tutorial.tried;
+      
+      return matchesSearch && matchesType && matchesDifficulty && matchesTime && matchesTried;
     });
+  
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredTutorials.length / itemsPerPage);
+  const paginatedTutorials = filteredTutorials.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
   
   return (
     <Box sx={{ backgroundColor: '#f9f9f9', py: { xs: 3, md: 5 } }}>
       <Container maxWidth="lg">
         {/* Header */}
         <Box sx={{ mb: { xs: 4, md: 5 } }}>
-          <Typography 
-            variant="h4" 
-            component="h1" 
-            fontWeight={800} 
-            gutterBottom 
-            sx={{ 
-              position: 'relative', 
-              display: 'inline-block',
-              mb: 3
-            }}
-          >
-            Daur Ulang Sampah Bernilai
-            <Box 
-              sx={{ 
-                position: 'absolute',
-                bottom: -5,
-                left: 0,
-                width: '100%',
-                height: 4,
-                backgroundColor: theme.palette.primary.main,
-                borderRadius: 2
+          <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 3 }}>
+            <Link color="inherit" href="/">
+              Beranda
+            </Link>
+            <Typography color="text.primary">Panduan Daur Ulang & Reuse</Typography>
+          </Breadcrumbs>
+          
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+            <Box>
+              <Typography 
+                variant="h4" 
+                component="h1" 
+                fontWeight={800} 
+                gutterBottom 
+                sx={{ 
+                  position: 'relative', 
+                  display: 'inline-block',
+                  mb: 2
+                }}
+              >
+                Panduan Daur Ulang & Reuse Kreatif
+                <Box 
+                  sx={{ 
+                    position: 'absolute',
+                    bottom: -5,
+                    left: 0,
+                    width: '100%',
+                    height: 4,
+                    backgroundColor: theme.palette.primary.main,
+                    borderRadius: 2
+                  }}
+                />
+              </Typography>
+              <Typography 
+                variant="body1" 
+                color="text.secondary" 
+                sx={{ 
+                  maxWidth: '800px',
+                  fontSize: '1.1rem',
+                  lineHeight: 1.6
+                }}
+              >
+                Temukan berbagai panduan kreatif untuk mendaur ulang dan memanfaatkan kembali sampah menjadi barang berguna.
+              </Typography>
+            </Box>
+            
+            {/* Add new tutorial button (visible for certain roles) */}
+            <Button 
+              variant="contained" 
+              startIcon={<AddCircleOutline />}
+              onClick={handleCreateNew}
+              sx={{
+                borderRadius: 8,
+                px: 4,
+                py: 1.5,
+                fontWeight: 600,
+                textTransform: 'none',
+                display: { xs: 'none', md: 'flex' }
               }}
-            />
-          </Typography>
-          <Typography 
-            variant="body1" 
-            color="text.secondary" 
-            sx={{ 
-              mt: 2, 
-              maxWidth: '800px',
-              fontSize: '1.1rem',
-              lineHeight: 1.6
-            }}
-          >
-            Temukan berbagai jenis sampah yang bisa dijual kembali, cara menyortirnya, dan estimasi harga pasaran.
-          </Typography>
+            >
+              Unggah Panduan Baru
+            </Button>
+          </Box>
         </Box>
         
-        {/* Search Bar */}
+        {/* Filter Panel */}
         <Paper
           elevation={0}
           sx={{ 
-            p: 2.5, 
-            mb: 5, 
-            display: 'flex', 
-            alignItems: 'center',
+            p: 3, 
+            mb: 5,
             border: '1px solid',
-            borderColor: isSearchActive ? theme.palette.primary.main : 'grey.200',
+            borderColor: 'grey.200',
             borderRadius: 3,
-            transition: 'all 0.3s ease',
-            boxShadow: isSearchActive ? '0 4px 20px rgba(0,0,0,0.08)' : 'none',
-            transform: isSearchActive ? 'scale(1.01)' : 'scale(1)',
           }}
         >
-          <SearchIcon 
-            sx={{ 
-              mx: 1.5, 
-              color: isSearchActive ? 'primary.main' : 'action',
-              fontSize: 28
-            }} 
-          />
-          <TextField
-            fullWidth
-            placeholder="Cari jenis sampah..."
-            value={searchQuery}
-            onChange={handleSearchChange}
-            variant="standard"
-            InputProps={{
-              disableUnderline: true,
-            }}
-            sx={{ 
-              '& input': { 
-                py: 1.2, 
-                fontSize: '1.1rem' 
-              } 
-            }}
-          />
-          {isSearchActive && (
-            <Fade in={isSearchActive}>
-              <IconButton onClick={handleClearSearch} size="medium" sx={{ mr: 1 }}>
-                <ClearIcon />
-              </IconButton>
-            </Fade>
-          )}
+          <Grid container spacing={3}>
+            {/* Search */}
+            <Grid item xs={12} md={6}>
+              <Paper
+                sx={{ 
+                  p: '2px 4px', 
+                  display: 'flex', 
+                  alignItems: 'center',
+                  borderRadius: 2,
+                  border: '1px solid',
+                  borderColor: 'grey.300'
+                }}
+              >
+                <IconButton sx={{ p: '10px' }} aria-label="search">
+                  <SearchIcon />
+                </IconButton>
+                <TextField
+                  fullWidth
+                  placeholder="Cari panduan..."
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  variant="standard"
+                  InputProps={{
+                    disableUnderline: true,
+                  }}
+                  sx={{ 
+                    '& input': { 
+                      py: 1.2, 
+                      fontSize: '1rem' 
+                    } 
+                  }}
+                />
+                {searchQuery && (
+                  <Fade in={!!searchQuery}>
+                    <IconButton onClick={handleClearSearch} size="small" sx={{ mr: 1 }}>
+                      <ClearIcon />
+                    </IconButton>
+                  </Fade>
+                )}
+              </Paper>
+            </Grid>
+            
+            {/* Tutorial Type */}
+            <Grid item xs={12} sm={6} md={3}>
+              <FormControl fullWidth size="small">
+                <InputLabel id="type-label">Jenis Panduan</InputLabel>
+                <Select
+                  labelId="type-label"
+                  value={selectedType}
+                  onChange={handleTypeChange}
+                  label="Jenis Panduan"
+                >
+                  <MenuItem value="all">Semua Jenis</MenuItem>
+                  <MenuItem value="daur_ulang">Daur Ulang</MenuItem>
+                  <MenuItem value="reuse">Reuse</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            
+            {/* Difficulty */}
+            <Grid item xs={12} sm={6} md={3}>
+              <FormControl fullWidth size="small">
+                <InputLabel id="difficulty-label">Tingkat Kesulitan</InputLabel>
+                <Select
+                  labelId="difficulty-label"
+                  value={selectedDifficulty}
+                  onChange={handleDifficultyChange}
+                  label="Tingkat Kesulitan"
+                >
+                  <MenuItem value="all">Semua Tingkat</MenuItem>
+                  <MenuItem value="VERY_EASY">Sangat Mudah</MenuItem>
+                  <MenuItem value="EASY">Mudah</MenuItem>
+                  <MenuItem value="MEDIUM">Sedang</MenuItem>
+                  <MenuItem value="HARD">Sulit</MenuItem>
+                  <MenuItem value="VERY_HARD">Sangat Sulit</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            
+            {/* Time Estimate */}
+            <Grid item xs={12} sm={6} md={3}>
+              <FormControl fullWidth size="small">
+                <InputLabel id="time-label">Estimasi Waktu</InputLabel>
+                <Select
+                  labelId="time-label"
+                  value={selectedTime}
+                  onChange={handleTimeChange}
+                  label="Estimasi Waktu"
+                >
+                  <MenuItem value="all">Semua Durasi</MenuItem>
+                  {timeEstimates.map((time) => (
+                    <MenuItem key={time.value} value={time.value}>{time.label}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            
+            {/* Tried Filter */}
+            <Grid item xs={12} sm={6} md={3}>
+              <FormControlLabel
+                control={
+                  <Checkbox 
+                    checked={showUntriedOnly}
+                    onChange={handleTriedFilterChange}
+                    icon={<CircleOutlined />}
+                    checkedIcon={<CheckCircle />}
+                  />
+                }
+                label="Hanya yang belum dicoba"
+                sx={{ ml: 1 }}
+              />
+            </Grid>
+          </Grid>
         </Paper>
         
-        {/* Category Filters */}
-        <Box sx={{ mb: 5 }}>
-          <Typography variant="subtitle1" fontWeight={700} gutterBottom sx={{ mb: 2, fontSize: '1.2rem' }}>
-            Kategori Sampah
-          </Typography>
-          <Grid container spacing={2.5}>
-            {wasteCategories.map((category) => (
-              <Grid item xs={6} sm={4} md={2} key={category.id}>
-                <CategoryCard 
-                  category={category} 
-                  isSelected={selectedCategory === category.id}
-                  onClick={handleCategoryChange}
-                />
-              </Grid>
-            ))}
-          </Grid>
-        </Box>
-        
-        {/* Sort Controls */}
+        {/* Results Count */}
         <Box 
           sx={{ 
             mb: 4, 
             display: 'flex', 
             justifyContent: 'space-between', 
-            alignItems: 'center',
-            flexDirection: { xs: 'column', sm: 'row' },
-            gap: { xs: 2, sm: 0 }
+            alignItems: 'center'
           }}
         >
           <Typography 
@@ -786,39 +649,53 @@ const DaurUlang = () => {
               fontSize: '0.95rem'
             }}
           >
-            Menampilkan {filteredAndSortedItems.length} hasil
+            Menampilkan {filteredTutorials.length} panduan
           </Typography>
-          
-          <FormControl variant="outlined" size="small" sx={{ minWidth: 200 }}>
-            <InputLabel id="sort-label">Urutkan</InputLabel>
-            <Select
-              labelId="sort-label"
-              value={sortBy}
-              onChange={handleSortChange}
-              label="Urutkan"
-            >
-              <MenuItem value="name_asc">Nama (A-Z)</MenuItem>
-              <MenuItem value="name_desc">Nama (Z-A)</MenuItem>
-              <MenuItem value="price_asc">Harga (Rendah-Tinggi)</MenuItem>
-              <MenuItem value="price_desc">Harga (Tinggi-Rendah)</MenuItem>
-            </Select>
-          </FormControl>
         </Box>
         
-        {/* Hasil Pencarian */}
+        {/* Tutorials Grid */}
         <Box sx={{ mb: 6 }}>
-          {filteredAndSortedItems.length > 0 ? (
+          {loading ? (
             <Grid container spacing={3}>
-              {filteredAndSortedItems.map((item, index) => (
-                <Grid item xs={12} sm={6} md={4} key={item.id}>
-                  <GridItemCard 
-                    item={item} 
-                    index={index} 
-                    onDetailClick={handleDetailClick}
-                  />
+              {[...Array(6)].map((_, index) => (
+                <Grid item xs={12} sm={6} md={4} key={index}>
+                  <Skeleton variant="rectangular" height={350} sx={{ borderRadius: 3 }} />
                 </Grid>
               ))}
             </Grid>
+          ) : filteredTutorials.length > 0 ? (
+            <>
+              <Grid container spacing={3}>
+                {paginatedTutorials.map((tutorial, index) => (
+                  <Grid item xs={12} sm={6} md={4} key={tutorial.tutorial_id}>
+                    <TutorialCard 
+                      tutorial={tutorial} 
+                      index={index} 
+                      onClick={handleTutorialClick}
+                    />
+                  </Grid>
+                ))}
+              </Grid>
+              
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}>
+                  <Pagination
+                    count={totalPages}
+                    page={currentPage}
+                    onChange={handlePageChange}
+                    color="primary"
+                    size="large"
+                    sx={{
+                      '& .MuiPaginationItem-root': {
+                        borderRadius: 2,
+                        fontWeight: 600
+                      }
+                    }}
+                  />
+                </Box>
+              )}
+            </>
           ) : (
             <Fade in={true} timeout={600}>
               <Box 
@@ -838,10 +715,10 @@ const DaurUlang = () => {
               >
                 <SearchIcon sx={{ fontSize: 72, color: 'grey.400', mb: 3 }} />
                 <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                  Tidak ada hasil yang ditemukan
+                  Tidak ada panduan yang ditemukan
                 </Typography>
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 4, maxWidth: '500px' }}>
-                  Coba ubah kata kunci atau filter pencarian Anda untuk menemukan jenis sampah yang dicari
+                  Coba ubah filter pencarian Anda untuk menemukan panduan yang sesuai
                 </Typography>
                 <Button 
                   variant="contained"
@@ -849,7 +726,10 @@ const DaurUlang = () => {
                   size="large"
                   onClick={() => {
                     setSearchQuery('');
-                    setSelectedCategory('all');
+                    setSelectedType('all');
+                    setSelectedDifficulty('all');
+                    setSelectedTime('all');
+                    setShowUntriedOnly(false);
                   }}
                   sx={{ 
                     borderRadius: 8,
@@ -858,20 +738,38 @@ const DaurUlang = () => {
                     fontWeight: 600
                   }}
                 >
-                  Reset Pencarian
+                  Reset Filter
                 </Button>
               </Box>
             </Fade>
           )}
         </Box>
+        
+        {/* Floating action button for mobile */}
+        <Box sx={{ 
+          position: 'fixed', 
+          bottom: 24, 
+          right: 24, 
+          zIndex: 1000,
+          display: { xs: 'block', md: 'none' }
+        }}>
+          <Button 
+            variant="contained" 
+            startIcon={<AddCircleOutline />}
+            onClick={handleCreateNew}
+            sx={{
+              borderRadius: 8,
+              px: 3,
+              py: 1.5,
+              fontWeight: 600,
+              textTransform: 'none',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
+            }}
+          >
+            Baru
+          </Button>
+        </Box>
       </Container>
-      
-      {/* Modal Panduan */}
-      <GuideModal 
-        open={modalOpen} 
-        onClose={handleCloseModal} 
-        item={selectedItem} 
-      />
     </Box>
   );
 };

@@ -8,7 +8,7 @@ export { default as Forum } from './Forum';
 export { default as ThreadDetail } from './ThreadDetail';
 export { default as PeluangUsaha } from './PeluangUsaha';
 export { default as Monetisasi } from './Monetisasi';
-export { default as Profile } from './profile';
+export { default as Profile } from './Profile';
 export { default as Login } from './Login';
 export { default as Register } from './Register';
 export { default as NotFound } from './NotFound';

@@ -15,6 +15,7 @@ import PeluangUsaha from '../pages/PeluangUsaha';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
 import Profile from '../pages/Profile';
+import About from '../pages/About'; // Tambahkan import untuk About
 import NotFound from '../pages/NotFound';
 
 // Layout
@@ -57,6 +58,9 @@ const AppRoutes = () => {
         
         {/* Profile */}
         <Route path="/profile" element={<Profile />} />
+        
+        {/* Tentang Kami */}
+        <Route path="/tentang" element={<About />} />
       </Route>
       
       {/* 404 Not Found */}

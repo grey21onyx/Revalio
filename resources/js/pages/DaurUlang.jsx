@@ -53,7 +53,7 @@ const tutorials = [
     deskripsi: 'Panduan lengkap membuat pot tanaman dari botol plastik bekas dengan berbagai desain kreatif.',
     jenis_tutorial: 'daur_ulang',
     waste_id: 1, // relates to plastic
-    media: '/assets/images/tutorials/pot-botol.jpg',
+    media: '/assets/images/tutorials/green.png',
     tingkat_kesulitan: 'EASY',
     estimasi_waktu: 30,
     rating: 4.5,
@@ -65,7 +65,7 @@ const tutorials = [
     deskripsi: 'Mengubah kemasan kopi sachet menjadi dompet yang stylish dan tahan lama.',
     jenis_tutorial: 'reuse',
     waste_id: 1, // relates to plastic
-    media: '/assets/images/tutorials/dompet-kopi.jpg',
+    media: '/assets/images/tutorials/green.png',
     tingkat_kesulitan: 'MEDIUM',
     estimasi_waktu: 60,
     rating: 4.2,
@@ -77,7 +77,7 @@ const tutorials = [
     deskripsi: 'Membuat lampu hias dengan pola unik dari kaleng minuman bekas.',
     jenis_tutorial: 'daur_ulang',
     waste_id: 4, // relates to aluminium
-    media: '/assets/images/tutorials/lampu-kaleng.jpg',
+    media: '/assets/images/tutorials/green.png',
     tingkat_kesulitan: 'HARD',
     estimasi_waktu: 90,
     rating: 4.8,
@@ -89,7 +89,7 @@ const tutorials = [
     deskripsi: 'Membuat rak buku sederhana namun kuat dari kardus bekas.',
     jenis_tutorial: 'reuse',
     waste_id: 2, // relates to paper
-    media: '/assets/images/tutorials/rak-kardus.jpg',
+    media: '/assets/images/tutorials/green.png',
     tingkat_kesulitan: 'EASY',
     estimasi_waktu: 45,
     rating: 3.9,
@@ -101,7 +101,7 @@ const tutorials = [
     deskripsi: 'Memanfaatkan komponen elektronik bekas untuk membuat mainan robot sederhana.',
     jenis_tutorial: 'daur_ulang',
     waste_id: 5, // relates to electronic
-    media: '/assets/images/tutorials/robot-elektronik.jpg',
+    media: '/assets/images/tutorials/green.png',
     tingkat_kesulitan: 'VERY_HARD',
     estimasi_waktu: 120,
     rating: 4.7,
@@ -112,8 +112,8 @@ const tutorials = [
     judul: 'Tas dari Kaos Bekas',
     deskripsi: 'Mengubah kaos bekas menjadi tas yang berguna tanpa perlu menjahit.',
     jenis_tutorial: 'reuse',
-    waste_id: null,
-    media: '/assets/images/tutorials/tas-kaos.jpg',
+    waste_id: 6,
+    media: '/assets/images/tutorials/green.png',
     tingkat_kesulitan: 'MEDIUM',
     estimasi_waktu: 50,
     rating: 4.1,
@@ -128,6 +128,7 @@ const wasteTypes = [
   { waste_id: 3, nama: 'Besi', kategori_id: 3 },
   { waste_id: 4, nama: 'Aluminium', kategori_id: 4 },
   { waste_id: 5, nama: 'Elektronik', kategori_id: 5 },
+  { waste_id: 6, nama: 'Tekstil', kategori_id: 6 },
 ];
 
 // Difficulty level mapping
@@ -441,13 +442,6 @@ const DaurUlang = () => {
       <Container maxWidth="lg">
         {/* Header */}
         <Box sx={{ mb: { xs: 4, md: 5 } }}>
-          <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 3 }}>
-            <Link color="inherit" href="/">
-              Beranda
-            </Link>
-            <Typography color="text.primary">Panduan Daur Ulang & Reuse</Typography>
-          </Breadcrumbs>
-          
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
             <Box>
               <Typography 
@@ -478,8 +472,8 @@ const DaurUlang = () => {
                 variant="body1" 
                 color="text.secondary" 
                 sx={{ 
-                  maxWidth: '800px',
-                  fontSize: '1.1rem',
+                  maxWidth: '500px',
+                  fontSize: '1.rem',
                   lineHeight: 1.6
                 }}
               >
@@ -501,7 +495,7 @@ const DaurUlang = () => {
                 display: { xs: 'none', md: 'flex' }
               }}
             >
-              Unggah Panduan Baru
+              Panduan Baru
             </Button>
           </Box>
         </Box>
@@ -519,7 +513,7 @@ const DaurUlang = () => {
         >
           <Grid container spacing={3}>
             {/* Search */}
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={12}>
               <Paper
                 sx={{ 
                   p: '2px 4px', 

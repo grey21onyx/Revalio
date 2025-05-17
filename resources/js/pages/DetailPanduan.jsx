@@ -51,32 +51,32 @@ const allTutorials = [
     deskripsi: 'Panduan lengkap membuat pot tanaman dari botol plastik bekas dengan berbagai desain kreatif.',
     jenis_tutorial: 'daur_ulang',
     waste_id: 1,
-    media: '/assets/images/tutorials/pot-botol.jpg',
+    media: '/assets/images/tutorials/green.png',
     tingkat_kesulitan: 'EASY',
     estimasi_waktu: 30,
     rating: 4.5,
     rating_count: 24,
     kontributor: {
       nama: 'Admin Revalio',
-      avatar: '/assets/images/avatars/admin.jpg'
+      avatar: '/assets/images/avatars/admin.png'
     },
     konten: {
       bahan_dan_alat: [
         {
           nama: 'Botol plastik bekas',
-          gambar: '/assets/images/materials/botol-plastik.jpg'
+          gambar: '/assets/images/materials/green.png'
         },
         {
           nama: 'Gunting/cutter',
-          gambar: '/assets/images/materials/gunting.jpg'
+          gambar: '/assets/images/materials/green.png'
         },
         {
           nama: 'Cat akrilik',
-          gambar: '/assets/images/materials/cat.jpg'
+          gambar: '/assets/images/materials/green.png'
         },
         {
           nama: 'Kuas',
-          gambar: '/assets/images/materials/kuas.jpg'
+          gambar: '/assets/images/materials/green.png'
         }
       ],
       langkah_langkah: [
@@ -84,21 +84,21 @@ const allTutorials = [
           langkah: 1,
           judul: 'Persiapan botol',
           deskripsi: 'Bersihkan botol plastik dari label dan sisa minuman. Potong bagian atas botol sesuai dengan desain yang diinginkan.',
-          media: '/assets/images/steps/pot-botol-1.jpg',
+          media: '/assets/images/steps/green.png',
           media_type: 'image'
         },
         {
           langkah: 2,
           judul: 'Lubangi bagian bawah',
           deskripsi: 'Buat beberapa lubang kecil di bagian bawah botol untuk drainase air. Gunakan paku yang dipanaskan atau bor kecil.',
-          media: '/assets/images/steps/pot-botol-2.jpg',
+          media: '/assets/images/steps/green.png',
           media_type: 'image'
         },
         {
           langkah: 3,
           judul: 'Hias botol',
           deskripsi: 'Gunakan cat akrilik untuk menghias botol sesuai selera. Biarkan kering sebelum digunakan.',
-          media: '/assets/images/steps/pot-botol-3.jpg',
+          media: '/assets/images/steps/green.png',
           media_type: 'image'
         }
       ],
@@ -109,7 +109,7 @@ const allTutorials = [
         id: 1,
         user: {
           nama: 'Budi Santoso',
-          avatar: '/assets/images/avatars/user1.jpg'
+          avatar: '/assets/images/avatars/green.png'
         },
         teks: 'Sangat membantu! Sudah saya coba dan hasilnya bagus.',
         rating: 5,
@@ -119,7 +119,7 @@ const allTutorials = [
         id: 2,
         user: {
           nama: 'Ani Wijaya',
-          avatar: '/assets/images/avatars/user2.jpg'
+          avatar: '/assets/images/avatars/green.png'
         },
         teks: 'Bagus panduannya, tapi menurut saya bagian melubangi botol agak susah kalau tidak punya alat yang tepat.',
         rating: 4,
@@ -133,28 +133,28 @@ const allTutorials = [
     deskripsi: 'Ubah baju bekas menjadi tas unik dan stylish dengan panduan ini.',
     jenis_tutorial: 'daur_ulang',
     waste_id: 2,
-    media: '/assets/images/tutorials/tas-baju.jpg',
+    media: '/assets/images/tutorials/green.png',
     tingkat_kesulitan: 'MEDIUM',
     estimasi_waktu: 60,
     rating: 4.2,
     rating_count: 15,
     kontributor: {
       nama: 'Admin Revalio',
-      avatar: '/assets/images/avatars/admin.jpg'
+      avatar: '/assets/images/avatars/admin.png'
     },
     konten: {
       bahan_dan_alat: [
         {
           nama: 'Baju bekas',
-          gambar: '/assets/images/materials/baju-bekas.jpg'
+          gambar: '/assets/images/materials/green.png'
         },
         {
           nama: 'Gunting',
-          gambar: '/assets/images/materials/gunting.jpg'
+          gambar: '/assets/images/materials/green.png'
         },
         {
           nama: 'Benang dan jarum',
-          gambar: '/assets/images/materials/benang-jarum.jpg'
+          gambar: '/assets/images/materials/green.png'
         }
       ],
       langkah_langkah: [
@@ -162,14 +162,14 @@ const allTutorials = [
           langkah: 1,
           judul: 'Persiapan bahan',
           deskripsi: 'Pilih baju bekas yang akan digunakan dan potong sesuai pola.',
-          media: '/assets/images/steps/tas-baju-1.jpg',
+          media: '/assets/images/steps/green.png',
           media_type: 'image'
         },
         {
           langkah: 2,
           judul: 'Jahit bagian dasar',
           deskripsi: 'Jahit bagian bawah baju untuk membentuk dasar tas.',
-          media: '/assets/images/steps/tas-baju-2.jpg',
+          media: '/assets/images/steps/green.png',
           media_type: 'image'
         }
       ],
@@ -180,7 +180,7 @@ const allTutorials = [
         id: 1,
         user: {
           nama: 'Citra Dewi',
-          avatar: '/assets/images/avatars/user3.jpg'
+          avatar: '/assets/images/avatars/green.png'
         },
         teks: 'Hasilnya keren! Anak-anak suka dengan tasnya.',
         rating: 5,
@@ -297,17 +297,6 @@ const DetailPanduan = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Breadcrumb Navigation */}
-      <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 3 }}>
-        <Link color="inherit" href="/">
-          Beranda
-        </Link>
-        <Link color="inherit" href="/daur-ulang">
-          Daur Ulang
-        </Link>
-        <Typography color="text.primary">{tutorial.judul}</Typography>
-      </Breadcrumbs>
-      
       {/* Back Button */}
       <Button 
         startIcon={<ArrowBack />}

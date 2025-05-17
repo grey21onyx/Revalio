@@ -25,7 +25,7 @@ const Monetisasi = () => {
         'Kaca', 'Organik', 'Baterai', 'Tekstil'
     ];
 
-    // Mock buyer data (replace with API call in production)
+    // Mock buyer data
     const mockBuyers = [
         {
             id: 1,
@@ -56,17 +56,11 @@ const Monetisasi = () => {
         setError(null);
         
         try {
-            // In a real app, you would call your API here:
-            // const response = await axios.get('/api/buyers', { params: { wasteType, location, minQuantity } });
-            // setBuyers(response.data);
-            
-            // For demo purposes, we'll use mock data filtered by wasteType
             const filteredBuyers = wasteType 
                 ? mockBuyers.filter(buyer => 
                     buyer.requirements.toLowerCase().includes(wasteType.toLowerCase()))
                 : mockBuyers;
             
-            // Add location to mock data
             const buyersWithLocation = filteredBuyers.map(buyer => ({
                 ...buyer,
                 location: `${buyer.location}, ${location}`
@@ -84,15 +78,13 @@ const Monetisasi = () => {
 
     const saveToFavorites = (buyerId) => {
         console.log(`Menambahkan pembeli ${buyerId} ke favorit`);
-        // Implement actual favorite saving logic here
     };
 
     const shareResults = () => {
         console.log('Berbagi hasil pencarian');
-        // Implement actual sharing logic here
     };
 
-    // Render functions for different tabs
+    // Render functions
     const renderCategories = () => (
       <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-6">Pilih Kategori Tips</h2>
@@ -105,7 +97,7 @@ const Monetisasi = () => {
                           if (category.id === 'buyers') {
                               setActiveTab('buyerFilter');
                           } else {
-                              setActiveTab('comingSoon');
+                              setActiveTab(category.id);
                           }
                       }}
                       className="bg-white rounded-xl shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-shadow duration-300"
@@ -155,7 +147,7 @@ const Monetisasi = () => {
               ))}
           </div>
       </div>
-  );
+    );
 
     const renderBuyerFilter = () => (
         <div className="bg-white rounded-lg shadow-md p-6">
@@ -251,7 +243,7 @@ const Monetisasi = () => {
                 <div className="flex space-x-2">
                     <button
                         onClick={shareResults}
-                        className="flex items-center bg-blue-100 hover:bg-blue-200 text-blue-800 py-2 px-4 rounded-md transition duration-200"
+                        className="flex items-center bg-green-100 hover:bg-green-200 text-green-800 py-2 px-4 rounded-md transition duration-200"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
@@ -296,7 +288,7 @@ const Monetisasi = () => {
                                     </div>
                                     <button
                                         onClick={() => saveToFavorites(buyer.id)}
-                                        className="text-yellow-500 hover:text-yellow-600"
+                                        className="text-green-500 hover:text-green-600"
                                         title="Simpan ke favorit"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -338,23 +330,213 @@ const Monetisasi = () => {
         </div>
     );
 
-    const renderComingSoon = () => (
-        <div className="bg-white rounded-lg shadow-md p-6 text-center py-12">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <h2 className="text-2xl font-bold text-gray-800 mt-4">Fitur Segera Hadir!</h2>
-            <p className="text-gray-600 mt-2 mb-6">Konten untuk kategori ini sedang dalam pengembangan.</p>
-            <button
+    const renderSellingTips = () => (
+        <div className="bg-white rounded-lg shadow-md p-6">
+            <button 
                 onClick={() => setActiveTab('categories')}
-                className="bg-green-600 hover:bg-green-700 text-white py-2 px-6 rounded-md transition duration-200"
+                className="flex items-center text-green-600 mb-4"
             >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                </svg>
                 Kembali ke Kategori
             </button>
+            
+            <h2 className="text-2xl font-bold text-green-800 mb-6">Cara Menjual Sampah dengan Efektif</h2>
+            
+            <div className="space-y-6">
+                <div className="bg-green-50 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-green-800 mb-2">Persiapan Sebelum Menjual</h3>
+                    <ul className="list-disc pl-5 space-y-2">
+                        <li><strong>Pilah sampah dengan benar</strong>: Pisahkan berdasarkan jenis (plastik, kertas, logam, dll)</li>
+                        <li><strong>Bersihkan sampah</strong>: Cuci sampah plastik/kaca dari sisa makanan/minuman</li>
+                        <li><strong>Keringkan</strong>: Pastikan benar-benar kering sebelum dijual</li>
+                        <li><strong>Kompres</strong>: Padatkan untuk menghemat ruang penyimpanan</li>
+                    </ul>
+                </div>
+                
+                <div className="bg-green-50 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-green-800 mb-2">Tempat Penjualan</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-white p-3 rounded shadow">
+                            <h4 className="font-medium text-green-700 mb-1">Bank Sampah</h4>
+                            <p className="text-sm">Sistem tabungan sampah dengan pencatatan teratur, harga lebih stabil</p>
+                        </div>
+                        <div className="bg-white p-3 rounded shadow">
+                            <h4 className="font-medium text-green-700 mb-1">Pengepul Keliling</h4>
+                            <p className="text-sm">Praktis tapi harga biasanya lebih rendah</p>
+                        </div>
+                        <div className="bg-white p-3 rounded shadow">
+                            <h4 className="font-medium text-green-700 mb-1">Tempat Pengumpulan</h4>
+                            <p className="text-sm">Dropbox sampah di titik-titik tertentu</p>
+                        </div>
+                        <div className="bg-white p-3 rounded shadow">
+                            <h4 className="font-medium text-green-700 mb-1">Online</h4>
+                            <p className="text-sm">Aplikasi/website khusus jual beli sampah</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div className="bg-green-50 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-green-800 mb-2">Tips Tambahan</h3>
+                    <ul className="list-disc pl-5 space-y-2">
+                        <li>Kumpulkan sampai mencapai jumlah minimum untuk harga lebih baik</li>
+                        <li>Bangun hubungan baik dengan pembeli untuk harga lebih stabil</li>
+                        <li>Manfaatkan program insentif dari pemerintah</li>
+                        <li>Jaga kualitas sampah untuk mendapatkan harga premium</li>
+                    </ul>
+                </div>
+            </div>
         </div>
     );
 
-    // Main render
+    const renderNegotiationTips = () => (
+        <div className="bg-white rounded-lg shadow-md p-6">
+            <button 
+                onClick={() => setActiveTab('categories')}
+                className="flex items-center text-green-600 mb-4"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                </svg>
+                Kembali ke Kategori
+            </button>
+            
+            <h2 className="text-2xl font-bold text-green-800 mb-6">Teknik Negosiasi Harga Sampah</h2>
+            
+            <div className="space-y-6">
+                <div className="bg-green-50 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-green-800 mb-2">Strategi Negosiasi</h3>
+                    <ul className="list-disc pl-5 space-y-2">
+                        <li><strong>Bandingkan harga</strong>: Survey harga dari beberapa pembeli sebelum menawarkan</li>
+                        <li><strong>Kelompokkan penjualan</strong>: Jual dalam jumlah besar untuk mendapatkan harga lebih baik</li>
+                        <li><strong>Bangun hubungan baik</strong>: Pembeli tetap sering memberikan harga lebih baik</li>
+                        <li><strong>Waktu tepat</strong>: Harga bisa naik saat permintaan industri tinggi</li>
+                    </ul>
+                </div>
+                
+                <div className="bg-green-50 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-green-800 mb-2">Teknik Komunikasi</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-white p-3 rounded shadow">
+                            <h4 className="font-medium text-green-700 mb-1">Gunakan Data</h4>
+                            <p className="text-sm">Bawa catatan harga pasar sebagai referensi negosiasi</p>
+                        </div>
+                        <div className="bg-white p-3 rounded shadow">
+                            <h4 className="font-medium text-green-700 mb-1">Tunjukkan Kualitas</h4>
+                            <p className="text-sm">Perlihatkan sampah yang sudah dipilah dan dibersihkan</p>
+                        </div>
+                        <div className="bg-white p-3 rounded shadow">
+                            <h4 className="font-medium text-green-700 mb-1">Ajukan Pertanyaan</h4>
+                            <p className="text-sm">Tanyakan alasan harga yang ditawarkan</p>
+                        </div>
+                        <div className="bg-white p-3 rounded shadow">
+                            <h4 className="font-medium text-green-700 mb-1">Bersikap Fleksibel</h4>
+                            <p className="text-sm">Siap untuk kompromi yang menguntungkan kedua belah pihak</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div className="bg-green-50 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-green-800 mb-2">Yang Harus Dihindari</h3>
+                    <ul className="list-disc pl-5 space-y-2">
+                        <li>Jangan langsung menerima tawaran pertama</li>
+                        <li>Hindari menjual saat pasar sedang sepi</li>
+                        <li>Jangan menjual sampah yang belum dipilah</li>
+                        <li>Hindari pembeli yang tidak transparan dengan harga</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderPricingTips = () => (
+        <div className="bg-white rounded-lg shadow-md p-6">
+            <button 
+                onClick={() => setActiveTab('categories')}
+                className="flex items-center text-green-600 mb-4"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                </svg>
+                Kembali ke Kategori
+            </button>
+            
+            <h2 className="text-2xl font-bold text-green-800 mb-6">Strategi Penentuan Harga Sampah</h2>
+            
+            <div className="space-y-6">
+                <div className="bg-green-50 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-green-800 mb-2">Faktor yang Mempengaruhi Harga</h3>
+                    <ul className="list-disc pl-5 space-y-2">
+                        <li><strong>Jenis sampah</strong>: Logam biasanya lebih mahal dari plastik</li>
+                        <li><strong>Kualitas</strong>: Sampah bersih dan terpilah rapi lebih tinggi harganya</li>
+                        <li><strong>Lokasi</strong>: Harga berbeda tiap daerah</li>
+                        <li><strong>Volume</strong>: Penjualan besar biasanya dapat harga lebih baik</li>
+                    </ul>
+                </div>
+                
+                <div className="bg-green-50 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-green-800 mb-2">Daftar Harga Referensi (per kg)</h3>
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full bg-white">
+                            <thead>
+                                <tr className="bg-green-100">
+                                    <th className="py-2 px-4 border text-left">Jenis Sampah</th>
+                                    <th className="py-2 px-4 border text-left">Harga Minimum</th>
+                                    <th className="py-2 px-4 border text-left">Harga Maksimum</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td className="py-2 px-4 border">Plastik PET</td>
+                                    <td className="py-2 px-4 border">Rp 3.000</td>
+                                    <td className="py-2 px-4 border">Rp 5.000</td>
+                                </tr>
+                                <tr className="bg-gray-50">
+                                    <td className="py-2 px-4 border">Kertas Koran</td>
+                                    <td className="py-2 px-4 border">Rp 2.000</td>
+                                    <td className="py-2 px-4 border">Rp 3.500</td>
+                                </tr>
+                                <tr>
+                                    <td className="py-2 px-4 border">Besi Tua</td>
+                                    <td className="py-2 px-4 border">Rp 5.000</td>
+                                    <td className="py-2 px-4 border">Rp 10.000</td>
+                                </tr>
+                                <tr className="bg-gray-50">
+                                    <td className="py-2 px-4 border">Aluminium</td>
+                                    <td className="py-2 px-4 border">Rp 15.000</td>
+                                    <td className="py-2 px-4 border">Rp 25.000</td>
+                                </tr>
+                                <tr>
+                                    <td className="py-2 px-4 border">Kaca Bening</td>
+                                    <td className="py-2 px-4 border">Rp 1.500</td>
+                                    <td className="py-2 px-4 border">Rp 3.000</td>
+                                </tr>
+                                <tr className="bg-gray-50">
+                                    <td className="py-2 px-4 border">Kardus</td>
+                                    <td className="py-2 px-4 border">Rp 2.500</td>
+                                    <td className="py-2 px-4 border">Rp 4.000</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">*Harga dapat berubah tergantung kondisi pasar</p>
+                </div>
+                
+                <div className="bg-green-50 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-green-800 mb-2">Tips Meningkatkan Nilai Jual</h3>
+                    <ul className="list-disc pl-5 space-y-2">
+                        <li>Kumpulkan sampai mencapai jumlah minimum</li>
+                        <li>Bersihkan dan pilah dengan baik</li>
+                        <li>Cari pembeli yang spesialis di jenis sampah Anda</li>
+                        <li>Manfaatkan fluktuasi harga musiman</li>
+                        <li>Jalin kerjasama dengan komunitas daur ulang</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    );
+
     return (
         <div className="container mx-auto py-8 px-4 max-w-6xl">
             <h1 className="text-3xl font-bold text-green-800 mb-6">Tips Monetisasi Sampah</h1>
@@ -362,7 +544,9 @@ const Monetisasi = () => {
             {activeTab === 'categories' && renderCategories()}
             {activeTab === 'buyerFilter' && renderBuyerFilter()}
             {activeTab === 'results' && renderResults()}
-            {activeTab === 'comingSoon' && renderComingSoon()}
+            {activeTab === 'selling' && renderSellingTips()}
+            {activeTab === 'negotiation' && renderNegotiationTips()}
+            {activeTab === 'pricing' && renderPricingTips()}
         </div>
     );
 };

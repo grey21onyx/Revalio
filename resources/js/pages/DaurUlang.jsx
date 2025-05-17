@@ -50,7 +50,7 @@ const wasteItems = [
     id: 1,
     name: 'Botol Plastik',
     description: 'Botol plastik minuman bekas yang dapat didaur ulang menjadi berbagai produk baru. Termasuk kategori plastik yang paling banyak dicari oleh pengepul.',
-    imageUrl: '/assets/images/waste/botol-plastik.jpeg',
+    imageUrl: '/assets/images/waste/botol-plastik.jpg',
     category: 'Plastik',
     categoryId: 1,
     priceRange: { min: 1000, max: 4000 },

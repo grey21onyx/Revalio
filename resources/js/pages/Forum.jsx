@@ -13,9 +13,12 @@ import {
 } from '@mui/material';
 import ForumIcon from '@mui/icons-material/Forum';
 import SearchIcon from '@mui/icons-material/Search';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 
 const Forum = () => {
+  const navigate = useNavigate();
+
   // State for forum threads, categories, filters, and search
   const [threads, setThreads] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -23,6 +26,13 @@ const Forum = () => {
   const [sortOption, setSortOption] = useState('latest'); // 'latest' or 'popular'
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredThreads, setFilteredThreads] = useState([]);
+
+  // Cleanup sweetalert on component unmount
+  useEffect(() => {
+    return () => {
+      Swal.close();
+    };
+  }, []);
 
   // Mock data fetching functions (replace with real API calls)
   useEffect(() => {
@@ -109,8 +119,22 @@ const Forum = () => {
   };
 
   const handleCreateThread = () => {
-    // Redirect to create thread page or open modal
-    alert('Fitur buat topik baru belum tersedia.');
+    Swal.fire({
+      title: 'Anda belum memiliki akun',
+      text: 'Silakan masuk atau daftar untuk membuat topik baru.',
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonText: 'Masuk',
+      cancelButtonText: 'Daftar',
+      reverseButtons: true,
+      allowOutsideClick: true,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        navigate('/login');
+      } else if (result.dismiss === Swal.DismissReason.cancel) {
+        navigate('/register');
+      }
+    });
   };
 
   return (

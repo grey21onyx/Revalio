@@ -26,7 +26,9 @@ import {
   MoreVert as MoreIcon,
   Logout as LogoutIcon,
   Person as PersonIcon,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  Login as LoginIcon,
+  PersonAdd as PersonAddIcon
 } from '@mui/icons-material';
 import RecyclingIcon from '@mui/icons-material/Recycling';
 
@@ -34,7 +36,7 @@ const Header = ({ toggleSidebar }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
-  const isAuthenticated = useSelector(state => state.auth?.isAuthenticated); // Asumsi menggunakan Redux untuk auth
+  const isAuthenticated = useSelector(state => state.auth?.isAuthenticated);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [anchorEl, setAnchorEl] = useState(null);
@@ -89,11 +91,11 @@ const Header = ({ toggleSidebar }) => {
       open={isMenuOpen}
       onClose={handleMenuClose}
     >
-      <MenuItem onClick={() => { handleMenuClose(); navigate('/profile'); }}>
+      <MenuItem onClick={() => { navigate('/profile'); handleMenuClose(); }}>
         <PersonIcon fontSize="small" sx={{ mr: 1 }} />
         Profil
       </MenuItem>
-      <MenuItem onClick={() => { handleMenuClose(); navigate('/settings'); }}>
+      <MenuItem onClick={() => { navigate('/settings'); handleMenuClose(); }}>
         <SettingsIcon fontSize="small" sx={{ mr: 1 }} />
         Pengaturan
       </MenuItem>
@@ -122,26 +124,45 @@ const Header = ({ toggleSidebar }) => {
       open={isMobileMenuOpen}
       onClose={handleMobileMenuClose}
     >
-      <MenuItem onClick={() => navigate('/notifications')}>
-        <IconButton size="large" color="inherit">
-          <Badge badgeContent={4} color="error">
-            <NotificationsIcon />
-          </Badge>
-        </IconButton>
-        <p>Notifikasi</p>
-      </MenuItem>
-      <MenuItem onClick={handleProfileMenuOpen}>
-        <IconButton
-          size="large"
-          aria-label="account of current user"
-          aria-controls="primary-search-account-menu"
-          aria-haspopup="true"
-          color="inherit"
-        >
-          <AccountCircle />
-        </IconButton>
-        <p>Profil</p>
-      </MenuItem>
+      {isAuthenticated ? (
+        [
+          <MenuItem key="notifications-mobile" onClick={() => { navigate('/notifications'); handleMobileMenuClose(); }}>
+            <IconButton size="large" aria-label="show new notifications" color="inherit">
+              <Badge badgeContent={4} color="error">
+                <NotificationsIcon />
+              </Badge>
+            </IconButton>
+            <p>Notifikasi</p>
+          </MenuItem>,
+          <MenuItem key="profile-mobile" onClick={handleProfileMenuOpen}>
+            <IconButton
+              size="large"
+              aria-label="account of current user"
+              aria-controls={menuId}
+              aria-haspopup="true"
+              color="inherit"
+            >
+              <AccountCircle />
+            </IconButton>
+            <p>Profil</p>
+          </MenuItem>
+        ]
+      ) : (
+        [
+          <MenuItem key="login-mobile" onClick={() => { navigate('/login'); handleMobileMenuClose(); }}>
+            <IconButton size="large" color="inherit">
+              <AccountCircle />
+            </IconButton>
+            <p>Masuk</p>
+          </MenuItem>,
+          <MenuItem key="register-mobile" onClick={() => { navigate('/register'); handleMobileMenuClose(); }}>
+            <IconButton size="large" color="inherit">
+              <PersonIcon />
+            </IconButton>
+            <p>Daftar</p>
+          </MenuItem>
+        ]
+      )}
     </Menu>
   );
 
@@ -228,7 +249,7 @@ const Header = ({ toggleSidebar }) => {
           {isAuthenticated ? (
             <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
               <Tooltip title="Notifikasi">
-                <IconButton size="large" color="inherit">
+                <IconButton size="large" aria-label="show new notifications" color="inherit" onClick={() => navigate('/notifications')}>
                   <Badge badgeContent={4} color="error">
                     <NotificationsIcon />
                   </Badge>

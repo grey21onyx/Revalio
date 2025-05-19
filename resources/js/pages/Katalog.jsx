@@ -27,9 +27,11 @@ import {
   FilterList as FilterListIcon,
   Clear as ClearIcon,
   CategoryOutlined as CategoryIcon,
-  LocalOffer as PriceIcon
+  LocalOffer as PriceIcon,
+  ArrowForward as ArrowForwardIcon
 } from '@mui/icons-material';
 import { gsap } from 'gsap';
+import { Link } from 'react-router-dom';
 
 // Data dummy untuk kategori sampah
 const wasteCategories = [
@@ -38,7 +40,6 @@ const wasteCategories = [
   { id: 3, name: 'Besi', count: 12, color: '#607D8B', icon: '🔧' },
   { id: 4, name: 'Allumunium', count: 6, color: '#4CAF50', icon: '🍾' },
   { id: 5, name: 'Elektronik', count: 9, color: '#9C27B0', icon: '💻' },
-  // { id: 6, name: 'Tekstil', count: 4, color: '#E91E63', icon: '👕' },
 ];
 
 // Data dummy untuk sampah bernilai
@@ -313,14 +314,48 @@ const GridItemCard = ({ item, index }) => {
         <Box sx={{ mt: 'auto' }}>
           <Divider sx={{ my: 1.5 }} />
           
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <PriceIcon sx={{ color: 'success.main', mr: 1, fontSize: 20 }} />
-            <Typography variant="subtitle1" color="success.main" fontWeight={700}>
-              Rp {item.priceRange.min.toLocaleString()} - {item.priceRange.max.toLocaleString()}
-              <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
-                /{item.unit}
+          <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+            {/* Harga di atas kiri */}
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              mb: 1 // Memberikan jarak antara harga dan button
+            }}>
+              <PriceIcon sx={{ color: 'success.main', mr: 1, fontSize: 20 }} />
+              <Typography variant="subtitle1" color="success.main" fontWeight={700}>
+                Rp {item.priceRange.min.toLocaleString()} - {item.priceRange.max.toLocaleString()}
+                <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                  /{item.unit}
+                </Typography>
               </Typography>
-            </Typography>
+            </Box>
+            
+            {/* Button di bawah dengan align right */}
+            <Box sx={{ 
+              display: 'flex',
+              justifyContent: 'flex-end' // Mengatur button ke kanan
+            }}>
+              <Button
+                component={Link}
+                to={`/katalog/detail-sampah/${item.id}`}
+                variant="outlined"
+                size="small"
+                endIcon={<ArrowForwardIcon />}
+                sx={{
+                  borderRadius: 8,
+                  px: 2,
+                  py: 0.5,
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  borderWidth: 2,
+                  '&:hover': {
+                    borderWidth: 2
+                  }
+                }}
+              >
+                Detail
+              </Button>
+            </Box>
           </Box>
         </Box>
       </CardContent>

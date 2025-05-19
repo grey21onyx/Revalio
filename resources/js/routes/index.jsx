@@ -37,7 +37,7 @@ const AppRoutes = () => {
         
         {/* Katalog Sampah */}
         <Route path="/katalog" element={<Katalog />} />
-        <Route path="/katalog/:id" element={<DetailSampah />} />
+        <Route path="/katalog/detail-sampah/:id" element={<DetailSampah />} />
         
         {/* Panduan Daur Ulang */}
         <Route path="/daur-ulang" element={<DaurUlang />} />

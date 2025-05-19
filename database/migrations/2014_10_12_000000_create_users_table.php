@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('foto_profil', 255)->nullable();
             $table->datetime('tanggal_registrasi')->default(now());
             $table->enum('status_akun', ['AKTIF', 'NONAKTIF', 'BLOKIR'])->default('AKTIF');
-            $table->string('role', 20)->default('user');
+            $table->enum('role', ['ADMIN', 'USER'])->default('USER');
             $table->text('preferensi_sampah')->nullable();
             $table->timestamps();
             $table->softDeletes();

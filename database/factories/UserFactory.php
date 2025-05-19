@@ -29,7 +29,7 @@ class UserFactory extends Factory
         return [
             'nama_lengkap' => $this->faker->name(),
             'email' => $this->faker->unique()->safeEmail(),
-            'role' => $this->faker->randomElement(['user', 'user', 'user', 'user', 'moderator']), // 80% user, 20% moderator
+            'role' => $this->faker->randomElement(['USER', 'USER', 'USER', 'USER', 'MODERATOR']), // 80% USER, 20% MODERATOR
             'password' => static::$password ??= Hash::make('password123'),
             'no_telepon' => $this->faker->phoneNumber(),
             'alamat' => $this->faker->address(),

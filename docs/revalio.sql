@@ -11,7 +11,7 @@ CREATE TABLE users (
     nama_lengkap VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    role ENUM('ADMIN','MODERATOR','USER') DEFAULT 'USER',
+    role ENUM('ADMIN','USER') DEFAULT 'USER',
     no_telepon VARCHAR(20),
     alamat TEXT,
     foto_profil VARCHAR(255),

@@ -350,7 +350,7 @@ const Home = () => {
             id: 1,
             title: 'Mengenal Jenis Plastik yang Bernilai Ekonomis',
             excerpt: 'Tidak semua plastik memiliki nilai yang sama. Pelajari jenis plastik yang paling dicari oleh pengepul...',
-            imageUrl: '/assets/images/articles/plastic-types.jpg',
+            imageUrl: '/assets/images/tutorials/green.png',
             createdAt: '2023-05-15',
             author: 'Tim Revalio'
           },
@@ -358,7 +358,7 @@ const Home = () => {
             id: 2,
             title: 'Cara Memulai Bank Sampah di Lingkungan Anda',
             excerpt: 'Panduan lengkap memulai bank sampah di RT/RW, mulai dari perizinan hingga operasional harian...',
-            imageUrl: '/assets/images/articles/waste-bank.jpg',
+            imageUrl: '/assets/images/tutorials/green.png',
             createdAt: '2023-05-10',
             author: 'Tim Revalio'
           }

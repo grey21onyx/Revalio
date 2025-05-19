@@ -69,14 +69,21 @@ class RolesAndPermissionsSeeder extends Seeder
             [
                 'nama' => 'Admin',
                 'deskripsi' => 'Administrator dengan semua hak akses',
-                'permissions' => Permission::all()->pluck('permission_id')->toArray()
-            ],
-            [
-                'nama' => 'Moderator',
-                'deskripsi' => 'Moderator dengan akses terbatas',
                 'permissions' => Permission::whereIn('nama', [
-                    'View Users', 'Moderate Forums', 'Manage Content', 
-                    'View Roles', 'View Permissions'
+                    // User Management
+                    'View Users', 'Create Users', 'Edit Users', 'Delete Users',
+                    // Role Management
+                    'View Roles', 'Create Roles', 'Edit Roles', 'Delete Roles',
+                    // Permission Management
+                    'View Permissions', 'Create Permissions', 'Edit Permissions', 'Delete Permissions',
+                    // Content Management
+                    'Manage Content',
+                    // Waste Management
+                    'Manage Waste Types', 'Manage Waste Categories', 'Manage Waste Values',
+                    // Forum Management
+                    'Moderate Forums',
+                    // User Actions (mungkin tidak semua relevan untuk admin, tapi untuk kelengkapan)
+                    'Track Waste', 'Create Forum Posts', 'Comment Forum'
                 ])->pluck('permission_id')->toArray()
             ],
             [

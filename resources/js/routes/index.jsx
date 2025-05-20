@@ -17,6 +17,7 @@ import Register from '../pages/Register';
 import Profile from '../pages/Profile';
 import About from '../pages/About'; // Tambahkan import untuk About
 import NotFound from '../pages/NotFound';
+import FormNewTopic from '../pages/FormNewTopic';
 
 // Layout
 import MainLayout from '../components/layout/MainLayout';
@@ -52,6 +53,7 @@ const AppRoutes = () => {
         {/* Forum */}
         <Route path="/forum" element={<Forum />} />
         <Route path="/forum/:id" element={<ThreadDetail />} />
+        <Route path="/forum/new-topic" element={<FormNewTopic />} />
         
         {/* Peluang Usaha */}
         <Route path="/peluang-usaha" element={<PeluangUsaha />} />

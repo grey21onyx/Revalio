@@ -119,22 +119,29 @@ const Forum = () => {
   };
 
   const handleCreateThread = () => {
-    Swal.fire({
-      title: 'Anda belum memiliki akun',
-      text: 'Silakan masuk atau daftar untuk membuat topik baru.',
-      icon: 'info',
-      showCancelButton: true,
-      confirmButtonText: 'Masuk',
-      cancelButtonText: 'Daftar',
-      reverseButtons: true,
-      allowOutsideClick: true,
-    }).then((result) => {
-      if (result.isConfirmed) {
-        navigate('/login');
-      } else if (result.dismiss === Swal.DismissReason.cancel) {
-        navigate('/register');
-      }
-    });
+    // Check if user is logged in (mock check, replace with real auth check)
+    const isLoggedIn = false; // TODO: Replace with actual auth state
+
+    if (!isLoggedIn) {
+      Swal.fire({
+        title: 'Anda belum memiliki akun',
+        text: 'Silakan masuk atau daftar untuk membuat topik baru.',
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonText: 'Masuk',
+        cancelButtonText: 'Daftar',
+        reverseButtons: true,
+        allowOutsideClick: true,
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate('/login');
+        } else if (result.dismiss === Swal.DismissReason.cancel) {
+          navigate('/register');
+        }
+      });
+    } else {
+      navigate('/forum/new-topic');
+    }
   };
 
   return (

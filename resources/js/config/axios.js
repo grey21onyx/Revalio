@@ -14,7 +14,7 @@ const instance = axios.create({
 // Interceptor untuk menambahkan token otentikasi ke semua request
 instance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('userToken');
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
@@ -33,7 +33,7 @@ instance.interceptors.response.use(
   (error) => {
     // Handle 401 Unauthorized response
     if (error.response && error.response.status === 401) {
-      localStorage.removeItem('token');
+      localStorage.removeItem('userToken');
       // Redirect ke halaman login
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';

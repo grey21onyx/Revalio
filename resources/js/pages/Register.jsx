@@ -25,8 +25,11 @@ import {
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 
+// Import authService
+import authService from '../services/authService';
+
 // Import action untuk register (akan diimplementasikan nanti)
-// import { register } from '../store/slices/authSlice';
+// import { register as registerAction } from '../store/slices/authSlice'; // Ubah nama jika ada konflik
 
 const Register = () => {
   const navigate = useNavigate();
@@ -63,6 +66,10 @@ const Register = () => {
         [name]: ''
       });
     }
+    // Reset general register error
+    if (registerError) {
+        setRegisterError('');
+    }
   };
 
   // Validasi form
@@ -84,8 +91,8 @@ const Register = () => {
     // Validasi password
     if (!formData.password) {
       newErrors.password = 'Password tidak boleh kosong';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password minimal 6 karakter';
+    } else if (formData.password.length < 8) { // Sesuai validasi backend min:8
+      newErrors.password = 'Password minimal 8 karakter';
     }
     
     // Validasi confirm password
@@ -117,18 +124,43 @@ const Register = () => {
     setIsLoading(true);
     
     try {
-      // Simulasi register (ganti dengan dispatch ke redux action nanti)
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Sukses register, navigate ke login page
-      navigate('/login');
+      const userData = {
+        nama_lengkap: formData.nama,
+        email: formData.email,
+        password: formData.password,
+        password_confirmation: formData.confirmPassword // Backend register mengharapkan password_confirmation
+      };
+
+      const response = await authService.register(userData);
+      console.log('Register response:', response);
+
+      // Backend AuthController@register mengembalikan token dan data user,
+      // jadi idealnya pengguna langsung login. 
+      // authService.register bisa diupdate untuk menyimpan token seperti login,
+      // atau kita tangani di sini jika respons mengandung token.
+      if (response.access_token && response.user) {
+        localStorage.setItem('userToken', response.access_token);
+        localStorage.setItem('userData', JSON.stringify(response.user));
+        axios.defaults.headers.common['Authorization'] = `Bearer ${response.access_token}`;
+        // Jika menggunakan Redux, dispatch action di sini
+        // dispatch(loginAction(response.user)); 
+        navigate('/'); // Langsung ke dashboard/homepage
+      } else {
+        // Jika backend tidak otomatis login, arahkan ke halaman login
+        alert('Registrasi berhasil! Silakan login.');
+        navigate('/login');
+      }
       
     } catch (error) {
-      // Handle error register
-      setRegisterError(
-        error.response?.data?.message || 
-        'Terjadi kesalahan saat mendaftar. Silakan coba lagi.'
-      );
+      console.error('Register error object:', error);
+      let errorMessage = 'Terjadi kesalahan saat mendaftar. Silakan coba lagi.';
+      if (error.errors) { // Error validasi dari Laravel
+        const firstErrorField = Object.keys(error.errors)[0];
+        errorMessage = error.errors[firstErrorField][0];
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      setRegisterError(errorMessage);
     } finally {
       setIsLoading(false);
     }

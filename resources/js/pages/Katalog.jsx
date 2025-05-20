@@ -20,7 +20,16 @@ import {
   useTheme,
   Paper,
   IconButton,
-  Avatar
+  Avatar,
+  ToggleButtonGroup,
+  ToggleButton,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemAvatar,
+  ListItemSecondaryAction,
+  Tooltip,
+  Pagination
 } from '@mui/material';
 import { 
   Search as SearchIcon, 
@@ -28,7 +37,11 @@ import {
   Clear as ClearIcon,
   CategoryOutlined as CategoryIcon,
   LocalOffer as PriceIcon,
-  ArrowForward as ArrowForwardIcon
+  ArrowForward as ArrowForwardIcon,
+  ViewModule as GridViewIcon,
+  ViewList as ListViewIcon,
+  Favorite as FavoriteIcon,
+  FavoriteBorder as FavoriteBorderIcon,
 } from '@mui/icons-material';
 import { gsap } from 'gsap';
 import { Link } from 'react-router-dom';
@@ -181,9 +194,10 @@ const CategoryCard = ({ category, isSelected, onClick }) => {
 };
 
 // Komponen untuk tampilan grid
-const GridItemCard = ({ item, index }) => {
+const GridItemCard = ({ item, index, onToggleFavorite, favorites }) => {
   const cardRef = useRef(null);
   const theme = useTheme();
+  const isFavorite = favorites.includes(item.id);
   
   useEffect(() => {
     const element = cardRef.current;
@@ -251,6 +265,35 @@ const GridItemCard = ({ item, index }) => {
   // Find category color
   const categoryData = wasteCategories.find(cat => cat.name === item.category);
   const categoryColor = categoryData ? categoryData.color : theme.palette.primary.main;
+  
+  // Handle favorite toggle with animation
+  const handleFavoriteClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const btn = e.currentTarget;
+    
+    // Animate the button on click
+    gsap.to(btn, {
+      scale: 0.8,
+      duration: 0.1,
+      onComplete: () => {
+        gsap.to(btn, {
+          scale: 1.2,
+          duration: 0.2,
+          ease: "back.out(1.7)",
+          onComplete: () => {
+            gsap.to(btn, {
+              scale: 1,
+              duration: 0.2
+            });
+          }
+        });
+      }
+    });
+    
+    onToggleFavorite(item.id);
+  };
 
   return (
     <Card 
@@ -293,6 +336,22 @@ const GridItemCard = ({ item, index }) => {
             borderRadius: '12px'
           }} 
         />
+        <IconButton 
+          onClick={handleFavoriteClick}
+          sx={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            backgroundColor: 'white',
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            },
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            color: isFavorite ? 'error.main' : 'grey.400'
+          }}
+        >
+          {isFavorite ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+        </IconButton>
       </Box>
       
       <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 3 }}>
@@ -363,6 +422,179 @@ const GridItemCard = ({ item, index }) => {
   );
 };
 
+// Komponen untuk tampilan list
+const ListItemRow = ({ item, index, onToggleFavorite, favorites }) => {
+  const theme = useTheme();
+  const itemRef = useRef(null);
+  const isFavorite = favorites.includes(item.id);
+  
+  useEffect(() => {
+    const element = itemRef.current;
+    
+    gsap.fromTo(
+      element,
+      { 
+        opacity: 0, 
+        x: -20 
+      },
+      { 
+        opacity: 1, 
+        x: 0, 
+        duration: 0.5,
+        delay: index * 0.08,
+        ease: "power2.out"
+      }
+    );
+  }, [index]);
+  
+  // Find category color
+  const categoryData = wasteCategories.find(cat => cat.name === item.category);
+  const categoryColor = categoryData ? categoryData.color : theme.palette.primary.main;
+  
+  // Handle favorite toggle with animation
+  const handleFavoriteClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const btn = e.currentTarget;
+    
+    // Animate the button on click
+    gsap.to(btn, {
+      scale: 0.8,
+      duration: 0.1,
+      onComplete: () => {
+        gsap.to(btn, {
+          scale: 1.2,
+          duration: 0.2,
+          ease: "back.out(1.7)",
+          onComplete: () => {
+            gsap.to(btn, {
+              scale: 1,
+              duration: 0.2
+            });
+          }
+        });
+      }
+    });
+    
+    onToggleFavorite(item.id);
+  };
+
+  return (
+    <Card 
+      ref={itemRef}
+      sx={{
+        mb: 2,
+        borderRadius: 3,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+        overflow: 'hidden',
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          boxShadow: '0 6px 12px rgba(0,0,0,0.1)',
+          transform: 'translateY(-3px)'
+        },
+        border: '1px solid',
+        borderColor: 'grey.100'
+      }}
+    >
+      <ListItem component="div" disablePadding>
+        <ListItemAvatar sx={{ minWidth: 200, display: 'flex', alignItems: 'center', p: 2 }}>
+          <Box sx={{ position: 'relative', width: '100%', height: 140 }}>
+            <img 
+              src={item.imageUrl} 
+              alt={item.name}
+              style={{ 
+                width: '100%', 
+                height: '100%', 
+                objectFit: 'cover',
+                borderRadius: 8
+              }}
+            />
+            <Chip 
+              label={item.category} 
+              size="small" 
+              sx={{ 
+                position: 'absolute', 
+                top: 8, 
+                left: 8,
+                fontWeight: 600,
+                backgroundColor: categoryColor,
+                color: 'white',
+                px: 1,
+                borderRadius: '12px'
+              }} 
+            />
+          </Box>
+        </ListItemAvatar>
+        
+        <ListItemText 
+          primary={
+            <Typography variant="h6" fontWeight={700}>
+              {item.name}
+            </Typography>
+          }
+          secondary={
+            <Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
+                {item.description.length > 180 
+                  ? `${item.description.substring(0, 180)}...` 
+                  : item.description
+                }
+              </Typography>
+              
+              <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                <PriceIcon sx={{ color: 'success.main', mr: 1, fontSize: 20 }} />
+                <Typography variant="subtitle1" color="success.main" fontWeight={700}>
+                  Rp {item.priceRange.min.toLocaleString()} - {item.priceRange.max.toLocaleString()}
+                  <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                    /{item.unit}
+                  </Typography>
+                </Typography>
+              </Box>
+            </Box>
+          }
+          sx={{ py: 2, pr: 2 }}
+        />
+        
+        <ListItemSecondaryAction sx={{ right: 16, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', py: 2 }}>
+          <IconButton 
+            edge="end" 
+            onClick={handleFavoriteClick}
+            sx={{ 
+              mb: 'auto',
+              color: isFavorite ? 'error.main' : 'grey.400'
+            }}
+          >
+            {isFavorite ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+          </IconButton>
+          
+          <Button
+            component={Link}
+            to={`/katalog/detail-sampah/${item.id}`}
+            variant="outlined"
+            size="small"
+            endIcon={<ArrowForwardIcon />}
+            sx={{
+              borderRadius: 8,
+              px: 2,
+              py: 0.5,
+              textTransform: 'none',
+              fontWeight: 600,
+              borderWidth: 2,
+              mt: 'auto',
+              '&:hover': {
+                borderWidth: 2
+              }
+            }}
+          >
+            Detail
+          </Button>
+        </ListItemSecondaryAction>
+      </ListItem>
+    </Card>
+  );
+};
+
 // Komponen utama halaman katalog
 const Katalog = () => {
   const theme = useTheme();
@@ -371,27 +603,63 @@ const Katalog = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('name_asc');
   const [isSearchActive, setIsSearchActive] = useState(false);
+  const [favorites, setFavorites] = useState([]);
+  const [viewMode, setViewMode] = useState('grid');
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 6; // Jumlah item per halaman
+  
+  // Handle view mode change
+  const handleViewModeChange = (event, newViewMode) => {
+    if (newViewMode !== null) {
+      setViewMode(newViewMode);
+    }
+  };
+  
+  // Handle pagination change
+  const handlePageChange = (event, value) => {
+    setPage(value);
+    // Scroll ke atas halaman saat ganti halaman
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+  };
+  
+  // Handle toggle favorite
+  const handleToggleFavorite = (itemId) => {
+    setFavorites(prev => {
+      if (prev.includes(itemId)) {
+        return prev.filter(id => id !== itemId);
+      } else {
+        return [...prev, itemId];
+      }
+    });
+  };
   
   // Handle pencarian
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
     setIsSearchActive(!!event.target.value);
+    setPage(1); // Reset ke halaman pertama saat pencarian berubah
   };
   
   // Handle clear search
   const handleClearSearch = () => {
     setSearchQuery('');
     setIsSearchActive(false);
+    setPage(1); // Reset ke halaman pertama saat pencarian dibersihkan
   };
   
   // Handle perubahan kategori
   const handleCategoryChange = (categoryId) => {
     setSelectedCategory(categoryId === selectedCategory ? 'all' : categoryId);
+    setPage(1); // Reset ke halaman pertama saat kategori berubah
   };
   
   // Handle pengurutan
   const handleSortChange = (event) => {
     setSortBy(event.target.value);
+    setPage(1); // Reset ke halaman pertama saat pengurutan berubah
   };
   
   // Filter dan sort data
@@ -421,6 +689,15 @@ const Katalog = () => {
           return 0;
       }
     });
+  
+  // Hitung jumlah halaman
+  const totalPages = Math.ceil(filteredAndSortedItems.length / itemsPerPage);
+  
+  // Potong data sesuai pagination
+  const paginatedItems = filteredAndSortedItems.slice(
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage
+  );
   
   return (
     <Box sx={{ backgroundColor: '#f9f9f9', py: { xs: 3, md: 5 } }}>
@@ -532,7 +809,7 @@ const Katalog = () => {
           </Grid>
         </Box>
         
-        {/* Sort Controls */}
+        {/* Sort Controls dan View Toggle */}
         <Box 
           sx={{ 
             mb: 4, 
@@ -543,16 +820,39 @@ const Katalog = () => {
             gap: { xs: 2, sm: 0 }
           }}
         >
-          <Typography 
-            variant="body2" 
-            color="text.secondary"
-            sx={{ 
-              fontWeight: 500,
-              fontSize: '0.95rem'
-            }}
-          >
-            Menampilkan {filteredAndSortedItems.length} hasil
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Typography 
+              variant="body2" 
+              color="text.secondary"
+              sx={{ 
+                fontWeight: 500,
+                fontSize: '0.95rem',
+                mr: 2
+              }}
+            >
+              Menampilkan {Math.min((page - 1) * itemsPerPage + 1, filteredAndSortedItems.length)}-
+              {Math.min(page * itemsPerPage, filteredAndSortedItems.length)} dari {filteredAndSortedItems.length} hasil
+            </Typography>
+            
+            <ToggleButtonGroup
+              value={viewMode}
+              exclusive
+              onChange={handleViewModeChange}
+              aria-label="view mode"
+              size="small"
+            >
+              <ToggleButton value="grid" aria-label="grid view">
+                <Tooltip title="Tampilan Grid">
+                  <GridViewIcon fontSize="small" />
+                </Tooltip>
+              </ToggleButton>
+              <ToggleButton value="list" aria-label="list view">
+                <Tooltip title="Tampilan List">
+                  <ListViewIcon fontSize="small" />
+                </Tooltip>
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
           
           <FormControl variant="outlined" size="small" sx={{ minWidth: 200 }}>
             <InputLabel id="sort-label">Urutkan</InputLabel>
@@ -571,15 +871,34 @@ const Katalog = () => {
         </Box>
         
         {/* Hasil Pencarian */}
-        <Box sx={{ mb: 6 }}>
+        <Box sx={{ mb: 4 }}>
           {filteredAndSortedItems.length > 0 ? (
-            <Grid container spacing={3}>
-              {filteredAndSortedItems.map((item, index) => (
-                <Grid item xs={12} sm={6} md={4} key={item.id}>
-                  <GridItemCard item={item} index={index} />
-                </Grid>
-              ))}
-            </Grid>
+            viewMode === 'grid' ? (
+              <Grid container spacing={3}>
+                {paginatedItems.map((item, index) => (
+                  <Grid item xs={12} sm={6} md={4} key={item.id}>
+                    <GridItemCard 
+                      item={item} 
+                      index={index} 
+                      onToggleFavorite={handleToggleFavorite}
+                      favorites={favorites}
+                    />
+                  </Grid>
+                ))}
+              </Grid>
+            ) : (
+              <List sx={{ width: '100%' }}>
+                {paginatedItems.map((item, index) => (
+                  <ListItemRow 
+                    key={item.id} 
+                    item={item} 
+                    index={index} 
+                    onToggleFavorite={handleToggleFavorite}
+                    favorites={favorites}
+                  />
+                ))}
+              </List>
+            )
           ) : (
             <Fade in={true} timeout={600}>
               <Box 
@@ -625,6 +944,36 @@ const Katalog = () => {
             </Fade>
           )}
         </Box>
+        
+        {/* Pagination */}
+        {filteredAndSortedItems.length > 0 && totalPages > 1 && (
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              justifyContent: 'center',
+              my: 4,
+              py: 2,
+              borderTop: '1px solid',
+              borderColor: 'grey.200'
+            }}
+          >
+            <Pagination
+              count={totalPages}
+              page={page}
+              onChange={handlePageChange}
+              color="primary"
+              size="large"
+              showFirstButton
+              showLastButton
+              sx={{
+                '& .MuiPaginationItem-root': {
+                  fontSize: '1rem',
+                  fontWeight: 500
+                }
+              }}
+            />
+          </Box>
+        )}
       </Container>
     </Box>
   );

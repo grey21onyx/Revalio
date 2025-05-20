@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+// import { useDispatch } from 'react-redux'; // Hapus atau comment jika Redux belum digunakan untuk auth
 import {
   Box,
   Typography,
@@ -23,12 +23,15 @@ import {
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 
+// Import authService
+import authService from '../services/authService';
+
 // Import action untuk login (akan diimplementasikan nanti)
-// import { login } from '../store/slices/authSlice';
+// import { login as loginAction } from '../store/slices/authSlice'; // Ubah nama jika ada konflik
 
 const Login = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  // const dispatch = useDispatch(); // Hapus atau comment jika Redux belum digunakan untuk auth
   
   // State untuk form
   const [formData, setFormData] = useState({
@@ -58,6 +61,10 @@ const Login = () => {
         [name]: ''
       });
     }
+    // Reset general login error
+    if (loginError) {
+        setLoginError('');
+    }
   };
 
   // Validasi form
@@ -74,9 +81,11 @@ const Login = () => {
     // Validasi password
     if (!formData.password) {
       newErrors.password = 'Password tidak boleh kosong';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password minimal 6 karakter';
-    }
+    } 
+    // Validasi panjang password bisa dihapus jika backend yang menangani sepenuhnya
+    // else if (formData.password.length < 6) { 
+    //   newErrors.password = 'Password minimal 6 karakter';
+    // }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -95,18 +104,26 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      // Simulasi login (ganti dengan dispatch ke redux action nanti)
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await authService.login({ 
+        email: formData.email, 
+        password: formData.password 
+      });
       
+      console.log('Login response:', response);
+      // authService.login sudah menyimpan token dan user data ke localStorage
+      // serta mengatur header default axios
+
+      // Jika menggunakan Redux, dispatch action di sini
+      // dispatch(loginAction(response.user)); 
+
       // Sukses login, navigate ke homepage
-      navigate('/');
+      navigate('/'); // Atau ke halaman dashboard, misal '/dashboard'
       
     } catch (error) {
+      console.error('Login error object:', error);
       // Handle error login
-      setLoginError(
-        error.response?.data?.message || 
-        'Terjadi kesalahan saat login. Silakan coba lagi.'
-      );
+      const errorMessage = error.message || (error.errors && error.errors.email && error.errors.email[0]) || 'Terjadi kesalahan saat login. Silakan coba lagi.';
+      setLoginError(errorMessage);
     } finally {
       setIsLoading(false);
     }

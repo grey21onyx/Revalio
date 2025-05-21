@@ -42,9 +42,10 @@ import {
   ViewList as ListViewIcon,
   Favorite as FavoriteIcon,
   FavoriteBorder as FavoriteBorderIcon,
+  InfoOutlined as InfoOutlinedIcon,
 } from '@mui/icons-material';
 import { gsap } from 'gsap';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 // Data dummy untuk kategori sampah
 const wasteCategories = [
@@ -99,8 +100,8 @@ const CategoryCard = ({ category, isSelected, onClick }) => {
     const handleMouseEnter = () => {
       if (!isSelected) {
         gsap.to(element, { 
-          y: -5, 
-          boxShadow: '0 8px 15px rgba(0,0,0,0.08)', 
+          y: -6, 
+          boxShadow: '0 8px 16px rgba(0,0,0,0.08)', 
           duration: 0.3, 
           ease: "power2.out" 
         });
@@ -111,7 +112,7 @@ const CategoryCard = ({ category, isSelected, onClick }) => {
       if (!isSelected) {
         gsap.to(element, { 
           y: 0, 
-          boxShadow: '0 2px 8px rgba(0,0,0,0.05)', 
+          boxShadow: '0 2px 8px rgba(0,0,0,0.06)', 
           duration: 0.3, 
           ease: "power1.out" 
         });
@@ -141,13 +142,13 @@ const CategoryCard = ({ category, isSelected, onClick }) => {
         alignItems: 'center',
         justifyContent: 'center',
         p: 2.5,
-        borderRadius: 3,
+        borderRadius: '12px',
         boxShadow: isSelected 
-          ? `0 0 0 2px ${category.color}, 0 4px 12px rgba(0,0,0,0.1)` 
-          : '0 2px 8px rgba(0,0,0,0.05)',
+          ? `0 0 0 2px ${category.color}, 0 4px 12px rgba(0,0,0,0.08)` 
+          : '0 2px 8px rgba(0,0,0,0.06)',
         bgcolor: isSelected ? `${category.color}10` : 'background.paper',
-        transition: 'all 0.2s ease',
-        transform: isSelected ? 'translateY(-5px)' : 'none',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        transform: isSelected ? 'translateY(-6px)' : 'none',
         border: '1px solid',
         borderColor: isSelected ? category.color : 'grey.200',
         position: 'relative',
@@ -198,7 +199,9 @@ const GridItemCard = ({ item, index, onToggleFavorite, favorites }) => {
   const cardRef = useRef(null);
   const theme = useTheme();
   const isFavorite = favorites.includes(item.id);
+  const navigate = useNavigate();
   
+  // Efek animasi dengan GSAP
   useEffect(() => {
     const element = cardRef.current;
     
@@ -206,7 +209,7 @@ const GridItemCard = ({ item, index, onToggleFavorite, favorites }) => {
       element,
       { 
         opacity: 0, 
-        y: 30 
+        y: 20 
       },
       { 
         opacity: 1, 
@@ -216,110 +219,86 @@ const GridItemCard = ({ item, index, onToggleFavorite, favorites }) => {
         ease: "power2.out"
       }
     );
-    
-    const handleMouseEnter = () => {
-      gsap.to(element, { 
-        y: -8, 
-        boxShadow: '0 12px 20px rgba(0,0,0,0.1)', 
-        duration: 0.3, 
-        ease: "power2.out" 
-      });
-      
-      // Animate image zoom
-      const imageElement = element.querySelector('.card-image');
-      gsap.to(imageElement, {
-        scale: 1.05,
-        duration: 0.5,
-        ease: "power1.out"
-      });
-    };
-    
-    const handleMouseLeave = () => {
-      gsap.to(element, { 
-        y: 0, 
-        boxShadow: '0 2px 8px rgba(0,0,0,0.05)', 
-        duration: 0.3, 
-        ease: "power1.out" 
-      });
-      
-      // Reset image zoom
-      const imageElement = element.querySelector('.card-image');
-      gsap.to(imageElement, {
-        scale: 1,
-        duration: 0.3,
-        ease: "power1.out"
-      });
-    };
-
-    if (element) {
-      element.addEventListener('mouseenter', handleMouseEnter);
-      element.addEventListener('mouseleave', handleMouseLeave);
-      
-      return () => {
-        element.removeEventListener('mouseenter', handleMouseEnter);
-        element.removeEventListener('mouseleave', handleMouseLeave);
-      };
-    }
   }, [index]);
-
-  // Find category color
-  const categoryData = wasteCategories.find(cat => cat.name === item.category);
-  const categoryColor = categoryData ? categoryData.color : theme.palette.primary.main;
   
-  // Handle favorite toggle with animation
-  const handleFavoriteClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const btn = e.currentTarget;
-    
-    // Animate the button on click
-    gsap.to(btn, {
-      scale: 0.8,
-      duration: 0.1,
-      onComplete: () => {
-        gsap.to(btn, {
-          scale: 1.2,
-          duration: 0.2,
-          ease: "back.out(1.7)",
-          onComplete: () => {
-            gsap.to(btn, {
-              scale: 1,
-              duration: 0.2
-            });
-          }
-        });
-      }
+  const handleMouseEnter = () => {
+    gsap.to(cardRef.current, { 
+      y: -6, 
+      boxShadow: '0 8px 16px rgba(0,0,0,0.08)', 
+      duration: 0.3 
     });
-    
+  };
+  
+  const handleMouseLeave = () => {
+    gsap.to(cardRef.current, { 
+      y: 0, 
+      boxShadow: '0 2px 8px rgba(0,0,0,0.06)', 
+      duration: 0.3 
+    });
+  };
+  
+  const handleClick = () => {
+    navigate(`/katalog/${item.id}`);
+  };
+  
+  const handleFavoriteClick = (e) => {
+    e.stopPropagation(); // Mencegah event bubbling ke card
     onToggleFavorite(item.id);
   };
-
+  
   return (
-    <Card 
+    <Paper 
       ref={cardRef}
-      sx={{ 
-        height: '100%', 
+      elevation={0}
+      sx={{
+        height: '100%',
         display: 'flex', 
         flexDirection: 'column',
-        borderRadius: 3,
         overflow: 'hidden',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-        transition: 'all 0.3s ease',
+        cursor: 'pointer',
+        transition: 'transform 0.3s, box-shadow 0.3s',
+        position: 'relative',
+        borderRadius: '12px',
         border: '1px solid',
         borderColor: 'grey.100',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
       }}
+      onClick={handleClick}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
-      <Box sx={{ position: 'relative', overflow: 'hidden', height: 220 }}>
-        <CardMedia
-          className="card-image"
-          component="img"
-          height="100%"
-          image={item.imageUrl}
+      {/* Content remains the same */}
+      
+      {/* Favorite Button */}
+      <IconButton 
+        size="small" 
+        onClick={handleFavoriteClick}
+        sx={{
+          position: 'absolute',
+          top: 8,
+          right: 8,
+          bgcolor: 'rgba(255,255,255,0.8)',
+          '&:hover': {
+            bgcolor: 'rgba(255,255,255,0.95)'
+          },
+          zIndex: 2
+        }}
+      >
+        {isFavorite ? <FavoriteIcon color="error" /> : <FavoriteBorderIcon />}
+      </IconButton>
+      
+      {/* Image */}
+      <Box sx={{ position: 'relative', pt: '56.25%' /* 16:9 aspect ratio */ }}>
+        <img 
+          src={item.imageUrl} 
           alt={item.name}
-          sx={{ 
-            transition: 'transform 0.5s ease',
-            objectFit: 'cover',
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover'
           }}
         />
         <Chip 
@@ -327,98 +306,57 @@ const GridItemCard = ({ item, index, onToggleFavorite, favorites }) => {
           size="small" 
           sx={{ 
             position: 'absolute', 
-            top: 12, 
-            left: 12,
-            fontWeight: 600,
-            backgroundColor: categoryColor,
+            bottom: 8, 
+            left: 8,
+            backgroundColor: theme.palette.primary.main,
             color: 'white',
-            px: 1,
-            borderRadius: '12px'
+            fontWeight: 500,
+            fontSize: '0.7rem',
+            height: 24,
+            borderRadius: '8px'
           }} 
         />
-        <IconButton 
-          onClick={handleFavoriteClick}
-          sx={{
-            position: 'absolute',
-            top: 8,
-            right: 8,
-            backgroundColor: 'white',
-            '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.9)',
-            },
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-            color: isFavorite ? 'error.main' : 'grey.400'
-          }}
-        >
-          {isFavorite ? <FavoriteIcon /> : <FavoriteBorderIcon />}
-        </IconButton>
       </Box>
       
-      <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 3 }}>
-        <Typography variant="h6" component="h3" gutterBottom fontWeight={700} sx={{ mb: 1 }}>
+      {/* Content */}
+      <Box sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+        <Typography variant="h6" component="h2" sx={{ mb: 1, fontWeight: 600 }}>
           {item.name}
         </Typography>
         
-        <Typography 
-          variant="body2" 
-          color="text.secondary" 
-          sx={{ mb: 2, flexGrow: 1 }}
-        >
-          {item.description.length > 120 
-            ? `${item.description.substring(0, 120)}...` 
-            : item.description
-          }
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2, flexGrow: 1 }}>
+          {item.description.length > 80 
+            ? `${item.description.substring(0, 80)}...` 
+            : item.description}
         </Typography>
         
-        <Box sx={{ mt: 'auto' }}>
-          <Divider sx={{ my: 1.5 }} />
-          
-          <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-            {/* Harga di atas kiri */}
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center',
-              mb: 1 // Memberikan jarak antara harga dan button
-            }}>
-              <PriceIcon sx={{ color: 'success.main', mr: 1, fontSize: 20 }} />
-              <Typography variant="subtitle1" color="success.main" fontWeight={700}>
-                Rp {item.priceRange.min.toLocaleString()} - {item.priceRange.max.toLocaleString()}
-                <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
-                  /{item.unit}
-                </Typography>
-              </Typography>
-            </Box>
-            
-            {/* Button di bawah dengan align right */}
-            <Box sx={{ 
-              display: 'flex',
-              justifyContent: 'flex-end' // Mengatur button ke kanan
-            }}>
-              <Button
-                component={Link}
-                to={`/katalog/detail-sampah/${item.id}`}
-                variant="outlined"
-                size="small"
-                endIcon={<ArrowForwardIcon />}
-                sx={{
-                  borderRadius: 8,
-                  px: 2,
-                  py: 0.5,
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  borderWidth: 2,
-                  '&:hover': {
-                    borderWidth: 2
-                  }
-                }}
-              >
-                Detail
-              </Button>
-            </Box>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <PriceIcon 
+              sx={{ 
+                fontSize: 16, 
+                color: theme.palette.success.main,
+                mr: 0.5 
+              }} 
+            />
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                fontWeight: 700, 
+                color: theme.palette.success.main
+              }}
+            >
+              {`Rp ${item.priceRange.min.toLocaleString()} - ${item.priceRange.max.toLocaleString()}`}
+            </Typography>
           </Box>
+          <Tooltip title="Lihat Detail">
+            <IconButton size="small" color="primary">
+              <InfoOutlinedIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
         </Box>
-      </CardContent>
-    </Card>
+      </Box>
+    </Paper>
   );
 };
 
@@ -485,13 +423,13 @@ const ListItemRow = ({ item, index, onToggleFavorite, favorites }) => {
       ref={itemRef}
       sx={{
         mb: 2,
-        borderRadius: 3,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+        borderRadius: '12px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
         overflow: 'hidden',
-        transition: 'all 0.3s ease',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         '&:hover': {
-          boxShadow: '0 6px 12px rgba(0,0,0,0.1)',
-          transform: 'translateY(-3px)'
+          boxShadow: '0 8px 16px rgba(0,0,0,0.08)',
+          transform: 'translateY(-6px)'
         },
         border: '1px solid',
         borderColor: 'grey.100'
@@ -521,7 +459,7 @@ const ListItemRow = ({ item, index, onToggleFavorite, favorites }) => {
                 backgroundColor: categoryColor,
                 color: 'white',
                 px: 1,
-                borderRadius: '12px'
+                borderRadius: '8px'
               }} 
             />
           </Box>

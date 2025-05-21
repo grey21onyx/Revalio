@@ -19,7 +19,7 @@ const Card = ({
   imageHeight = 140,
   children,
   actions,
-  elevation = 2,
+  elevation = 1,
   sx = {},
   onClick,
   hoverEffect = true,
@@ -28,19 +28,24 @@ const Card = ({
 }) => {
   const theme = useTheme();
 
-  // Custom styling dengan hover effect
+  // Custom styling dengan hover effect yang lebih halus
   const customSx = {
     height: '100%',
     display: 'flex',
     flexDirection: 'column',
-    transition: 'transform 0.2s, box-shadow 0.2s',
-    borderRadius: '8px',
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    borderRadius: '12px',
     overflow: 'hidden',
     cursor: onClick ? 'pointer' : 'default',
+    boxShadow: elevation === 0 
+      ? 'none' 
+      : '0 2px 8px rgba(0,0,0,0.06)',
+    border: '1px solid',
+    borderColor: 'grey.100',
     ...(hoverEffect && {
       '&:hover': {
-        transform: 'translateY(-4px)',
-        boxShadow: theme.shadows[elevation + 2],
+        transform: 'translateY(-6px)',
+        boxShadow: '0 8px 16px rgba(0,0,0,0.08)',
       },
     }),
     ...sx,
@@ -48,19 +53,27 @@ const Card = ({
 
   return (
     <MuiCard 
-      elevation={elevation} 
+      elevation={0} // Menggunakan custom shadow dari sx
       sx={customSx} 
       onClick={onClick}
       {...props}
     >
       {/* Image Section */}
       {image && (
-        <CardMedia
-          component="img"
-          height={imageHeight}
-          image={image}
-          alt={imageAlt || title}
-        />
+        <Box sx={{ position: 'relative', overflow: 'hidden' }}>
+          <CardMedia
+            component="img"
+            height={imageHeight}
+            image={image}
+            alt={imageAlt || title}
+            sx={{ 
+              transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                transform: hoverEffect ? 'scale(1.05)' : 'none',
+              }
+            }}
+          />
+        </Box>
       )}
 
       {/* Header Content (optional) */}
@@ -71,7 +84,7 @@ const Card = ({
       )}
 
       {/* Main Content */}
-      <CardContent sx={{ flexGrow: 1 }}>
+      <CardContent sx={{ flexGrow: 1, p: 3 }}>
         {title && (
           <Typography 
             variant="h6" 
@@ -122,7 +135,7 @@ const Card = ({
 
       {/* Actions Section (optional) */}
       {actions && (
-        <CardActions sx={{ p: 2, pt: 0 }}>
+        <CardActions sx={{ p: 3, pt: 0 }}>
           {actions}
         </CardActions>
       )}

@@ -215,12 +215,20 @@ const Forum = () => {
             {filteredThreads.map(thread => (
               <Grid item xs={12} key={thread.id}>
                 <Paper
-                  elevation={1}
+                  elevation={0}
                   sx={{
                     p: 3,
                     cursor: 'pointer',
-                    transition: 'background-color 0.3s',
-                    '&:hover': { backgroundColor: 'grey.100' }
+                    borderRadius: '12px',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': { 
+                      backgroundColor: 'grey.100',
+                      transform: 'translateY(-6px)',
+                      boxShadow: '0 8px 16px rgba(0,0,0,0.08)'
+                    },
+                    border: '1px solid',
+                    borderColor: 'grey.200',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
                   }}
                   onClick={() => alert(`Navigasi ke detail thread ID: ${thread.id}`)}
                 >
@@ -235,7 +243,7 @@ const Forum = () => {
                   </Stack>
                   <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap' }}>
                     {thread.tags.map((tag, idx) => (
-                      <Chip key={idx} label={`#${tag}`} size="small" color="primary" />
+                      <Chip key={idx} label={`#${tag}`} size="small" color="primary" sx={{ borderRadius: '8px' }} />
                     ))}
                   </Stack>
                 </Paper>

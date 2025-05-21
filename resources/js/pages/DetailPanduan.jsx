@@ -586,7 +586,8 @@ const DetailPanduan = () => {
             backgroundColor: 'primary.light', 
             borderLeft: '4px solid',
             borderColor: 'primary.main',
-            borderRadius: 2
+            borderRadius: '12px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
           }}>
             <Typography variant="body1">{tutorial.konten.tips}</Typography>
           </Paper>
@@ -601,7 +602,14 @@ const DetailPanduan = () => {
         <Divider sx={{ mb: 3 }} />
         
         {/* Comment Form */}
-        <Paper elevation={0} sx={{ p: 3, mb: 4, border: '1px solid', borderColor: 'grey.200', borderRadius: 3 }}>
+        <Paper elevation={0} sx={{ 
+          p: 3, 
+          mb: 4, 
+          border: '1px solid', 
+          borderColor: 'grey.200', 
+          borderRadius: '12px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+        }}>
           <Typography variant="subtitle1" fontWeight={600} gutterBottom>
             Beri Ulasan
           </Typography>

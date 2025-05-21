@@ -125,6 +125,7 @@ const TutorialCard = ({
               label={jenisTutorial === 'daur ulang' ? 'Daur Ulang' : 'Reuse'}
               color={jenisTutorial === 'daur ulang' ? 'primary' : 'secondary'}
               variant="filled"
+              sx={{ borderRadius: '8px' }}
             />
           </Grid>
           <Grid item>
@@ -133,6 +134,7 @@ const TutorialCard = ({
               label={difficultyLabelMap[difficulty]}
               color={difficultyColorMap[difficulty]}
               variant="outlined"
+              sx={{ borderRadius: '8px' }}
             />
           </Grid>
         </Grid>

@@ -66,7 +66,16 @@ const FormNewTopic = () => {
   return (
     <Box sx={{ backgroundColor: '#f9f9f9', minHeight: '100vh', py: { xs: 4, sm: 6 } }}>
       <Container maxWidth="lg">
-        <Paper sx={{ p: { xs: 4, sm: 8 } }}>
+        <Paper 
+          elevation={0} 
+          sx={{ 
+            p: { xs: 4, sm: 8 },
+            borderRadius: '12px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+            border: '1px solid',
+            borderColor: 'grey.200'
+          }}
+        >
           <Stack direction="row" alignItems="center" spacing={1} mb={3}>
             <ForumIcon color="primary" sx={{ fontSize: 36 }} />
             <Typography variant="h5" fontWeight={700}>
@@ -115,6 +124,7 @@ const FormNewTopic = () => {
                     label={option}
                     {...getTagProps({ index })}
                     key={option + index}
+                    sx={{ borderRadius: '8px' }}
                   />
                 ))
               }
@@ -146,6 +156,7 @@ const FormNewTopic = () => {
                 variant="outlined"
                 onClick={() => navigate('/forum')}
                 disabled={submitting}
+                sx={{ borderRadius: '8px' }}
               >
                 Batal
               </Button>
@@ -154,6 +165,7 @@ const FormNewTopic = () => {
                 variant="contained"
                 color="primary"
                 disabled={submitting}
+                sx={{ borderRadius: '8px' }}
               >
                 {submitting ? 'Menyimpan...' : 'Buat Topik'}
               </Button>

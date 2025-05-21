@@ -178,8 +178,8 @@ const TutorialCard = ({ tutorial, index, onClick }) => {
     
     const handleMouseEnter = () => {
       gsap.to(element, { 
-        y: -8, 
-        boxShadow: '0 12px 20px rgba(0,0,0,0.1)', 
+        y: -6, 
+        boxShadow: '0 8px 16px rgba(0,0,0,0.08)', 
         duration: 0.3, 
         ease: "power2.out" 
       });
@@ -195,7 +195,7 @@ const TutorialCard = ({ tutorial, index, onClick }) => {
     const handleMouseLeave = () => {
       gsap.to(element, { 
         y: 0, 
-        boxShadow: '0 2px 8px rgba(0,0,0,0.05)', 
+        boxShadow: '0 2px 8px rgba(0,0,0,0.06)', 
         duration: 0.3, 
         ease: "power1.out" 
       });
@@ -231,10 +231,10 @@ const TutorialCard = ({ tutorial, index, onClick }) => {
         height: '100%', 
         display: 'flex', 
         flexDirection: 'column',
-        borderRadius: 3,
+        borderRadius: '12px',
         overflow: 'hidden',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-        transition: 'all 0.3s ease',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         border: '1px solid',
         borderColor: 'grey.100',
         cursor: 'pointer',
@@ -270,7 +270,7 @@ const TutorialCard = ({ tutorial, index, onClick }) => {
           image={tutorial.media}
           alt={tutorial.judul}
           sx={{ 
-            transition: 'transform 0.5s ease',
+            transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
             objectFit: 'cover',
           }}
         />
@@ -286,7 +286,7 @@ const TutorialCard = ({ tutorial, index, onClick }) => {
               backgroundColor: theme.palette.primary.main,
               color: 'white',
               px: 1,
-              borderRadius: '12px'
+              borderRadius: '8px'
             }} 
           />
         )}
@@ -325,7 +325,7 @@ const TutorialCard = ({ tutorial, index, onClick }) => {
               size="small" 
               variant="outlined"
               sx={{ 
-                borderRadius: 1,
+                borderRadius: 8,
                 borderColor: theme.palette.primary.main,
                 color: theme.palette.primary.main
               }}
@@ -508,7 +508,7 @@ const DaurUlang = () => {
             mb: 5,
             border: '1px solid',
             borderColor: 'grey.200',
-            borderRadius: 3,
+            borderRadius: '12px',
           }}
         >
           <Grid container spacing={3}>

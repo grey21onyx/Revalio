@@ -90,6 +90,7 @@ const WasteCardItem = ({
                 label="Dapat didaur ulang"
                 color="primary"
                 variant="outlined"
+                sx={{ borderRadius: '8px' }}
               />
             </Grid>
           )}
@@ -100,6 +101,7 @@ const WasteCardItem = ({
                 label="Dapat digunakan kembali"
                 color="secondary"
                 variant="outlined"
+                sx={{ borderRadius: '8px' }}
               />
             </Grid>
           )}

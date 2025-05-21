@@ -95,7 +95,7 @@
                         onClick={() => {
                             setSelectedCategory(category.id);
                             if (category.id === 'buyers') {
-                                setActiveTab('buyerFilter');
+                                setActiveTab('buyers');
                             } else {
                                 setActiveTab(category.id);
                             }
@@ -149,186 +149,226 @@
         </div>
       );
 
-      const renderBuyerFilter = () => (
-          <div className="bg-white rounded-lg shadow-md p-6">
-              <button 
-                  onClick={() => setActiveTab('categories')}
-                  className="flex items-center text-green-600 mb-4"
-              >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-                  </svg>
-                  Kembali ke Kategori
-              </button>
-              
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">Cari Pembeli Potensial</h2>
-              
-              <form onSubmit={handleSearchBuyers} className="space-y-4">
-                  <div>
-                      <label htmlFor="wasteType" className="block text-sm font-medium text-gray-700 mb-1">Jenis Sampah</label>
-                      <select
-                          id="wasteType"
-                          value={wasteType}
-                          onChange={(e) => setWasteType(e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
-                          required
-                      >
-                          <option value="">Pilih Jenis Sampah</option>
-                          {wasteTypes.map(type => (
-                              <option key={type} value={type}>{type}</option>
-                          ))}
-                      </select>
-                  </div>
-                  
-                  <div>
-                      <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">Lokasi</label>
-                      <input
-                          type="text"
-                          id="location"
-                          value={location}
-                          onChange={(e) => setLocation(e.target.value)}
-                          placeholder="Masukkan kota/kecamatan"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
-                          required
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Gunakan peta untuk memilih lokasi (fitur akan datang)</p>
-                  </div>
-                  
-                  <div>
-                      <label htmlFor="minQuantity" className="block text-sm font-medium text-gray-700 mb-1">Jumlah Minimum (opsional)</label>
-                      <input
-                          type="number"
-                          id="minQuantity"
-                          value={minQuantity}
-                          onChange={(e) => setMinQuantity(e.target.value)}
-                          placeholder="Dalam kg"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
-                      />
-                  </div>
-                  
-                  <div className="pt-2">
-                      <button
-                          type="submit"
-                          className="bg-green-600 hover:bg-green-700 text-white py-2 px-6 rounded-md transition duration-200 flex items-center"
-                          disabled={loading}
-                      >
-                          {loading ? (
-                              <>
-                                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                  </svg>
-                                  Mencari...
-                              </>
-                          ) : 'Cari Pembeli'}
-                      </button>
-                  </div>
-              </form>
-          </div>
-      );
-
-      const renderResults = () => (
-          <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex justify-between items-center mb-6">
-                  <button 
-                      onClick={() => setActiveTab('buyerFilter')}
-                      className="flex items-center text-green-600"
-                  >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-                      </svg>
-                      Ubah Pencarian
-                  </button>
-                  
-                  <div className="flex space-x-2">
-                      <button
-                          onClick={shareResults}
-                          className="flex items-center bg-green-100 hover:bg-green-200 text-green-800 py-2 px-4 rounded-md transition duration-200"
-                      >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                              <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
-                          </svg>
-                          Bagikan
-                      </button>
-                  </div>
-              </div>
-              
-              {error && (
-                  <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6">
-                      <p>{error}</p>
-                  </div>
-              )}
-              
-              {buyers.length === 0 ? (
-                  <div className="text-center py-8">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <h3 className="mt-2 text-lg font-medium text-gray-900">Tidak ditemukan pembeli</h3>
-                      <p className="mt-1 text-gray-500">Coba perlebar area pencarian atau ubah kriteria filter.</p>
-                      <button
-                          onClick={() => setActiveTab('buyerFilter')}
-                          className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                      >
-                          Ubah Pencarian
-                      </button>
-                  </div>
-              ) : (
-                  <>
-                      <h2 className="text-xl font-semibold text-gray-800 mb-4">Hasil Pencarian Pembeli</h2>
-                      <p className="text-gray-600 mb-6">Menampilkan pembeli untuk {wasteType} di {location}</p>
-              
-                      <div className="space-y-6">
-                          {buyers.map((buyer) => (
-                              <div key={buyer.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition duration-200">
-                                  <div className="flex justify-between items-start">
-                                      <div>
-                                          <h3 className="text-lg font-semibold text-green-800">{buyer.name}</h3>
-                                          <p className="text-gray-600">{buyer.type}</p>
-                                      </div>
-                                      <button
-                                          onClick={() => saveToFavorites(buyer.id)}
-                                          className="text-green-500 hover:text-green-600"
-                                          title="Simpan ke favorit"
-                                      >
-                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                                          </svg>
-                                      </button>
-                                  </div>
-                                  
-                                  <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                                      <div>
-                                          <h4 className="text-sm font-medium text-gray-500">Kisaran Harga</h4>
-                                          <p className="font-medium">{buyer.priceRange}</p>
-                                      </div>
-                                      <div>
-                                          <h4 className="text-sm font-medium text-gray-500">Persyaratan</h4>
-                                          <p>{buyer.requirements}</p>
-                                      </div>
-                                      <div>
-                                          <h4 className="text-sm font-medium text-gray-500">Lokasi</h4>
-                                          <p>{buyer.location}</p>
-                                      </div>
-                                  </div>
-                                  
-                                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                      <div>
-                                          <h4 className="text-sm font-medium text-gray-500">Kontak</h4>
-                                          <p>{buyer.contact}</p>
-                                      </div>
-                                      <div>
-                                          <h4 className="text-sm font-medium text-gray-500">Jam Operasional</h4>
-                                          <p>{buyer.operationalHours}</p>
-                                      </div>
-                                  </div>
-                              </div>
-                          ))}
-                      </div>
-                  </>
-              )}
-          </div>
-      );
+      const renderBuyerTips = () => (
+        <div className="bg-white rounded-lg shadow-md p-6">
+            <button 
+                onClick={() => setActiveTab('categories')}
+                className="flex items-center text-green-600 mb-4"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                </svg>
+                Kembali ke Kategori
+            </button>
+            
+            <h2 className="text-2xl font-bold text-green-800 mb-6">Strategi Mencari Pembeli Potensial</h2>
+            
+            <div className="space-y-6">
+                {/* Section 1: Jenis Pembeli Potensial */}
+                <div className="bg-green-50 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-green-800 mb-2">Jenis Pembeli Potensial</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-white p-4 rounded-lg shadow-sm border border-green-100">
+                            <div className="flex items-center mb-2">
+                                <div className="bg-green-100 p-2 rounded-full mr-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                    </svg>
+                                </div>
+                                <h4 className="font-medium text-green-700">Bank Sampah</h4>
+                            </div>
+                            <p className="text-sm text-gray-600">Sistem terorganisir dengan harga stabil, biasanya menerima berbagai jenis sampah dengan persyaratan tertentu.</p>
+                        </div>
+                        
+                        <div className="bg-white p-4 rounded-lg shadow-sm border border-green-100">
+                            <div className="flex items-center mb-2">
+                                <div className="bg-green-100 p-2 rounded-full mr-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                    </svg>
+                                </div>
+                                <h4 className="font-medium text-green-700">Pengepul Langsung</h4>
+                            </div>
+                            <p className="text-sm text-gray-600">Biasanya fokus pada jenis sampah tertentu, harga bervariasi tergantung musim dan permintaan.</p>
+                        </div>
+                        
+                        <div className="bg-white p-4 rounded-lg shadow-sm border border-green-100">
+                            <div className="flex items-center mb-2">
+                                <div className="bg-green-100 p-2 rounded-full mr-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                    </svg>
+                                </div>
+                                <h4 className="font-medium text-green-700">Industri Daur Ulang</h4>
+                            </div>
+                            <p className="text-sm text-gray-600">Membutuhkan jumlah besar dengan kualitas konsisten, harga biasanya lebih tinggi.</p>
+                        </div>
+                        
+                        <div className="bg-white p-4 rounded-lg shadow-sm border border-green-100">
+                            <div className="flex items-center mb-2">
+                                <div className="bg-green-100 p-2 rounded-full mr-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                    </svg>
+                                </div>
+                                <h4 className="font-medium text-green-700">Pengrajin Kreatif</h4>
+                            </div>
+                            <p className="text-sm text-gray-600">Membutuhkan sampah dengan karakteristik khusus untuk kerajinan, sering membayar premium.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                {/* Section 2: Cara Mencari Pembeli */}
+                <div className="bg-green-50 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-green-800 mb-2">5 Langkah Efektif Mencari Pembeli</h3>
+                    <div className="space-y-4">
+                        <div className="flex items-start">
+                            <div className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-1 mr-3">1</div>
+                            <div>
+                                <h4 className="font-medium text-green-700">Identifikasi Jenis Sampah Anda</h4>
+                                <p className="text-sm text-gray-600">Ketahui dengan pasti jenis dan kualitas sampah yang Anda miliki. Pembeli berbeda membutuhkan jenis sampah yang berbeda.</p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex items-start">
+                            <div className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-1 mr-3">2</div>
+                            <div>
+                                <h4 className="font-medium text-green-700">Gunakan Jaringan Lokal</h4>
+                                <p className="text-sm text-gray-600">Tanyakan kepada tetangga, komunitas RT/RW, atau kelompok lingkungan tentang pembeli terpercaya di daerah Anda.</p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex items-start">
+                            <div className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-1 mr-3">3</div>
+                            <div>
+                                <h4 className="font-medium text-green-700">Manfaatkan Teknologi</h4>
+                                <p className="text-sm text-gray-600">Gunakan aplikasi dan platform online khusus daur ulang seperti Waste4Change, Gringgo, atau grup Facebook lokal.</p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex items-start">
+                            <div className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-1 mr-3">4</div>
+                            <div>
+                                <h4 className="font-medium text-green-700">Kunjungi Tempat Pengumpulan</h4>
+                                <p className="text-sm text-gray-600">Datangi langsung bank sampah atau tempat pengumpulan untuk mendapatkan informasi pembeli dan harga terkini.</p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex items-start">
+                            <div className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-1 mr-3">5</div>
+                            <div>
+                                <h4 className="font-medium text-green-700">Buat Daftar Pembeli</h4>
+                                <p className="text-sm text-gray-600">Catat kontak beberapa pembeli untuk setiap jenis sampah sehingga Anda bisa membandingkan harga dan persyaratan.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {/* Section 3: Ciri Pembeli Terpercaya */}
+                <div className="bg-green-50 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-green-800 mb-2">Ciri-ciri Pembeli Terpercaya</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-white p-3 rounded-lg border border-green-100">
+                            <div className="flex items-center mb-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                <h4 className="font-medium">Transparan Tentang Harga</h4>
+                            </div>
+                            <p className="text-sm text-gray-600 pl-7">Memberikan informasi harga jelas tanpa hidden cost.</p>
+                        </div>
+                        
+                        <div className="bg-white p-3 rounded-lg border border-green-100">
+                            <div className="flex items-center mb-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                <h4 className="font-medium">Pembayaran Tepat Waktu</h4>
+                            </div>
+                            <p className="text-sm text-gray-600 pl-7">Tidak menunda-nunda pembayaran setelah transaksi.</p>
+                        </div>
+                        
+                        <div className="bg-white p-3 rounded-lg border border-green-100">
+                            <div className="flex items-center mb-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                <h4 className="font-medium">Legalitas Jelas</h4>
+                            </div>
+                            <p className="text-sm text-gray-600 pl-7">Memiliki izin usaha atau terdaftar di asosiasi resmi.</p>
+                        </div>
+                        
+                        <div className="bg-white p-3 rounded-lg border border-green-100">
+                            <div className="flex items-center mb-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                <h4 className="font-medium">Komunikasi Baik</h4>
+                            </div>
+                            <p className="text-sm text-gray-600 pl-7">Responsif dan jelas dalam berkomunikasi.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                {/* Section 4: Platform Rekomendasi */}
+                <div className="bg-green-50 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-green-800 mb-2">Platform Online untuk Mencari Pembeli</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-white p-4 rounded-lg shadow-sm border border-green-100">
+                            <div className="flex items-center mb-2">
+                                <div className="bg-green-100 p-2 rounded-lg mr-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                                    </svg>
+                                </div>
+                                <h4 className="font-medium text-green-700">Waste4Change</h4>
+                            </div>
+                            <p className="text-sm text-gray-600">Platform profesional untuk pengelolaan sampah dengan jaringan pembeli luas.</p>
+                            <a href="#" className="text-green-600 text-sm mt-2 inline-block">Kunjungi Situs →</a>
+                        </div>
+                        
+                        <div className="bg-white p-4 rounded-lg shadow-sm border border-green-100">
+                            <div className="flex items-center mb-2">
+                                <div className="bg-green-100 p-2 rounded-lg mr-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                    </svg>
+                                </div>
+                                <h4 className="font-medium text-green-700">Grup WhatsApp/Facebook</h4>
+                            </div>
+                            <p className="text-sm text-gray-600">Cari grup "Jual Beli Sampah [Nama Kota]" untuk pembeli lokal.</p>
+                            <a href="#" className="text-green-600 text-sm mt-2 inline-block">Cari Grup →</a>
+                        </div>
+                        
+                        <div className="bg-white p-4 rounded-lg shadow-sm border border-green-100">
+                            <div className="flex items-center mb-2">
+                                <div className="bg-green-100 p-2 rounded-lg mr-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                    </svg>
+                                </div>
+                                <h4 className="font-medium text-green-700">Aplikasi Lokal</h4>
+                            </div>
+                            <p className="text-sm text-gray-600">Cek aplikasi seperti "Bank Sampah Digital" dari pemerintah daerah Anda.</p>
+                            <a href="#" className="text-green-600 text-sm mt-2 inline-block">Pelajari Lebih →</a>
+                        </div>
+                    </div>
+                </div>
+                
+                {/* Section 5: Tips Tambahan */}
+                <div className="bg-green-50 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-green-800 mb-2">Tips Tambahan untuk Hasil Maksimal</h3>
+                    <ul className="list-disc pl-5 space-y-2">
+                        <li><strong>Buat sampah Anda menarik</strong> - Semakin bersih dan terpilah, semakin tinggi harga yang bisa Anda dapatkan</li>
+                        <li><strong>Jalin hubungan baik</strong> - Pembeli tetap sering memberikan harga lebih baik dan prioritas</li>
+                        <li><strong>Pantau fluktuasi harga</strong> - Harga sampah bisa berubah tergantung musim dan permintaan industri</li>
+                        <li><strong>Gabung dengan komunitas</strong> - Komunitas daur ulang sering memiliki daftar pembeli terpercaya</li>
+                        <li><strong>Dokumentasikan transaksi</strong> - Catat harga dan pembeli untuk referensi di masa depan</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    );
 
       const renderSellingTips = () => (
           <div className="bg-white rounded-lg shadow-md p-6">
@@ -616,12 +656,11 @@
       );
 
         return (
-            <div className="container mx-auto py-8 px-4 max-w-6xl">
+            <div className="container mx-auto py-8 px-2 max-w-6xl">
                 <h1 className="text-3xl font-bold text-green-800 mb-6">Tips Monetisasi Sampah</h1>
                 
                 {activeTab === 'categories' && renderCategories()}
-                {activeTab === 'buyerFilter' && renderBuyerFilter()}
-                {activeTab === 'results' && renderResults()}
+                {activeTab === 'buyers' && renderBuyerTips()}
                 {activeTab === 'selling' && renderSellingTips()}
                 {activeTab === 'negotiation' && renderNegotiationTips()}
                 {activeTab === 'pricing' && renderPricingTips()}

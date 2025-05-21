@@ -1569,10 +1569,10 @@ const Home = () => {
           ) : error.waste ? (
             <Alert severity="error" sx={{ mb: 4 }}>{error.waste}</Alert>
           ) : (
-            <Grid container spacing={3}>
+          <Grid container spacing={3} alignItems="stretch">
               {wasteItems.map((item) => (
-                <Grid item xs={12} sm={6} md={4} key={item.id}>
-                  <Box className="waste-card" sx={{ transformStyle: 'preserve-3d', perspective: 1000 }}>
+                <Grid item xs={6} sm={6} md={3} key={item.id} sx={{ display: 'flex', flexDirection: 'column' }}>
+                  <Box className="waste-card" sx={{ flexGrow: 1, transformStyle: 'preserve-3d', perspective: 1000 }}>
                     <WasteCardItem 
                       {...item}
                       onToggleFavorite={handleToggleFavorite}
@@ -1602,7 +1602,7 @@ const Home = () => {
           ) : (
             <Grid container spacing={3}>
               {tutorials.map((tutorial) => (
-                <Grid item xs={12} sm={6} key={tutorial.id}>
+                <Grid item xs={6} sm={3} key={tutorial.id}>
                   <TutorialCard 
                     {...tutorial}
                     onToggleSave={handleToggleSave}
@@ -1631,7 +1631,7 @@ const Home = () => {
           ) : (
             <Grid container spacing={3}>
               {articles.map((article) => (
-                <Grid item xs={12} md={6} key={article.id}>
+                <Grid item xs={6} md={6} key={article.id}>
                   <Card sx={{ 
                     display: 'flex', 
                     flexDirection: { xs: 'column', sm: 'row' },
@@ -1802,7 +1802,7 @@ const Home = () => {
                   color="primary"
                   sx={{ 
                     borderRadius: 8,
-                    px: 4,
+                    px: 3,
                     py: 1,
                     fontWeight: 600
                   }}
@@ -1969,7 +1969,7 @@ const Home = () => {
                         boxShadow: '0 8px 15px rgba(0,0,0,0.2)'
                       },
                       borderRadius: 8,
-                      px: { xs: 4, md: 5 },
+                      px: { xs: 3, md: 5 },
                       py: 1.5,
                       fontSize: '1.1rem',
                       fontWeight: 600,
@@ -1994,7 +1994,7 @@ const Home = () => {
                         transform: 'translateY(-3px)',
                       },
                       borderRadius: 8,
-                      px: { xs: 4, md: 5 },
+                      px: { xs: 3, md: 5 },
                       py: 1.5,
                       fontSize: '1.1rem',
                       fontWeight: 600,

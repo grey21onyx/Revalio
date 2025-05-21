@@ -41,11 +41,8 @@ const WasteCardItem = ({
     <Grid container justifyContent="space-between" alignItems="center">
       <Grid item>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <PriceIcon 
-            fontSize="small" 
-            sx={{ color: theme.palette.success.main, mr: 0.5 }} 
-          />
-          <Typography variant="body2" fontWeight={600} color="success.main">
+          {/* PriceIcon removed as per user request */}
+          <Typography variant="overline" fontWeight={600} color="success.main">
             {formatPrice(priceRange.min, priceRange.max)}
           </Typography>
         </Box>

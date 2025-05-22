@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Box, Container, Typography, useTheme } from '@mui/material';
+import { Box, Container, Typography, useTheme, Button } from '@mui/material';
+import { ArrowBack } from '@mui/icons-material';
 
 const Monetisasi = () => {
       const theme = useTheme();
@@ -153,15 +154,13 @@ const Monetisasi = () => {
 
       const renderBuyerTips = () => (
         <div className="bg-white rounded-lg shadow-md p-6">
-            <button 
-                onClick={() => setActiveTab('categories')}
-                className="flex items-center text-green-600 mb-4"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-                </svg>
-                Kembali ke Kategori
-            </button>
+<Button
+    startIcon={<ArrowBack />}
+    onClick={() => setActiveTab('categories')}
+    sx={{ mb: 3, color: 'green' }}
+>
+    Kembali ke Kategori
+</Button>
             
             <h2 className="text-2xl font-bold text-green-800 mb-6">Strategi Mencari Pembeli Potensial</h2>
             
@@ -374,15 +373,13 @@ const Monetisasi = () => {
 
       const renderSellingTips = () => (
           <div className="bg-white rounded-lg shadow-md p-6">
-              <button 
-                  onClick={() => setActiveTab('categories')}
-                  className="flex items-center text-green-600 mb-4"
-              >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-                  </svg>
-                  Kembali ke Kategori
-              </button>
+<Button
+    startIcon={<ArrowBack />}
+    onClick={() => setActiveTab('categories')}
+    sx={{ mb: 3, color: 'green' }}
+>
+    Kembali ke Kategori
+</Button>
               
               <h2 className="text-2xl font-bold text-green-800 mb-6">Cara Menjual Sampah dengan Efektif</h2>
               
@@ -434,15 +431,13 @@ const Monetisasi = () => {
 
       const renderNegotiationTips = () => (
           <div className="bg-white rounded-lg shadow-md p-6">
-              <button 
-                  onClick={() => setActiveTab('categories')}
-                  className="flex items-center text-green-600 mb-4"
-              >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-                  </svg>
-                  Kembali ke Kategori
-              </button>
+<Button
+    startIcon={<ArrowBack />}
+    onClick={() => setActiveTab('categories')}
+    sx={{ mb: 3, color: 'green' }}
+>
+    Kembali ke Kategori
+</Button>
               
               <h2 className="text-2xl font-bold text-green-800 mb-6">Teknik Negosiasi Harga Sampah</h2>
               
@@ -494,15 +489,13 @@ const Monetisasi = () => {
 
       const renderPricingTips = () => (
         <div className="bg-white rounded-lg shadow-md p-6">
-          <button 
-            onClick={() => setActiveTab('categories')}
-            className="flex items-center text-green-600 mb-4"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-            </svg>
-            Kembali ke Kategori
-          </button>
+<Button
+    startIcon={<ArrowBack />}
+    onClick={() => setActiveTab('categories')}
+    sx={{ mb: 3, color: 'green' }}
+>
+    Kembali ke Kategori
+</Button>
           
           <h2 className="text-2xl font-bold text-green-800 mb-6">Strategi Penentuan Harga Sampah</h2>
           

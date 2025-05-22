@@ -229,7 +229,7 @@ const About = () => {
             <ul className="list-disc pl-5 text-gray-700">
               <li>Framework: React.js</li>
               <li>UI Library: Material-UI</li>
-              <li>State Management: Redux</li>
+              <li>State Management: React Context API</li>
               <li>Styling: Tailwind CSS</li>
             </ul>
           </div>

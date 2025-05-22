@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   AppBar,
   Box,
@@ -36,7 +36,7 @@ const Header = ({ toggleSidebar }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
-  const isAuthenticated = useSelector(state => state.auth?.isAuthenticated);
+  const { isAuthenticated, logout } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [anchorEl, setAnchorEl] = useState(null);
@@ -73,6 +73,11 @@ const Header = ({ toggleSidebar }) => {
     navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
   };
 
+  const handleLogout = () => {
+    logout();
+    handleMenuClose();
+  };
+
   // Profile menu
   const menuId = 'primary-search-account-menu';
   const renderMenu = (
@@ -99,7 +104,7 @@ const Header = ({ toggleSidebar }) => {
         <SettingsIcon fontSize="small" sx={{ mr: 1 }} />
         Pengaturan
       </MenuItem>
-      <MenuItem onClick={handleMenuClose}>
+      <MenuItem onClick={handleLogout}>
         <LogoutIcon fontSize="small" sx={{ mr: 1 }} />
         Keluar
       </MenuItem>

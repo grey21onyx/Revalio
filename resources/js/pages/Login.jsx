@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-// import { useDispatch } from 'react-redux'; // Hapus atau comment jika Redux belum digunakan untuk auth
 import {
   Box,
   Typography,
@@ -24,15 +23,17 @@ import {
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 
+// Import hook useAuth dari hooks
+import { useAuth } from '../hooks/useAuth';
+
 // Import authService
 import authService from '../services/authService';
 
-// Import action untuk login (akan diimplementasikan nanti)
-// import { login as loginAction } from '../store/slices/authSlice'; // Ubah nama jika ada konflik
-
 const Login = () => {
   const navigate = useNavigate();
-  // const dispatch = useDispatch(); // Hapus atau comment jika Redux belum digunakan untuk auth
+  
+  // Gunakan hook useAuth untuk mendapatkan state dan fungsi autentikasi
+  const { isAuthenticated, login, error, clearError, isLoading } = useAuth();
 
   const handleBack = () => {
     navigate(-1);
@@ -45,11 +46,16 @@ const Login = () => {
     rememberMe: false
   });
   
-  // State untuk error dan loading
+  // State untuk error dan UI
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [loginError, setLoginError] = useState('');
+
+  // Redirect jika sudah login
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
 
   // Handle perubahan input
   const handleChange = (e) => {
@@ -66,9 +72,10 @@ const Login = () => {
         [name]: ''
       });
     }
-    // Reset general login error
-    if (loginError) {
-        setLoginError('');
+    
+    // Reset general error
+    if (error) {
+      clearError();
     }
   };
 
@@ -87,10 +94,6 @@ const Login = () => {
     if (!formData.password) {
       newErrors.password = 'Password tidak boleh kosong';
     } 
-    // Validasi panjang password bisa dihapus jika backend yang menangani sepenuhnya
-    // else if (formData.password.length < 6) { 
-    //   newErrors.password = 'Password minimal 6 karakter';
-    // }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -100,37 +103,18 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Reset error
-    setLoginError('');
-    
     // Validasi form
     if (!validateForm()) return;
     
-    setIsLoading(true);
-    
     try {
-      const response = await authService.login({ 
+      await login({ 
         email: formData.email, 
         password: formData.password 
       });
-      
-      console.log('Login response:', response);
-      // authService.login sudah menyimpan token dan user data ke localStorage
-      // serta mengatur header default axios
-
-      // Jika menggunakan Redux, dispatch action di sini
-      // dispatch(loginAction(response.user)); 
-
-      // Sukses login, navigate ke homepage
-      navigate('/'); // Atau ke halaman dashboard, misal '/dashboard'
-      
-    } catch (error) {
-      console.error('Login error object:', error);
-      // Handle error login
-      const errorMessage = error.message || (error.errors && error.errors.email && error.errors.email[0]) || 'Terjadi kesalahan saat login. Silakan coba lagi.';
-      setLoginError(errorMessage);
-    } finally {
-      setIsLoading(false);
+      // login function dalam AuthContext sudah menangani redirect ke halaman utama
+    } catch (err) {
+      // Error akan ditangani oleh AuthContext
+      console.error('Login error:', err);
     }
   };
 
@@ -151,9 +135,9 @@ const Login = () => {
         Isi kredensial Anda di bawah ini untuk mengakses akun Revalio
       </Typography>
       
-      {loginError && (
+      {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
-          {loginError}
+          {error}
         </Alert>
       )}
       

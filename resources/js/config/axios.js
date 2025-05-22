@@ -16,11 +16,13 @@ instance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('userToken');
     if (token) {
+      console.log('Attaching auth token to request', config.url);
       config.headers['Authorization'] = `Bearer ${token}`;
     }
     return config;
   },
   (error) => {
+    console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -28,17 +30,25 @@ instance.interceptors.request.use(
 // Interceptor untuk handling error response
 instance.interceptors.response.use(
   (response) => {
+    // Bisa menambahkan logika tambahan di sini jika perlu
     return response;
   },
   (error) => {
-    // Handle 401 Unauthorized response
+    console.error('Response error:', error.response?.status, error.response?.data);
+    
+    // Handle 401 Unauthorized response (token invalid/expired)
     if (error.response && error.response.status === 401) {
+      console.log('401 Unauthorized detected, clearing auth data');
       localStorage.removeItem('userToken');
-      // Redirect ke halaman login
+      localStorage.removeItem('userData');
+      
+      // Redirect ke halaman login jika bukan di halaman login
       if (window.location.pathname !== '/login') {
+        console.log('Redirecting to login page');
         window.location.href = '/login';
       }
     }
+    
     return Promise.reject(error);
   }
 );

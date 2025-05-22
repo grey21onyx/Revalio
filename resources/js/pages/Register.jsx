@@ -1,7 +1,5 @@
-import axios from 'axios';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
 import {
   Box,
   Typography,
@@ -27,15 +25,12 @@ import {
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 
-// Import authService
-import authService from '../services/authService';
-
-// Import action untuk register (akan diimplementasikan nanti)
-// import { register as registerAction } from '../store/slices/authSlice'; // Ubah nama jika ada konflik
+// Import useAuth dari Context API
+import { useAuth } from '../hooks/useAuth';
 
 const Register = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const { register, isAuthenticated, isLoading, error, clearError } = useAuth();
   
   // State untuk form
   const [formData, setFormData] = useState({
@@ -46,12 +41,17 @@ const Register = () => {
     agreeTerms: false
   });
   
-  // State untuk error dan loading
+  // State untuk errors dan UI
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [registerError, setRegisterError] = useState('');
+
+  // Redirect jika sudah login
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
 
   // Handle perubahan input
   const handleChange = (e) => {
@@ -68,9 +68,10 @@ const Register = () => {
         [name]: ''
       });
     }
-    // Reset general register error
-    if (registerError) {
-        setRegisterError('');
+    
+    // Reset general error
+    if (error) {
+      clearError();
     }
   };
 
@@ -117,13 +118,8 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Reset error
-    setRegisterError('');
-    
     // Validasi form
     if (!validateForm()) return;
-    
-    setIsLoading(true);
     
     try {
       const userData = {
@@ -133,38 +129,12 @@ const Register = () => {
         password_confirmation: formData.confirmPassword // Backend register mengharapkan password_confirmation
       };
 
-      const response = await authService.register(userData);
-      console.log('Register response:', response);
+      await register(userData);
+      // register function dalam AuthContext sudah menangani redirect
 
-      // Backend AuthController@register mengembalikan token dan data user,
-      // jadi idealnya pengguna langsung login. 
-      // authService.register bisa diupdate untuk menyimpan token seperti login,
-      // atau kita tangani di sini jika respons mengandung token.
-      if (response.access_token && response.user) {
-        localStorage.setItem('userToken', response.access_token);
-        localStorage.setItem('userData', JSON.stringify(response.user));
-        axios.defaults.headers.common['Authorization'] = `Bearer ${response.access_token}`;
-        // Jika menggunakan Redux, dispatch action di sini
-        // dispatch(loginAction(response.user)); 
-        navigate('/'); // Langsung ke dashboard/homepage
-      } else {
-        // Jika backend tidak otomatis login, arahkan ke halaman login
-        alert('Registrasi berhasil! Silakan login.');
-        navigate('/login');
-      }
-      
-    } catch (error) {
-      console.error('Register error object:', error);
-      let errorMessage = 'Terjadi kesalahan saat mendaftar. Silakan coba lagi.';
-      if (error.errors) { // Error validasi dari Laravel
-        const firstErrorField = Object.keys(error.errors)[0];
-        errorMessage = error.errors[firstErrorField][0];
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      setRegisterError(errorMessage);
-    } finally {
-      setIsLoading(false);
+    } catch (err) {
+      // Error akan ditangani oleh AuthContext
+      console.error('Register error:', err);
     }
   };
 
@@ -186,9 +156,9 @@ const Register = () => {
         Isi data berikut untuk mendaftar di platform Revalio
       </Typography>
       
-      {registerError && (
+      {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
-          {registerError}
+          {error}
         </Alert>
       )}
       

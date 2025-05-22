@@ -296,7 +296,8 @@ const DetailPanduan = () => {
   const maxSteps = steps.length;
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Box sx={{ backgroundColor: '#f9f9f9', py: { xs: 3, md: 5 } }}>
+      <Container maxWidth="lg" sx={{ py: 0 }}>
       {/* Back Button */}
       <Button 
         startIcon={<ArrowBack />}
@@ -733,6 +734,7 @@ const DetailPanduan = () => {
         </DialogContent>
       </Dialog>
     </Container>
+    </Box>
   );
 };
 

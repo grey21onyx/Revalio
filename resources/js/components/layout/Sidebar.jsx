@@ -62,18 +62,27 @@ const Sidebar = ({ open, onClose }) => {
               component={Link}
               to={item.path}
               selected={location.pathname === item.path}
+              TouchRippleProps={{ color: 'white' }}
               sx={{
                 mx: 1,
                 mb: 1,
                 borderRadius: 1,
+                color: 'inherit',
+                '&:hover': {
+                  backgroundColor: theme.palette.primary.main,
+                  color: '#fff',
+                  '& .MuiListItemIcon-root': {
+                    color: '#fff',
+                  },
+                },
                 '&.Mui-selected': {
                   backgroundColor: theme.palette.primary.light,
-                  color: theme.palette.primary.main,
+                  color: 'black',
                   '&:hover': {
                     backgroundColor: theme.palette.primary.light,
                   },
                   '& .MuiListItemIcon-root': {
-                    color: theme.palette.primary.main,
+                    color: 'black',
                   },
                 },
               }}

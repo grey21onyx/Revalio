@@ -1,7 +1,9 @@
-  import React, { useState } from 'react';
-  import axios from 'axios';
+import React, { useState } from 'react';
+import axios from 'axios';
+import { Box, Container, Typography, useTheme } from '@mui/material';
 
-  const Monetisasi = () => {
+const Monetisasi = () => {
+      const theme = useTheme();
       // State management
       const [activeTab, setActiveTab] = useState('categories');
       const [selectedCategory, setSelectedCategory] = useState(null);
@@ -655,17 +657,57 @@
         </div>
       );
 
-        return (
-            <div className="container mx-auto py-8 px-2 max-w-6xl">
-                <h1 className="text-3xl font-bold text-green-800 mb-6">Tips Monetisasi Sampah</h1>
-                
-                {activeTab === 'categories' && renderCategories()}
-                {activeTab === 'buyers' && renderBuyerTips()}
-                {activeTab === 'selling' && renderSellingTips()}
-                {activeTab === 'negotiation' && renderNegotiationTips()}
-                {activeTab === 'pricing' && renderPricingTips()}
-            </div>
-        );
+  return (
+    <Box sx={{ backgroundColor: '#f9f9f9', py: { xs: 3, md: 5 } }}>
+      <Container maxWidth="lg">
+        {/* Header */}
+        <Box sx={{ mb: { xs: 4, md: 5 } }}>
+          <Typography 
+            variant="h4" 
+            component="h1" 
+            fontWeight={800} 
+            gutterBottom 
+            sx={{ 
+              position: 'relative', 
+              display: 'inline-block',
+              mb: 3
+            }}
+          >
+            Tips Monetisasi Sampah
+            <Box 
+              sx={{ 
+                position: 'absolute',
+                bottom: -5,
+                left: 0,
+                width: '50%',
+                height: 4,
+                backgroundColor: theme.palette.primary.main,
+                borderRadius: 2
+              }}
+            />
+          </Typography>
+          <Typography 
+            variant="body1" 
+            color="text.secondary" 
+            sx={{ 
+              mt: 2, 
+              maxWidth: '800px',
+              fontSize: '1.1rem',
+              lineHeight: 1.6
+            }}
+          >
+            Pelajari berbagai tips dan strategi untuk memaksimalkan nilai jual sampah Anda.
+          </Typography>
+        </Box>
+
+        {activeTab === 'categories' && renderCategories()}
+        {activeTab === 'buyers' && renderBuyerTips()}
+        {activeTab === 'selling' && renderSellingTips()}
+        {activeTab === 'negotiation' && renderNegotiationTips()}
+        {activeTab === 'pricing' && renderPricingTips()}
+      </Container>
+    </Box>
+  );
   };
 
   export default Monetisasi;

@@ -1,10 +1,20 @@
 import React from 'react';
-import { Outlet, Link } from 'react-router-dom';
+import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Box, Container, Paper, Typography, useTheme } from '@mui/material';
 import RecyclingIcon from '@mui/icons-material/Recycling';
 
 const AuthLayout = () => {
   const theme = useTheme();
+  const location = useLocation();
+
+  // Determine background style based on current route
+  const isLoginPage = location.pathname === '/login';
+
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+
+  const backgroundStyle = isAuthPage
+    ? "linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.7)), url('/assets/images/bg1.jpeg')"
+    : 'url(/assets/images/auth-bg.jpg)';
 
   return (
     <Box 
@@ -15,7 +25,7 @@ const AuthLayout = () => {
         alignItems: 'center',
         justifyContent: 'center',
         bgcolor: theme.palette.background.default,
-        backgroundImage: 'url(/assets/images/auth-bg.jpg)',
+        backgroundImage: backgroundStyle,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         py: 4
@@ -75,4 +85,4 @@ const AuthLayout = () => {
   );
 };
 
-export default AuthLayout; 
+export default AuthLayout;

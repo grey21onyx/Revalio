@@ -21,6 +21,7 @@ const Card = ({
   actions,
   elevation = 1,
   sx = {},
+  descriptionSx = {},
   onClick,
   hoverEffect = true,
   headerContent,
@@ -124,6 +125,7 @@ const Card = ({
               WebkitBoxOrient: 'vertical',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
+              ...descriptionSx,
             }}
           >
             {description}
@@ -154,6 +156,7 @@ Card.propTypes = {
   actions: PropTypes.node,
   elevation: PropTypes.number,
   sx: PropTypes.object,
+  descriptionSx: PropTypes.object,
   onClick: PropTypes.func,
   hoverEffect: PropTypes.bool,
   headerContent: PropTypes.node,

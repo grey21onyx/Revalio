@@ -189,35 +189,44 @@ const Tracking = () => {
   const totalBerat = filteredRecords.reduce((sum, record) => sum + record.jumlah, 0);
 
   return (
-    <Box sx={{ py: 4, px: { xs: 2, md: 4 } }}>
-      <Container maxWidth="xl">
+    <Box sx={{ backgroundColor: '#f9f9f9', py: { xs: 3, md: 5 } }}>
+      <Container maxWidth="lg">
         {/* Header Section */}
-        <Box sx={{ mb: 4 }}>
+        <Box sx={{ mb: { xs: 4, md: 5 } }}>
           <Typography 
             variant="h4" 
             component="h1" 
-            fontWeight={700} 
+            fontWeight={800} 
             gutterBottom
             sx={{ 
               position: 'relative',
               display: 'inline-block',
-              color: theme.palette.primary.main
+              mb: 3
             }}
           >
             Tracking Pengelolaan Sampahku
             <Box 
               sx={{ 
                 position: 'absolute',
-                bottom: -4,
+                bottom: -5,
                 left: 0,
-                width: '60%',
+                width: '50%',
                 height: 4,
-                backgroundColor: theme.palette.secondary.main,
+                backgroundColor: theme.palette.primary.main,
                 borderRadius: 2
               }}
             />
           </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
+          <Typography 
+            variant="body1" 
+            color="text.secondary" 
+            sx={{ 
+              mt: 2, 
+              maxWidth: '800px',
+              fontSize: '1.1rem',
+              lineHeight: 1.6
+            }}
+          >
             Pantau dan kelola sampah yang kamu kumpulkan untuk lingkungan yang lebih baik
           </Typography>
         </Box>
@@ -246,9 +255,10 @@ const Tracking = () => {
                 <Card
                   title="Total Nilai Ekonomis"
                   description={`Estimasi total nilai sampah yang kamu kelola`}
-                  sx={{ bgcolor: theme.palette.success.light, color: theme.palette.success.dark }}
+                  sx={{ bgcolor: theme.palette.success.light, color: '#fff' }}
+                  descriptionSx={{ color: '#fff' }}
                 >
-                  <Typography variant="h3" sx={{ mt: 2, fontWeight: 700, color: theme.palette.success.dark }}>
+                  <Typography variant="h3" sx={{ mt: 2, fontWeight: 700, color: '#fff' }}>
                     Rp {totalNilai.toLocaleString()}
                   </Typography>
                 </Card>
@@ -257,9 +267,10 @@ const Tracking = () => {
                 <Card
                   title="Total Sampah Terkelola"
                   description={`Jumlah total sampah yang sudah kamu kelola`}
-                  sx={{ bgcolor: theme.palette.info.light, color: theme.palette.info.dark }}
+                  sx={{ bgcolor: theme.palette.info.light, color: '#fff' }}
+                  descriptionSx={{ color: '#fff' }}
                 >
-                  <Typography variant="h3" sx={{ mt: 2, fontWeight: 700, color: theme.palette.info.dark }}>
+                  <Typography variant="h3" sx={{ mt: 2, fontWeight: 700, color: '#fff' }}>
                     {totalBerat.toLocaleString()} kg
                   </Typography>
                 </Card>

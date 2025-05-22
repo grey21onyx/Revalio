@@ -14,6 +14,7 @@ import ThreadDetail from '../pages/ThreadDetail';
 import PeluangUsaha from '../pages/PeluangUsaha';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
+import ForgotPassword from '../pages/ForgotPassword';
 import Profile from '../pages/Profile';
 import About from '../pages/About'; // Tambahkan import untuk About
 import NotFound from '../pages/NotFound';
@@ -30,6 +31,7 @@ const AppRoutes = () => {
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
       </Route>
 
       {/* Main App Routes */}

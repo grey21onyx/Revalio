@@ -10,7 +10,7 @@ const AuthLayout = () => {
   // Determine background style based on current route
   const isLoginPage = location.pathname === '/login';
 
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/forgot-password';
 
   const backgroundStyle = isAuthPage
     ? "linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.7)), url('/assets/images/bg1.jpeg')"

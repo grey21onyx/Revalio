@@ -12,6 +12,7 @@ import {
   FormControlLabel
 } from '@mui/material';
 import {
+  ArrowBack,
   Email as EmailIcon,
   Lock as LockIcon,
   Visibility as VisibilityIcon,
@@ -32,6 +33,10 @@ import authService from '../services/authService';
 const Login = () => {
   const navigate = useNavigate();
   // const dispatch = useDispatch(); // Hapus atau comment jika Redux belum digunakan untuk auth
+
+  const handleBack = () => {
+    navigate(-1);
+  };
   
   // State untuk form
   const [formData, setFormData] = useState({
@@ -131,10 +136,17 @@ const Login = () => {
 
   return (
     <Box>
+      <Button
+        startIcon={<ArrowBack />}
+        onClick={handleBack}
+        sx={{ mb: 3 }}
+        variant="outlined"
+      >
+        Beranda
+      </Button>
       <Typography variant="h5" fontWeight={700} gutterBottom>
         Masuk ke Akun Anda
       </Typography>
-      
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         Isi kredensial Anda di bawah ini untuk mengakses akun Revalio
       </Typography>

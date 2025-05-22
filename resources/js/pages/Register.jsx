@@ -14,6 +14,7 @@ import {
   Grid
 } from '@mui/material';
 import {
+  ArrowBack,
   Email as EmailIcon,
   Lock as LockIcon,
   Visibility as VisibilityIcon,
@@ -169,6 +170,14 @@ const Register = () => {
 
   return (
     <Box>
+      <Button
+        variant="outlined"
+        sx={{ mb: 2 }}
+        onClick={() => navigate('/')}
+        startIcon={<ArrowBack />}
+      >
+        Beranda
+      </Button>
       <Typography variant="h5" fontWeight={700} gutterBottom>
         Daftar Akun Baru
       </Typography>

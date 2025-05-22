@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Box, 
   Typography, 
@@ -6,11 +7,12 @@ import {
   Button, 
   Chip, 
   Divider, 
-  Avatar, 
   Paper,
   IconButton,
   Grid,
-  useTheme
+  useTheme,
+  Fade,
+  Skeleton
 } from '@mui/material';
 import {
   ArrowBack,
@@ -24,6 +26,7 @@ import {
   Download
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
+import { gsap } from 'gsap';
 
 const defaultImage = '/assets/images/tutorials/green.png';
 
@@ -93,6 +96,8 @@ const DetailPeluangUsaha = () => {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const mainRef = useRef(null);
 
   useEffect(() => {
     const foundOpportunity = mockBusinessOpportunities.find(item => item.id === parseInt(id));
@@ -103,6 +108,18 @@ const DetailPeluangUsaha = () => {
       navigate('/peluang-usaha', { replace: true });
     }
   }, [id, navigate]);
+
+  useEffect(() => {
+    if (opportunity) {
+      setLoading(false);
+      const element = mainRef.current;
+      gsap.fromTo(
+        element,
+        { opacity: 0, y: 30 },
+        { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }
+      );
+    }
+  }, [opportunity]);
 
   const handleBack = () => {
     navigate(-1);
@@ -117,12 +134,10 @@ const DetailPeluangUsaha = () => {
   };
 
   const handleShare = () => {
-    // Placeholder for share functionality
     alert(`Bagikan peluang usaha: ${opportunity?.title}`);
   };
 
   const handleDownloadPDF = () => {
-    // Placeholder for download PDF functionality
     alert(`Unduh PDF peluang usaha: ${opportunity?.title}`);
   };
 
@@ -134,20 +149,23 @@ const DetailPeluangUsaha = () => {
     setImageModalOpen(false);
   };
 
-  if (!opportunity) {
+  if (loading) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
-          <Typography variant="h6">Memuat detail peluang usaha...</Typography>
-        </Box>
+        <Grid container spacing={3}>
+          {[...Array(3)].map((_, index) => (
+            <Grid item xs={12} sm={6} md={4} key={index}>
+              <Skeleton variant="rectangular" height={350} sx={{ borderRadius: 3 }} />
+            </Grid>
+          ))}
+        </Grid>
       </Container>
     );
   }
 
   return (
-    <Box sx={{ backgroundColor: '#f9f9f9', py: { xs: 3, md: 5 } }}>
-        <Container maxWidth="lg" sx={{ py: 0 }}>
-        {/* Back Button */}
+    <Box sx={{ backgroundColor: '#f9f9f9', py: { xs: 3, md: 5 } }} ref={mainRef}>
+      <Container maxWidth="lg" sx={{ py: 0 }}>
         <Button 
           startIcon={<ArrowBack />}
           onClick={handleBack}
@@ -156,7 +174,6 @@ const DetailPeluangUsaha = () => {
           Kembali
         </Button>
 
-        {/* Header Section */}
         <Box sx={{ mb: 4 }}>
           <Typography variant="h4" component="h1" fontWeight={800} gutterBottom>
             {opportunity.title}
@@ -165,7 +182,6 @@ const DetailPeluangUsaha = () => {
             {opportunity.description}
           </Typography>
 
-          {/* Meta Information */}
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
             <Chip 
               label={opportunity.category} 
@@ -184,7 +200,6 @@ const DetailPeluangUsaha = () => {
             </Typography>
           </Box>
 
-          {/* Action Buttons */}
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 4 }}>
             <Button
               variant="outlined"
@@ -224,7 +239,6 @@ const DetailPeluangUsaha = () => {
           </Box>
         </Box>
 
-        {/* Main Image */}
         <Box 
           sx={{ 
             position: 'relative', 
@@ -232,9 +246,18 @@ const DetailPeluangUsaha = () => {
             overflow: 'hidden', 
             mb: 5,
             height: { xs: 300, md: 500 },
-            cursor: 'pointer'
+            cursor: 'pointer',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
           }}
           onClick={handleImageClick}
+          onMouseEnter={() => {
+            const element = mainRef.current.querySelector('img');
+            gsap.to(element, { scale: 1.05, duration: 0.5, ease: "power1.out" });
+          }}
+          onMouseLeave={() => {
+            const element = mainRef.current.querySelector('img');
+            gsap.to(element, { scale: 1, duration: 0.3, ease: "power1.out" });
+          }}
         >
           <Box
             component="img"
@@ -244,10 +267,6 @@ const DetailPeluangUsaha = () => {
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              transition: 'transform 0.3s ease',
-              '&:hover': {
-                transform: 'scale(1.03)'
-              }
             }}
           />
           <Box
@@ -267,7 +286,6 @@ const DetailPeluangUsaha = () => {
           </Box>
         </Box>
 
-        {/* Challenges Section */}
         <Box sx={{ mb: 6 }}>
           <Typography variant="h5" component="h2" fontWeight={700} gutterBottom>
             Tantangan
@@ -278,7 +296,6 @@ const DetailPeluangUsaha = () => {
           </Paper>
         </Box>
 
-        {/* Implementation Suggestions Section */}
         <Box sx={{ mb: 6 }}>
           <Typography variant="h5" component="h2" fontWeight={700} gutterBottom>
             Saran Implementasi
@@ -289,7 +306,6 @@ const DetailPeluangUsaha = () => {
           </Paper>
         </Box>
 
-        {/* Image Modal */}
         {imageModalOpen && (
           <Box
             sx={{

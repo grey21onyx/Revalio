@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Box, 
   Container, 
@@ -14,11 +15,14 @@ import {
   Slider, 
   Button, 
   Pagination,
-  Chip
+  Chip,
+  Fade,
+  Skeleton
 } from '@mui/material';
 import { BusinessCenter as PeluangUsahaIcon } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
+import { gsap } from 'gsap';
 
 // Mock data for categories and business opportunities
 const categories = [
@@ -89,7 +93,9 @@ const PeluangUsaha = () => {
   const [investmentRange, setInvestmentRange] = useState([0, 30000000]);
   const [filteredOpportunities, setFilteredOpportunities] = useState(mockBusinessOpportunities);
   const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
   const itemsPerPage = 4;
+  const cardsRef = useRef([]);
 
   // Handle filter changes
   const handleCategoryChange = (event) => {
@@ -137,6 +143,29 @@ const PeluangUsaha = () => {
   const handleCardClick = (id) => {
     navigate(`/peluang-usaha/${id}`);
   };
+
+  // Animate cards on mount and update
+  useEffect(() => {
+    if (!loading) {
+      cardsRef.current.forEach((card, index) => {
+        if (card) {
+          gsap.fromTo(
+            card,
+            { opacity: 0, y: 30 },
+            { opacity: 1, y: 0, duration: 0.5, delay: index * 0.1, ease: "power2.out" }
+          );
+        }
+      });
+    }
+  }, [loading, paginatedOpportunities]);
+
+  // Simulate loading delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <Box sx={{ backgroundColor: '#f8f9fa', minHeight: '100vh', pb: 0.5 }}>
@@ -227,52 +256,93 @@ const PeluangUsaha = () => {
       </Container>
 
       {/* Business Opportunities Grid */}
-      <Container maxWidth="lg" sx={{ mb: 6 }}>
-        <Grid container spacing={4}>
-          {paginatedOpportunities.length === 0 ? (
-            <Grid item xs={12}>
-              <Typography variant="h6" align="center" color="text.secondary">
-                Tidak ada peluang usaha yang sesuai dengan filter.
-              </Typography>
-            </Grid>
-          ) : (
-            paginatedOpportunities.map((item) => (
-              <Grid item xs={12} sm={6} md={3} key={item.id}>
-                <Card 
-                  sx={{ height: '100%', display: 'flex', flexDirection: 'column', cursor: 'pointer' }}
-                  onClick={() => handleCardClick(item.id)}
-                >
-                  <CardMedia
-                    component="img"
-                    height="160"
-                    image={item.media}
-                    alt={item.title}
-                  />
-                  <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" component="h2" gutterBottom>
-                      {item.title}
-                    </Typography>
-                    <Chip 
-                      label={item.category} 
-                      color="primary" 
-                      size="small" 
-                      sx={{ mb: 1 }}
-                    />
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                      {item.description}
-                    </Typography>
-                    <Typography variant="subtitle2" fontWeight={600}>
-                      Estimasi Investasi: {formatCurrency(item.investment)}
-                    </Typography>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Potensi Pendapatan: {item.potentialIncome}
-                    </Typography>
-                  </CardContent>
-                </Card>
+      <Container maxWidth="lg" sx={{ mb: 6, px: 0, maxWidth: '1200px' }}>
+        {loading ? (
+          <Grid container spacing={2} sx={{ mx: 0, maxWidth: '1200px' }}>
+            {[...Array(itemsPerPage)].map((_, index) => (
+              <Grid item xs={12} sm={6} md={3} key={index} sx={{ px: 1 }}>
+                <Skeleton variant="rectangular" height={280} sx={{ borderRadius: 2 }} />
               </Grid>
-            ))
-          )}
-        </Grid>
+            ))}
+          </Grid>
+        ) : (
+          <Grid container spacing={2} sx={{ mx: 0, maxWidth: '1200px' }}>
+            {paginatedOpportunities.length === 0 ? (
+              <Grid item xs={12} sx={{ px: 1 }}>
+                <Typography variant="h6" align="center" color="text.secondary">
+                  Tidak ada peluang usaha yang sesuai dengan filter.
+                </Typography>
+              </Grid>
+            ) : (
+              paginatedOpportunities.map((item, index) => (
+                <Grid item xs={12} sm={6} md={3} key={item.id} ref={el => cardsRef.current[index] = el} sx={{ px: 1 }}>
+                  <Card 
+                    sx={{ 
+                      height: '100%', 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      cursor: 'pointer', 
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      backgroundColor: 'background.paper',
+                      '&:hover': {
+                        backgroundColor: 'rgba(0,0,0,0.04)'
+                      }
+                    }}
+                    onClick={() => handleCardClick(item.id)}
+                    onMouseEnter={() => {
+                      const card = cardsRef.current[index];
+                      if (card) {
+                        gsap.to(card, { y: -6, boxShadow: 'none', duration: 0.3, ease: "power2.out" });
+                        const img = card.querySelector('img');
+                        if (img) {
+                          gsap.to(img, { scale: 1.05, duration: 0.5, ease: "power1.out" });
+                        }
+                      }
+                    }}
+                    onMouseLeave={() => {
+                      const card = cardsRef.current[index];
+                      if (card) {
+                        gsap.to(card, { y: 0, boxShadow: 'none', duration: 0.3, ease: "power1.out" });
+                        const img = card.querySelector('img');
+                        if (img) {
+                          gsap.to(img, { scale: 1, duration: 0.3, ease: "power1.out" });
+                        }
+                      }
+                    }}
+                  >
+                    <CardMedia
+                      component="img"
+                      height="160"
+                      image={item.media}
+                      alt={item.title}
+                      sx={{ transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                    />
+                    <CardContent sx={{ flexGrow: 1 }}>
+                      <Typography variant="h6" component="h2" gutterBottom>
+                        {item.title}
+                      </Typography>
+                      <Chip 
+                        label={item.category} 
+                        color="primary" 
+                        size="small" 
+                        sx={{ mb: 1 }}
+                      />
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                        {item.description}
+                      </Typography>
+                      <Typography variant="subtitle2" fontWeight={600}>
+                        Estimasi Investasi: {formatCurrency(item.investment)}
+                      </Typography>
+                      <Typography variant="subtitle2" color="text.secondary">
+                        Potensi Pendapatan: {item.potentialIncome}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))
+            )}
+          </Grid>
+        )}
       </Container>
 
       {/* Pagination */}

@@ -168,35 +168,48 @@ const PeluangUsaha = () => {
   }, []);
 
   return (
-    <Box sx={{ backgroundColor: '#f8f9fa', minHeight: '100vh', pb: 0.5 }}>
-      {/* Hero Section - Banner with title and subtitle */}
-      <Box
-        sx={{
-          background: `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.7)), url('/assets/images/bg1.jpeg')`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          color: 'white',
-          py: { xs: 6, md: 10 },
-          mb: 6,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          textAlign: 'center',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-          position: 'relative',
-          minHeight: { xs: '30vh', md: '40vh' },
-        }}
-      >
-        <Container maxWidth="md">
-          <PeluangUsahaIcon sx={{ fontSize: 64, mb: 2, color: theme.palette.error.main }} />
-          <Typography variant="h3" component="h1" fontWeight={700} gutterBottom>
-            Temukan Peluang Usaha dari Sampah
-          </Typography>
-          <Typography variant="h6" sx={{ opacity: 0.85 }}>
-            Jelajahi berbagai peluang usaha yang dapat Anda mulai dengan pengelolaan sampah
-          </Typography>
+      <Box sx={{ backgroundColor: '#f9f9f9', py: { xs: 3, md: 5 } }}>
+        <Container maxWidth="lg">
+          {/* Header */}
+          <Box sx={{ mb: { xs: 4, md: 5 } }}>
+            <Typography 
+              variant="h4" 
+              component="h1" 
+              fontWeight={800} 
+              gutterBottom 
+              sx={{ 
+                position: 'relative', 
+                display: 'inline-block',
+                mb: 3
+              }}
+            >
+              Temukan Peluang Usaha dari Sampah
+              <Box 
+                sx={{ 
+                  position: 'absolute',
+                  bottom: -5,
+                  left: 0,
+                  width: '50%',
+                  height: 4,
+                  backgroundColor: theme.palette.primary.main,
+                  borderRadius: 2
+                }}
+              />
+            </Typography>
+            <Typography 
+              variant="body1" 
+              color="text.secondary" 
+              sx={{ 
+                mt: 2, 
+                maxWidth: '800px',
+                fontSize: '1.1rem',
+                lineHeight: 1.6
+              }}
+            >
+              Jelajahi berbagai peluang usaha yang dapat Anda mulai dengan pengelolaan sampah
+            </Typography>
+          </Box>
         </Container>
-      </Box>
 
       {/* Filters */}
       <Container maxWidth="lg" sx={{ mb: 4 }}>

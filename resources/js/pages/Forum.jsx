@@ -145,13 +145,45 @@ const Forum = () => {
   };
 
   return (
-    <Box sx={{ backgroundColor: '#f9f9f9', minHeight: '100vh', py: 6 }}>
+      <Box sx={{ backgroundColor: '#f9f9f9', py: { xs: 3, md: 5 } }}>
       <Container maxWidth="lg">
         {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-          <ForumIcon color="primary" sx={{ fontSize: 40, mr: 1 }} />
-          <Typography variant="h4" fontWeight={700}>
+        <Box sx={{ mb: { xs: 4, md: 5 } }}>
+          <Typography 
+            variant="h4" 
+            component="h1" 
+            fontWeight={800} 
+            gutterBottom 
+            sx={{ 
+              position: 'relative', 
+              display: 'inline-block',
+              mb: 3
+            }}
+          >
             Forum Diskusi Revalio
+            <Box 
+              sx={{ 
+                position: 'absolute',
+                bottom: -5,
+                left: 0,
+                width: '50%',
+                height: 4,
+                backgroundColor: (theme) => theme.palette.primary.main,
+                borderRadius: 2
+              }}
+            />
+          </Typography>
+          <Typography 
+            variant="body1" 
+            color="text.secondary" 
+            sx={{ 
+              mt: 2, 
+              maxWidth: '800px',
+              fontSize: '1.1rem',
+              lineHeight: 1.6
+            }}
+          >
+            Temukan dan diskusikan berbagai topik terkait pengelolaan sampah dan daur ulang.
           </Typography>
         </Box>
 

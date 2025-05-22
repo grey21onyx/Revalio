@@ -22,7 +22,6 @@ import {
   Menu as MenuIcon,
   Search as SearchIcon,
   AccountCircle,
-  Notifications as NotificationsIcon,
   MoreVert as MoreIcon,
   Logout as LogoutIcon,
   Person as PersonIcon,
@@ -100,10 +99,6 @@ const Header = ({ toggleSidebar }) => {
         <PersonIcon fontSize="small" sx={{ mr: 1 }} />
         Profil
       </MenuItem>
-      <MenuItem onClick={() => { navigate('/settings'); handleMenuClose(); }}>
-        <SettingsIcon fontSize="small" sx={{ mr: 1 }} />
-        Pengaturan
-      </MenuItem>
       <MenuItem onClick={handleLogout}>
         <LogoutIcon fontSize="small" sx={{ mr: 1 }} />
         Keluar
@@ -131,14 +126,6 @@ const Header = ({ toggleSidebar }) => {
     >
       {isAuthenticated ? (
         [
-          <MenuItem key="notifications-mobile" onClick={() => { navigate('/notifications'); handleMobileMenuClose(); }}>
-            <IconButton size="large" aria-label="show new notifications" color="inherit">
-              <Badge badgeContent={4} color="error">
-                <NotificationsIcon />
-              </Badge>
-            </IconButton>
-            <p>Notifikasi</p>
-          </MenuItem>,
           <MenuItem key="profile-mobile" onClick={handleProfileMenuOpen}>
             <IconButton
               size="large"
@@ -253,13 +240,6 @@ const Header = ({ toggleSidebar }) => {
           {/* User Menu */}
           {isAuthenticated ? (
             <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
-              <Tooltip title="Notifikasi">
-                <IconButton size="large" aria-label="show new notifications" color="inherit" onClick={() => navigate('/notifications')}>
-                  <Badge badgeContent={4} color="error">
-                    <NotificationsIcon />
-                  </Badge>
-                </IconButton>
-              </Tooltip>
               <Tooltip title="Profil">
                 <IconButton
                   size="large"

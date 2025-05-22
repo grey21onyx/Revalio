@@ -12,6 +12,7 @@ import Monetisasi from '../pages/Monetisasi';
 import Forum from '../pages/Forum';
 import ThreadDetail from '../pages/ThreadDetail';
 import PeluangUsaha from '../pages/PeluangUsaha';
+import DetailPeluangUsaha from '../pages/DetailPeluangUsaha';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
 import ForgotPassword from '../pages/ForgotPassword';
@@ -59,6 +60,7 @@ const AppRoutes = () => {
         
         {/* Peluang Usaha */}
         <Route path="/peluang-usaha" element={<PeluangUsaha />} />
+        <Route path="/peluang-usaha/:id" element={<DetailPeluangUsaha />} />
         
         {/* Profile */}
         <Route path="/profile" element={<Profile />} />

@@ -13,12 +13,12 @@ import {
   MenuItem, 
   Slider, 
   Button, 
-  Stack,
   Pagination,
   Chip
 } from '@mui/material';
 import { BusinessCenter as PeluangUsahaIcon } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
+import { useNavigate } from 'react-router-dom';
 
 // Mock data for categories and business opportunities
 const categories = [
@@ -29,6 +29,9 @@ const categories = [
   'Lainnya'
 ];
 
+// Default fallback image path
+const defaultImage = '/assets/images/tutorials/green.png';
+
 const mockBusinessOpportunities = [
   {
     id: 1,
@@ -37,7 +40,7 @@ const mockBusinessOpportunities = [
     category: 'Kerajinan',
     investment: 10000000,
     potentialIncome: 'Rp 15.000.000 - Rp 25.000.000 per bulan',
-    imageUrl: '/assets/images/business-opportunities/kerajinan-plastik.jpg',
+    media: defaultImage,
   },
   {
     id: 2,
@@ -46,7 +49,7 @@ const mockBusinessOpportunities = [
     category: 'Kompos',
     investment: 5000000,
     potentialIncome: 'Rp 8.000.000 - Rp 12.000.000 per bulan',
-    imageUrl: '/assets/images/business-opportunities/kompos.jpg',
+    media: defaultImage,
   },
   {
     id: 3,
@@ -55,7 +58,7 @@ const mockBusinessOpportunities = [
     category: 'Jasa Pengolahan',
     investment: 15000000,
     potentialIncome: 'Rp 20.000.000 - Rp 30.000.000 per bulan',
-    imageUrl: '/assets/images/business-opportunities/jasa-pengumpulan.jpg',
+    media: defaultImage,
   },
   {
     id: 4,
@@ -64,7 +67,7 @@ const mockBusinessOpportunities = [
     category: 'Energi Terbarukan',
     investment: 25000000,
     potentialIncome: 'Rp 30.000.000 - Rp 50.000.000 per bulan',
-    imageUrl: '/assets/images/business-opportunities/biogas.jpg',
+    media: defaultImage,
   },
   {
     id: 5,
@@ -73,12 +76,13 @@ const mockBusinessOpportunities = [
     category: 'Lainnya',
     investment: 20000000,
     potentialIncome: 'Rp 25.000.000 - Rp 40.000.000 per bulan',
-    imageUrl: '/assets/images/business-opportunities/sampah-elektronik.jpg',
+    media: defaultImage,
   },
 ];
 
 const PeluangUsaha = () => {
   const theme = useTheme();
+  const navigate = useNavigate();
 
   // State for filters
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -127,6 +131,11 @@ const PeluangUsaha = () => {
   // Format currency
   const formatCurrency = (value) => {
     return 'Rp ' + value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  };
+
+  // Navigate to detail page
+  const handleCardClick = (id) => {
+    navigate(`/peluang-usaha/${id}`);
   };
 
   return (
@@ -229,15 +238,16 @@ const PeluangUsaha = () => {
           ) : (
             paginatedOpportunities.map((item) => (
               <Grid item xs={12} sm={6} md={3} key={item.id}>
-                <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                  {item.imageUrl && (
-                    <CardMedia
-                      component="img"
-                      height="160"
-                      image={item.imageUrl}
-                      alt={item.title}
-                    />
-                  )}
+                <Card 
+                  sx={{ height: '100%', display: 'flex', flexDirection: 'column', cursor: 'pointer' }}
+                  onClick={() => handleCardClick(item.id)}
+                >
+                  <CardMedia
+                    component="img"
+                    height="160"
+                    image={item.media}
+                    alt={item.title}
+                  />
                   <CardContent sx={{ flexGrow: 1 }}>
                     <Typography variant="h6" component="h2" gutterBottom>
                       {item.title}

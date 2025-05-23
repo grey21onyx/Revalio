@@ -23,6 +23,9 @@ import {
   useTheme,
   useMediaQuery,
 } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
+import Swal from 'sweetalert2';
 import { 
   Search as SearchIcon,
   DateRange as DateRangeIcon,
@@ -30,6 +33,7 @@ import {
   Delete as DeleteIcon,
   Edit as EditIcon,
   FilterList as FilterListIcon,
+  LockOutlined as LockIcon
 } from '@mui/icons-material';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -94,6 +98,8 @@ const generateChartData = (records) => {
 
 const Tracking = () => {
   const theme = useTheme();
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [tabValue, setTabValue] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
@@ -187,6 +193,63 @@ const Tracking = () => {
   // Menghitung total nilai estimasi dan berat total
   const totalNilai = filteredRecords.reduce((sum, record) => sum + record.nilai_estimasi, 0);
   const totalBerat = filteredRecords.reduce((sum, record) => sum + record.jumlah, 0);
+
+  // Fungsi untuk menangani klik login
+  const handleLoginClick = () => {
+    navigate('/login', { state: { from: '/tracking' } });
+  };
+
+  // Menampilkan overlay login jika belum terautentikasi, bukan langsung return null
+  if (!isAuthenticated) {
+    return (
+      <Box 
+        sx={{ 
+          position: 'relative', 
+          height: '100vh', 
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#f8f9fa'
+        }}
+      >
+        <Paper 
+          elevation={3} 
+          sx={{ 
+            p: 5, 
+            maxWidth: 500, 
+            width: '90%',
+            textAlign: 'center',
+            borderRadius: 3,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.1)'
+          }}
+        >
+          <LockIcon sx={{ fontSize: 64, mb: 2, color: theme.palette.primary.main }} />
+          <Typography variant="h5" fontWeight={700} gutterBottom>
+            Fitur Terbatas
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+            Fitur tracking sampah hanya tersedia untuk pengguna yang sudah login. Silakan login untuk mengakses fitur ini.
+          </Typography>
+          <Button 
+            variant="contained" 
+            color="primary" 
+            onClick={handleLoginClick}
+            sx={{ px: 4, py: 1.5, borderRadius: 2, fontWeight: 600 }}
+          >
+            Masuk Sekarang
+          </Button>
+          <Button 
+            variant="outlined" 
+            onClick={() => navigate('/')}
+            sx={{ ml: 2, px: 4, py: 1.5, borderRadius: 2, fontWeight: 600 }}
+          >
+            Kembali
+          </Button>
+        </Paper>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ backgroundColor: '#f9f9f9', py: { xs: 3, md: 5 } }}>

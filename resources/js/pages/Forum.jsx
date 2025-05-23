@@ -15,9 +15,11 @@ import ForumIcon from '@mui/icons-material/Forum';
 import SearchIcon from '@mui/icons-material/Search';
 import { Link, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import { useAuth } from '../hooks/useAuth';
 
 const Forum = () => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   // State for forum threads, categories, filters, and search
   const [threads, setThreads] = useState([]);
@@ -119,10 +121,7 @@ const Forum = () => {
   };
 
   const handleCreateThread = () => {
-    // Check if user is logged in (mock check, replace with real auth check)
-    const isLoggedIn = false; // TODO: Replace with actual auth state
-
-    if (!isLoggedIn) {
+    if (!isAuthenticated) {
       Swal.fire({
         title: 'Anda belum memiliki akun',
         text: 'Silakan masuk atau daftar untuk membuat topik baru.',

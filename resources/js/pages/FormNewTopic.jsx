@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -14,6 +14,7 @@ import {
 import ForumIcon from '@mui/icons-material/Forum';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import { useAuth } from '../hooks/useAuth';
 
 const categories = [
   { id: 'general', name: 'Umum' },
@@ -23,6 +24,24 @@ const categories = [
 
 const FormNewTopic = () => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      Swal.fire({
+        title: 'Login Diperlukan',
+        text: 'Anda harus login terlebih dahulu untuk membuat topik baru.',
+        icon: 'warning',
+        confirmButtonText: 'Login Sekarang',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate('/login', { state: { from: '/forum/create' } });
+        } else {
+          navigate('/forum');
+        }
+      });
+    }
+  }, [isAuthenticated, navigate]);
 
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
@@ -32,6 +51,22 @@ const FormNewTopic = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!isAuthenticated) {
+      Swal.fire({
+        title: 'Login Diperlukan',
+        text: 'Anda harus login terlebih dahulu untuk membuat topik baru.',
+        icon: 'warning',
+        confirmButtonText: 'Login Sekarang',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate('/login', { state: { from: '/forum/create' } });
+        } else {
+          navigate('/forum');
+        }
+      });
+      return;
+    }
 
     if (!title.trim()) {
       Swal.fire('Error', 'Judul topik harus diisi.', 'error');
@@ -62,6 +97,10 @@ const FormNewTopic = () => {
       setSubmitting(false);
     }
   };
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <Box sx={{ backgroundColor: '#f9f9f9', minHeight: '100vh', py: { xs: 4, sm: 6 } }}>

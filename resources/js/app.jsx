@@ -1,8 +1,15 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
+import axios from './config/axios';
+
+// Register GSAP plugins globally
+gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
 
 // Import theme dan AuthProvider
 import theme from './theme/theme';
@@ -15,6 +22,21 @@ import AppRoutes from './routes';
 import '../css/app.css';
 
 function App() {
+    useEffect(() => {
+        const getCsrfToken = async () => {
+            try {
+                console.log('Attempting to fetch CSRF cookie...');
+                await axios.get('/sanctum/csrf-cookie');
+                console.log('CSRF cookie fetched successfully.');
+            } catch (error) {
+                console.error('Error fetching CSRF cookie:', error);
+                // Pertimbangkan untuk menampilkan notifikasi ke user jika ini gagal
+            }
+        };
+
+        getCsrfToken();
+    }, []);
+
     return (
         <BrowserRouter
             future={{

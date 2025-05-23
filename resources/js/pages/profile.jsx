@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -49,6 +49,9 @@ import {
   Security as SecurityIcon,
   VerifiedUser as VerifiedUserIcon
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
+import Swal from 'sweetalert2';
 
 // Data dummy untuk profil pengguna
 const userDummyData = {
@@ -88,11 +91,41 @@ const activityDummyData = {
 
 const Profile = () => {
   const theme = useTheme();
+  const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [tabValue, setTabValue] = useState(0);
   const [editMode, setEditMode] = useState(false);
   const [userData, setUserData] = useState(userDummyData);
   const fileInputRef = useRef(null);
+
+  // Cek autentikasi saat halaman dimuat
+  useEffect(() => {
+    if (!isAuthenticated) {
+      Swal.fire({
+        title: 'Login Diperlukan',
+        text: 'Anda harus login terlebih dahulu untuk mengakses halaman profil.',
+        icon: 'warning',
+        confirmButtonText: 'Login Sekarang',
+      }).then((result) => {
+        navigate('/login', { state: { from: '/profile' } });
+      });
+    } else if (user) {
+      // Jika user data tersedia dari auth context, gunakan itu
+      setUserData({
+        ...userDummyData,
+        ...user,
+        nama_lengkap: user.nama_lengkap || user.name || userDummyData.nama_lengkap,
+        email: user.email || userDummyData.email,
+      });
+      setFormData({
+        ...userDummyData,
+        ...user,
+        nama_lengkap: user.nama_lengkap || user.name || userDummyData.nama_lengkap,
+        email: user.email || userDummyData.email,
+      });
+    }
+  }, [isAuthenticated, user, navigate]);
 
   // State untuk form
   const [formData, setFormData] = useState({
@@ -137,6 +170,11 @@ const Profile = () => {
     setUserData(formData);
     setEditMode(false);
   };
+
+  // Jika belum terautentikasi, tidak perlu render halaman
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <Box sx={{ backgroundColor: '#f8f9fa', py: 4, minHeight: '100vh' }}>

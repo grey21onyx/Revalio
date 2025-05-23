@@ -71,7 +71,7 @@ const WasteCardItem = ({
       imageAlt={`Sampah ${name}`}
       imageHeight={180}
       actions={cardActions}
-      onClick={() => navigate(`/katalog/${id}`)}
+      onClick={() => navigate(`/katalog/detail-sampah/${id}`)}
       sx={sx}
     >
       <Box sx={{ mt: 2, mb: 2 }}>

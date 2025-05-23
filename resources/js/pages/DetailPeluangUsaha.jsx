@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Box, 
@@ -27,6 +26,8 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { gsap } from 'gsap';
+import { useAuth } from '../hooks/useAuth';
+import Swal from 'sweetalert2';
 
 const defaultImage = '/assets/images/tutorials/green.png';
 
@@ -92,6 +93,7 @@ const DetailPeluangUsaha = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const { id } = useParams();
+  const { isAuthenticated } = useAuth();
   const [opportunity, setOpportunity] = useState(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -100,11 +102,16 @@ const DetailPeluangUsaha = () => {
   const mainRef = useRef(null);
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      console.log('User belum login - hanya bisa melihat detail tanpa akses fitur lain');
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
     const foundOpportunity = mockBusinessOpportunities.find(item => item.id === parseInt(id));
     if (foundOpportunity) {
       setOpportunity(foundOpportunity);
     } else {
-      // Redirect back if not found
       navigate('/peluang-usaha', { replace: true });
     }
   }, [id, navigate]);
@@ -126,10 +133,42 @@ const DetailPeluangUsaha = () => {
   };
 
   const handleBookmarkToggle = () => {
+    if (!isAuthenticated) {
+      Swal.fire({
+        title: 'Login Diperlukan',
+        text: 'Anda harus login terlebih dahulu untuk menyimpan ke favorit.',
+        icon: 'warning',
+        confirmButtonText: 'Login Sekarang',
+        showCancelButton: true,
+        cancelButtonText: 'Tutup',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate('/login', { state: { from: `/peluang-usaha/${id}` } });
+        }
+      });
+      return;
+    }
+    
     setIsBookmarked(!isBookmarked);
   };
 
   const handleCompleteToggle = () => {
+    if (!isAuthenticated) {
+      Swal.fire({
+        title: 'Login Diperlukan',
+        text: 'Anda harus login terlebih dahulu untuk menandai sebagai selesai.',
+        icon: 'warning',
+        confirmButtonText: 'Login Sekarang',
+        showCancelButton: true,
+        cancelButtonText: 'Tutup',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate('/login', { state: { from: `/peluang-usaha/${id}` } });
+        }
+      });
+      return;
+    }
+    
     setIsCompleted(!isCompleted);
   };
 
@@ -138,6 +177,22 @@ const DetailPeluangUsaha = () => {
   };
 
   const handleDownloadPDF = () => {
+    if (!isAuthenticated) {
+      Swal.fire({
+        title: 'Login Diperlukan',
+        text: 'Anda harus login terlebih dahulu untuk mengunduh PDF.',
+        icon: 'warning',
+        confirmButtonText: 'Login Sekarang',
+        showCancelButton: true,
+        cancelButtonText: 'Tutup',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate('/login', { state: { from: `/peluang-usaha/${id}` } });
+        }
+      });
+      return;
+    }
+    
     alert(`Unduh PDF peluang usaha: ${opportunity?.title}`);
   };
 

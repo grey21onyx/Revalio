@@ -35,6 +35,9 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
 import axios from 'axios';
 
+// Import komponen ScrollToTop
+import ScrollToTop from '../components/ui/ScrollToTop';
+
 // Register GSAP plugins
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
 
@@ -822,23 +825,12 @@ const Home = () => {
   // Parallax effect for About Revalio section
   const aboutSection = aboutSectionRef.current;
   if (aboutSection) {
-    // Image parallax
-    const aboutImage = aboutSection.querySelector('.about-image');
+    // Hanya animasi reveal untuk image, tanpa efek parallax
+    const aboutImage = aboutSection.querySelector('.about-image img');
     if (aboutImage) {
-      gsap.to(aboutImage, {
-        y: -80,
-        ease: "none",
-        scrollTrigger: {
-          trigger: aboutSection,
-          start: "top bottom",
-          end: "bottom top",
-          scrub: true
-        }
-      });
-      
       // Image reveal animation
       gsap.fromTo(
-        aboutImage.querySelector('img'),
+        aboutImage,
         { 
           clipPath: "polygon(0 0, 100% 0, 100% 0, 0 0)",
           scale: 1.2
@@ -2055,6 +2047,9 @@ const Home = () => {
           </CardContent>
         </Card>
       </Container>
+
+      {/* Tambahkan komponen ScrollToTop */}
+      <ScrollToTop threshold={400} color="secondary" />
     </Box>
   );
 };

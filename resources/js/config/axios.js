@@ -4,6 +4,7 @@ import axios from 'axios';
 const instance = axios.create({
   baseURL: '/api', // URL dasar untuk semua request
   timeout: 15000, // Timeout 15 detik
+  withCredentials: true, // Tambahkan ini untuk mengirim cookie
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',

@@ -238,7 +238,7 @@ const GridItemCard = ({ item, index, onToggleFavorite, favorites }) => {
   };
   
   const handleClick = () => {
-    navigate(`/katalog/${item.id}`);
+    navigate(`/katalog/detail-sampah/${item.id}`);
   };
   
   const handleFavoriteClick = (e) => {

@@ -11,12 +11,13 @@ import Tracking from '../pages/Tracking';
 import Monetisasi from '../pages/Monetisasi';
 import Forum from '../pages/Forum';
 import ThreadDetail from '../pages/ThreadDetail';
+import DetailForum from '../pages/DetailForum';
 import PeluangUsaha from '../pages/PeluangUsaha';
 import DetailPeluangUsaha from '../pages/DetailPeluangUsaha';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
 import ForgotPassword from '../pages/ForgotPassword';
-import Profile from '../pages/Profile';
+import Profile from '../pages/profile';
 import About from '../pages/About'; // Tambahkan import untuk About
 import NotFound from '../pages/NotFound';
 import FormNewTopic from '../pages/FormNewTopic';
@@ -55,6 +56,7 @@ const AppRoutes = () => {
         
         {/* Forum */}
         <Route path="/forum" element={<Forum />} />
+        <Route path="/detail-forum/:id" element={<DetailForum />} />
         <Route path="/forum/:id" element={<ThreadDetail />} />
         <Route path="/forum/new-topic" element={<FormNewTopic />} />
         

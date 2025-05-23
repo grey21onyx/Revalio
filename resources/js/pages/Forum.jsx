@@ -40,9 +40,9 @@ const Forum = () => {
     // Example categories
     setCategories([
       { id: '', name: 'Semua Kategori' },
-      { id: 'general', name: 'Umum' },
-      { id: 'tips', name: 'Tips & Trik' },
-      { id: 'recycling', name: 'Daur Ulang' },
+      { id: 'Umum', name: 'Umum' },
+      { id: 'Tips & Trik', name: 'Tips & Trik' },
+      { id: 'Daur Ulang', name: 'Daur Ulang' },
     ]);
 
     // Fetch threads
@@ -53,7 +53,7 @@ const Forum = () => {
         author: 'Budi Santoso',
         replies: 12,
         lastPost: '2024-06-01T10:30:00Z',
-        category: 'recycling',
+        category: 'Daur Ulang',
         tags: ['plastik', 'daur ulang'],
       },
       {
@@ -62,7 +62,7 @@ const Forum = () => {
         author: 'Sari Dewi',
         replies: 8,
         lastPost: '2024-05-30T15:45:00Z',
-        category: 'tips',
+        category: 'Tips & Trik',
         tags: ['usaha', 'daur ulang'],
       },
       {
@@ -71,7 +71,7 @@ const Forum = () => {
         author: 'Andi Wijaya',
         replies: 20,
         lastPost: '2024-06-02T08:20:00Z',
-        category: 'general',
+        category: 'Umum',
         tags: ['diskusi', 'sampah'],
       },
     ]);
@@ -262,7 +262,7 @@ const Forum = () => {
                     borderColor: 'grey.200',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
                   }}
-                  onClick={() => alert(`Navigasi ke detail thread ID: ${thread.id}`)}
+                  onClick={() => navigate(`/detail-forum/${thread.id}`)}
                 >
                   <Typography variant="h6" color="primary" gutterBottom>
                     {thread.title}

@@ -17,6 +17,7 @@ use App\Http\Controllers\API\v1\RoleController;
 use App\Http\Controllers\API\v1\PermissionController;
 use App\Http\Controllers\API\v1\UserRoleController;
 use App\Http\Controllers\API\v1\OpenAPIController;
+use App\Http\Controllers\API\v1\HomeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -61,6 +62,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/upload-photo', [UserController::class, 'uploadPhoto']);
             Route::get('/waste-history', [UserController::class, 'wasteHistory']);
             Route::get('/user-statistics', [UserController::class, 'statistics']);
+            Route::get('/dashboard-stats', [UserController::class, 'getUserStats']);
 
             // Users
             Route::apiResource('users', UserController::class);
@@ -89,6 +91,10 @@ Route::prefix('v1')->group(function () {
             
             // Waste Categories
             Route::apiResource('waste-categories', WasteCategoryController::class);
+            
+            // Favorit Feature
+            Route::get('/favorites/waste-types', [WasteTypeController::class, 'getUserFavorites']);
+            Route::post('/favorites/waste-types/{id}', [WasteTypeController::class, 'toggleFavorite']);
             
             // Waste Values
             Route::apiResource('waste-values', WasteValueController::class);
@@ -142,5 +148,13 @@ Route::prefix('v1')->group(function () {
         Route::get('/waste-buyers/public', [WasteBuyerController::class, 'public']);
         Route::get('/waste-buyer-types/public', [WasteBuyerTypeController::class, 'public']);
         Route::get('/business-opportunities/public', [BusinessOpportunityController::class, 'public']);
+        
+        // Home & Dashboard Routes
+        Route::get('/home-data', [HomeController::class, 'index']);
+        
+        // Detail Sampah Routes
+        Route::get('/waste-types/{id}/detail', [WasteTypeController::class, 'showDetail']);
+        Route::get('/waste-types/{id}/tutorials', [WasteTypeController::class, 'getRelatedTutorials']);
+        Route::get('/waste-types/{id}/buyers', [WasteTypeController::class, 'getPotentialBuyers']);
     });
 });

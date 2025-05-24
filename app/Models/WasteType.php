@@ -9,10 +9,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class WasteType extends Model
 {
-    use HasFactory, CommonScopes, RecyclableTrait;
+    use HasFactory, CommonScopes, RecyclableTrait, SoftDeletes;
     
     /**
      * Nama tabel yang terkait dengan model.
@@ -132,5 +134,16 @@ class WasteType extends Model
     public function buyers(): HasMany
     {
         return $this->hasMany(WasteBuyerType::class, 'waste_id', 'waste_id');
+    }
+    
+    /**
+     * Relasi ke model User untuk favorit
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function favoriteByUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'user_favorite_waste_types', 'waste_id', 'user_id')
+                    ->withTimestamps();
     }
 }

@@ -309,4 +309,15 @@ class User extends Authenticatable
     {
         return $this->hasMany(DeletedRecord::class, 'user_id', 'user_id');
     }
+    
+    /**
+     * Relasi ke model WasteType untuk favorit
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function favoriteWasteTypes(): BelongsToMany
+    {
+        return $this->belongsToMany(WasteType::class, 'user_favorite_waste_types', 'user_id', 'waste_id')
+                    ->withTimestamps();
+    }
 }

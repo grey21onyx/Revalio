@@ -5,9 +5,16 @@ namespace App\Http\Controllers\API\v1;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\WasteTypeCollection;
 use App\Http\Resources\WasteTypeResource;
+use App\Http\Resources\WasteTypeDetailResource;
+use App\Http\Resources\TutorialResource;
+use App\Http\Resources\WasteBuyerResource;
 use App\Models\WasteType;
+use App\Models\Tutorial;
+use App\Models\WasteBuyer;
+use App\Models\WasteValue;
 use App\Services\CacheService;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class WasteTypeController extends Controller
 {
@@ -291,5 +298,137 @@ class WasteTypeController extends Controller
         });
         
         return response()->json(new WasteTypeCollection($wasteTypes));
+    }
+    
+    /**
+     * Mendapatkan daftar ID sampah favorit user
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getUserFavorites()
+    {
+        if (!auth()->check()) {
+            return response()->json(['favorites' => []], 200);
+        }
+        
+        $favorites = auth()->user()
+            ->favoriteWasteTypes()
+            ->pluck('waste_id')
+            ->toArray();
+            
+        return response()->json(['favorites' => $favorites], 200);
+    }
+
+    /**
+     * Toggle status favorit untuk jenis sampah
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function toggleFavorite($id)
+    {
+        if (!auth()->check()) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+        
+        $user = auth()->user();
+        $wasteType = WasteType::findOrFail($id);
+        
+        if ($user->favoriteWasteTypes()->where('waste_id', $id)->exists()) {
+            $user->favoriteWasteTypes()->detach($id);
+            $message = 'Removed from favorites';
+            $isFavorite = false;
+        } else {
+            $user->favoriteWasteTypes()->attach($id);
+            $message = 'Added to favorites';
+            $isFavorite = true;
+        }
+        
+        return response()->json([
+            'message' => $message,
+            'is_favorite' => $isFavorite
+        ], 200);
+    }
+
+    /**
+     * Display detailed information about the specified waste type
+     * including price history, related tutorials, and potential buyers.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function showDetail($id)
+    {
+        $wasteType = WasteType::with([
+            'category',
+            'values',
+            'tutorials',
+            'buyers.buyer',
+        ])->findOrFail($id);
+        
+        // Get price history grouped by month
+        $priceHistory = WasteValue::where('waste_id', $id)
+            ->orderBy('tanggal_update', 'asc')
+            ->get()
+            ->groupBy(function($date) {
+                return Carbon::parse($date->tanggal_update)->format('Y-m');
+            })
+            ->map(function($group) {
+                return [
+                    'min' => $group->avg('harga_minimum'),
+                    'max' => $group->avg('harga_maksimum'),
+                ];
+            });
+        
+        // Check if the user has favorited this waste type
+        $isFavorite = false;
+        if (auth()->check()) {
+            $isFavorite = auth()->user()->favoriteWasteTypes()->where('waste_id', $id)->exists();
+        }
+        
+        return response()->json([
+            'waste_type' => new WasteTypeDetailResource($wasteType),
+            'price_history' => $priceHistory,
+            'is_favorite' => $isFavorite,
+        ]);
+    }
+
+    /**
+     * Get related tutorials for a waste type
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getRelatedTutorials($id)
+    {
+        $wasteType = WasteType::findOrFail($id);
+        
+        $tutorials = Tutorial::where('waste_id', $id)
+            ->orWhere('kategori_id', $wasteType->kategori_id)
+            ->take(5)
+            ->get();
+            
+        return response()->json([
+            'tutorials' => TutorialResource::collection($tutorials)
+        ]);
+    }
+
+    /**
+     * Get potential buyers for a waste type
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getPotentialBuyers($id)
+    {
+        $buyers = WasteBuyer::whereHas('wasteTypes', function($query) use ($id) {
+            $query->where('waste_id', $id);
+        })->with(['wasteTypes' => function($query) use ($id) {
+            $query->where('waste_id', $id);
+        }])->get();
+        
+        return response()->json([
+            'buyers' => WasteBuyerResource::collection($buyers)
+        ]);
     }
 } 

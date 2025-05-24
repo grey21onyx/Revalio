@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
+use App\Http\Controllers\API\v1\HomeController;
 
 class UserController extends Controller
 {
@@ -377,6 +378,86 @@ class UserController extends Controller
                 'unique_waste_types' => $uniqueWasteTypes,
                 'top_wastes' => $topWastes,
             ]
+        ]);
+    }
+
+    /**
+     * Get comprehensive user statistics for dashboard.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getUserStats(Request $request)
+    {
+        $user = $request->user();
+        
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+        
+        $userId = $user->user_id;
+        
+        // Get user's waste tracking stats
+        $trackings = $user->wasteTrackings();
+        
+        // Get all waste types
+        $wasteTypeDistribution = $user->wasteTrackings()
+            ->selectRaw('waste_id, SUM(jumlah) as total_jumlah')
+            ->with('wasteType.category')
+            ->groupBy('waste_id')
+            ->get()
+            ->map(function($item) {
+                return [
+                    'waste_id' => $item->waste_id,
+                    'name' => $item->wasteType->nama_sampah,
+                    'category' => $item->wasteType->category->nama_kategori,
+                    'total' => $item->total_jumlah,
+                ];
+            });
+            
+        // Statistik per kategori
+        $categoryStats = $user->wasteTrackings()
+            ->join('waste_types', 'user_waste_tracking.waste_id', '=', 'waste_types.waste_id')
+            ->join('waste_categories', 'waste_types.kategori_id', '=', 'waste_categories.kategori_id')
+            ->selectRaw('waste_categories.nama_kategori, SUM(jumlah) as total_jumlah, SUM(nilai_estimasi) as total_nilai')
+            ->groupBy('waste_categories.nama_kategori')
+            ->get();
+            
+        // Statistik per bulan (time series)
+        $monthlySeries = $user->wasteTrackings()
+            ->selectRaw("DATE_FORMAT(tanggal_pencatatan, '%Y-%m') as month, SUM(jumlah) as total_jumlah, SUM(nilai_estimasi) as total_nilai")
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+        
+        // Aktivitas forum
+        $forumActivity = [
+            'thread_count' => $user->forumThreads()->count(),
+            'comment_count' => $user->forumComments()->count(),
+            'recent_threads' => $user->forumThreads()->latest('tanggal_posting')->limit(5)->get(),
+            'recent_comments' => $user->forumComments()->latest('tanggal_komentar')->limit(5)->get(),
+        ];
+        
+        // Hitung dampak lingkungan
+        $environmentalImpact = app(HomeController::class)->calculateEnvironmentalImpact($userId);
+        
+        $stats = [
+            'total_waste' => $trackings->sum('jumlah'),
+            'total_value' => $trackings->sum('nilai_estimasi'),
+            'total_records' => $trackings->count(),
+            'waste_types_count' => $wasteTypeDistribution->count(),
+            'forum_threads' => $forumActivity['thread_count'],
+            'forum_comments' => $forumActivity['comment_count'],
+            'waste_type_distribution' => $wasteTypeDistribution,
+            'category_stats' => $categoryStats,
+            'monthly_series' => $monthlySeries,
+            'forum_activity' => $forumActivity,
+            'environmental_impact' => $environmentalImpact,
+        ];
+        
+        return response()->json([
+            'status' => 'success',
+            'data' => $stats
         ]);
     }
 } 

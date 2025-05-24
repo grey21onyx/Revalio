@@ -18,6 +18,7 @@ use App\Http\Controllers\API\v1\PermissionController;
 use App\Http\Controllers\API\v1\UserRoleController;
 use App\Http\Controllers\API\v1\OpenAPIController;
 use App\Http\Controllers\API\v1\HomeController;
+use App\Http\Controllers\API\v1\MonetizationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -148,6 +149,11 @@ Route::prefix('v1')->group(function () {
         Route::get('/waste-buyers/public', [WasteBuyerController::class, 'public']);
         Route::get('/waste-buyer-types/public', [WasteBuyerTypeController::class, 'public']);
         Route::get('/business-opportunities/public', [BusinessOpportunityController::class, 'public']);
+        
+        // Monetization Routes
+        Route::get('/monetization/tips', [MonetizationController::class, 'getMonetizationTips']);
+        Route::get('/monetization/summary', [MonetizationController::class, 'getMonetizationSummary']);
+        Route::get('/monetization/recommended-buyers', [MonetizationController::class, 'getRecommendedBuyers']);
         
         // Home & Dashboard Routes
         Route::get('/home-data', [HomeController::class, 'index']);

@@ -15,21 +15,28 @@ class ForumCommentResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->comment_id,
+            'id' => $this->komentar_id,
             'thread_id' => $this->thread_id,
-            'parent_id' => $this->parent_id,
-            'konten' => $this->konten,
-            'gambar' => $this->gambar ? url('storage/app/public/' . $this->gambar) : null,
-            'tanggal_posting' => $this->tanggal_posting,
-            'status' => $this->status,
             'user_id' => $this->user_id,
+            'konten' => $this->konten,
+            'tanggal_komentar' => $this->tanggal_komentar,
+            'parent_komentar_id' => $this->parent_komentar_id,
+            'status' => $this->status,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
             'user' => $this->whenLoaded('user', function() {
                 return new UserResource($this->user);
+            }),
+            'thread' => $this->whenLoaded('thread', function() {
+                return new ForumThreadResource($this->thread);
+            }),
+            'parent' => $this->whenLoaded('parent', function() {
+                return new ForumCommentResource($this->parent);
             }),
             'replies' => $this->whenLoaded('replies', function() {
                 return ForumCommentResource::collection($this->replies);
             }),
-            'likes_count' => $this->whenCounted('likes'),
+            'replies_count' => $this->whenCounted('replies')
         ];
     }
 } 

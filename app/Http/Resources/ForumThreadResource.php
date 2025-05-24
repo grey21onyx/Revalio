@@ -18,20 +18,19 @@ class ForumThreadResource extends JsonResource
             'id' => $this->thread_id,
             'judul' => $this->judul,
             'konten' => $this->konten,
-            'gambar' => $this->gambar ? url('storage/app/public/' . $this->gambar) : null,
             'tanggal_posting' => $this->tanggal_posting,
-            'kategori' => $this->kategori,
-            'tag' => $this->tag,
             'status' => $this->status,
+            'tags' => $this->tags,
             'user_id' => $this->user_id,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
             'user' => $this->whenLoaded('user', function() {
                 return new UserResource($this->user);
             }),
             'comments' => $this->whenLoaded('comments', function() {
                 return ForumCommentResource::collection($this->comments);
             }),
-            'likes_count' => $this->whenCounted('likes'),
-            'comments_count' => $this->whenCounted('comments'),
+            'comments_count' => $this->whenCounted('comments')
         ];
     }
 } 

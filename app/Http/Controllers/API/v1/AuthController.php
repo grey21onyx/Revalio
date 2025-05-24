@@ -14,6 +14,9 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Laravel\Socialite\Facades\Socialite;
 use Exception;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
 {
@@ -25,13 +28,22 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
-        $request->validate([
-            'nama_lengkap' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            'no_telepon' => 'nullable|string|max:15',
+        $validator = Validator::make($request->all(), [
+            'nama_lengkap' => 'required|string|max:100',
+            'email' => 'required|string|email|max:100|unique:users',
+            'password' => ['required', 'confirmed', Password::defaults()],
+            'no_telepon' => 'nullable|string|max:20',
             'alamat' => 'nullable|string',
+            'preferensi_sampah' => 'nullable|string',
         ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
 
         $user = User::create([
             'nama_lengkap' => $request->nama_lengkap,
@@ -41,16 +53,22 @@ class AuthController extends Controller
             'alamat' => $request->alamat,
             'tanggal_registrasi' => now(),
             'status_akun' => 'AKTIF',
-            'updated_at' => now(),
+            'role' => 'USER',
+            'preferensi_sampah' => $request->preferensi_sampah,
         ]);
+
+        event(new Registered($user));
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
+            'status' => 'success',
             'message' => 'Registrasi berhasil',
-            'user' => new UserResource($user),
-            'access_token' => $token,
-            'token_type' => 'Bearer',
+            'data' => [
+                'user' => $user,
+                'access_token' => $token,
+                'token_type' => 'Bearer',
+            ]
         ], 201);
     }
 
@@ -62,34 +80,47 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'email' => 'required|string|email',
             'password' => 'required|string',
         ]);
 
-        $user = User::where('email', $request->email)->first();
-
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            throw ValidationException::withMessages([
-                'email' => ['Email atau password salah'],
-            ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
         }
+
+        if (!Auth::attempt($request->only('email', 'password'))) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Email atau password salah'
+            ], 401);
+        }
+
+        $user = User::where('email', $request->email)->firstOrFail();
 
         if ($user->status_akun !== 'AKTIF') {
-            throw ValidationException::withMessages([
-                'email' => ['Akun anda tidak aktif, silahkan hubungi admin'],
-            ]);
+            Auth::logout();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Akun anda tidak aktif'
+            ], 401);
         }
 
-        $user->tokens()->delete(); // Hapus token yang sudah ada
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
+            'status' => 'success',
             'message' => 'Login berhasil',
-            'user' => new UserResource($user),
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-        ]);
+            'data' => [
+                'user' => $user,
+                'access_token' => $token,
+                'token_type' => 'Bearer',
+            ]
+        ], 200);
     }
 
     /**
@@ -100,8 +131,14 @@ class AuthController extends Controller
      */
     public function user(Request $request)
     {
+        $user = $request->user();
+        $user->load('roles.permissions');
+
         return response()->json([
-            'user' => new UserResource($request->user()),
+            'status' => 'success',
+            'data' => [
+                'user' => $user,
+            ]
         ]);
     }
 
@@ -116,7 +153,8 @@ class AuthController extends Controller
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([
-            'message' => 'Berhasil logout',
+            'status' => 'success',
+            'message' => 'Logout berhasil'
         ]);
     }
     
@@ -264,94 +302,98 @@ class AuthController extends Controller
      * Redirect user to the specified provider for social login
      *
      * @param string $provider
-     * @return \Illuminate\Http\JsonResponse|\Symfony\Component\HttpFoundation\RedirectResponse
+     * @return \Illuminate\Http\JsonResponse
      */
     public function redirectToProvider($provider)
     {
-        if (!in_array($provider, ['google', 'facebook', 'github'])) {
+        $validProviders = ['google', 'facebook'];
+
+        if (!in_array($provider, $validProviders)) {
             return response()->json([
-                'message' => 'Provider tidak didukung'
+                'status' => 'error',
+                'message' => 'Provider tidak valid'
             ], 400);
         }
-        
-        try {
-            return Socialite::driver($provider)->stateless()->redirect();
-        } catch (Exception $e) {
-            return response()->json([
-                'message' => 'Terjadi kesalahan saat menghubungkan ke provider',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+
+        $url = Socialite::driver($provider)->stateless()->redirect()->getTargetUrl();
+
+        return response()->json([
+            'status' => 'success',
+            'redirect_url' => $url
+        ]);
     }
     
     /**
      * Handle callback dari provider social
      *
      * @param string $provider
+     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function handleProviderCallback($provider)
+    public function handleProviderCallback($provider, Request $request)
     {
-        if (!in_array($provider, ['google', 'facebook', 'github'])) {
-            return response()->json([
-                'message' => 'Provider tidak didukung'
-            ], 400);
-        }
-        
         try {
             $socialUser = Socialite::driver($provider)->stateless()->user();
-            
-            // Cari user berdasarkan provider ID
-            $socialIdentity = SocialIdentity::where('provider_name', $provider)
-                                         ->where('provider_id', $socialUser->getId())
-                                         ->first();
-            
-            if ($socialIdentity) {
-                // User sudah ada, login
-                $user = $socialIdentity->user;
-            } else {
-                // Cek email apakah sudah terdaftar
-                $user = User::where('email', $socialUser->getEmail())->first();
-                
-                if (!$user) {
-                    // Buat user baru jika belum ada
-                    $user = User::create([
-                        'nama_lengkap' => $socialUser->getName() ?? 'User ' . Str::random(5),
-                        'email' => $socialUser->getEmail(),
-                        'password' => Hash::make(Str::random(16)),
-                        'tanggal_registrasi' => now(),
-                        'status_akun' => 'AKTIF',
-                        'updated_at' => now(),
-                    ]);
-                    
-                    // Assign role 'user' ke user baru
-                    $user->assignRole('user');
-                }
-                
-                // Simpan identitas social
-                $user->socialIdentities()->create([
-                    'provider_name' => $provider,
-                    'provider_id' => $socialUser->getId(),
-                    'provider_token' => $socialUser->token,
-                    'provider_refresh_token' => $socialUser->refreshToken ?? null,
-                ]);
-            }
-            
-            // Create token
-            $token = $user->createToken('auth_token')->plainTextToken;
-            
+        } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Login berhasil via ' . $provider,
-                'user' => new UserResource($user),
+                'status' => 'error',
+                'message' => 'Autentikasi sosial gagal',
+                'error' => $e->getMessage()
+            ], 422);
+        }
+
+        $socialId = SocialIdentity::where('provider_name', $provider)
+            ->where('provider_id', $socialUser->getId())
+            ->first();
+
+        if ($socialId) {
+            $user = $socialId->user;
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Login berhasil',
+                'data' => [
+                    'user' => $user,
+                    'access_token' => $token,
+                    'token_type' => 'Bearer',
+                ]
+            ]);
+        }
+
+        $user = User::where('email', $socialUser->getEmail())->first();
+
+        if (!$user) {
+            $user = User::create([
+                'nama_lengkap' => $socialUser->getName(),
+                'email' => $socialUser->getEmail(),
+                'password' => Hash::make(str_random(24)),
+                'tanggal_registrasi' => now(),
+                'status_akun' => 'AKTIF',
+                'role' => 'USER',
+                'foto_profil' => $socialUser->getAvatar(),
+            ]);
+
+            event(new Registered($user));
+        }
+
+        $user->socialIdentities()->create([
+            'provider_name' => $provider,
+            'provider_id' => $socialUser->getId(),
+            'provider_token' => $socialUser->token,
+            'provider_refresh_token' => $socialUser->refreshToken ?? null,
+        ]);
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Login berhasil',
+            'data' => [
+                'user' => $user,
                 'access_token' => $token,
                 'token_type' => 'Bearer',
-            ]);
-            
-        } catch (Exception $e) {
-            return response()->json([
-                'message' => 'Terjadi kesalahan saat memproses callback dari provider',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+            ]
+        ]);
     }
 }

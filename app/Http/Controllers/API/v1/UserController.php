@@ -8,7 +8,10 @@ use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 class UserController extends Controller
 {
@@ -166,6 +169,214 @@ class UserController extends Controller
 
         return response()->json([
             'message' => $message
+        ]);
+    }
+
+    /**
+     * Get current user profile.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function profile(Request $request)
+    {
+        $user = $request->user();
+        $user->load('wasteTrackings', 'roles.permissions');
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'user' => $user,
+            ]
+        ]);
+    }
+
+    /**
+     * Update user profile.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+
+        $validator = Validator::make($request->all(), [
+            'nama_lengkap' => 'sometimes|required|string|max:100',
+            'email' => [
+                'sometimes',
+                'required',
+                'string',
+                'email',
+                'max:100',
+                Rule::unique('users')->ignore($user->user_id, 'user_id'),
+            ],
+            'no_telepon' => 'nullable|string|max:20',
+            'alamat' => 'nullable|string',
+            'preferensi_sampah' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $user->update($validator->validated());
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Profil berhasil diperbarui',
+            'data' => [
+                'user' => $user
+            ]
+        ]);
+    }
+
+    /**
+     * Update user password.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updatePassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'current_password' => 'required|string',
+            'password' => ['required', 'confirmed', Password::defaults()],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $user = $request->user();
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Password saat ini salah'
+            ], 422);
+        }
+
+        $user->update([
+            'password' => Hash::make($request->password)
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Password berhasil diperbarui'
+        ]);
+    }
+
+    /**
+     * Upload user profile photo.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function uploadPhoto(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'foto' => 'required|image|max:2048', // max 2MB
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $user = $request->user();
+
+        // Hapus foto lama jika bukan default
+        if ($user->foto_profil && $user->foto_profil != 'profiles/default.jpg') {
+            Storage::disk('public')->delete($user->foto_profil);
+        }
+
+        // Simpan foto baru
+        $path = $request->file('foto')->store('profiles', 'public');
+
+        $user->update([
+            'foto_profil' => $path
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Foto profil berhasil diperbarui',
+            'data' => [
+                'foto_profil' => $path,
+                'foto_url' => asset('storage/' . $path)
+            ]
+        ]);
+    }
+
+    /**
+     * Get user waste tracking history.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function wasteHistory(Request $request)
+    {
+        $user = $request->user();
+        $wasteTrackings = $user->wasteTrackings()
+                            ->with('wasteType')
+                            ->orderBy('tanggal_pencatatan', 'desc')
+                            ->paginate(15);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $wasteTrackings
+        ]);
+    }
+
+    /**
+     * Get user statistics.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function statistics(Request $request)
+    {
+        $user = $request->user();
+        
+        // Total sampah yang terlacak
+        $totalWaste = $user->wasteTrackings()->sum('jumlah');
+        
+        // Total nilai estimasi
+        $totalValue = $user->wasteTrackings()->sum('nilai_estimasi');
+        
+        // Jumlah jenis sampah yang pernah dilacak
+        $uniqueWasteTypes = $user->wasteTrackings()
+            ->distinct('waste_id')
+            ->count('waste_id');
+            
+        // Top 3 jenis sampah yang paling banyak dikoleksi
+        $topWastes = $user->wasteTrackings()
+            ->selectRaw('waste_id, SUM(jumlah) as total_amount')
+            ->with('wasteType')
+            ->groupBy('waste_id')
+            ->orderByDesc('total_amount')
+            ->limit(3)
+            ->get();
+            
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'total_waste' => $totalWaste,
+                'total_value' => $totalValue,
+                'unique_waste_types' => $uniqueWasteTypes,
+                'top_wastes' => $topWastes,
+            ]
         ]);
     }
 } 

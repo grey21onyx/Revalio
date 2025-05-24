@@ -53,8 +53,14 @@ Route::prefix('v1')->group(function () {
             // Auth
             Route::get('/user', [AuthController::class, 'user']);
             Route::post('/logout', [AuthController::class, 'logout']);
-            Route::post('/update-profile', [AuthController::class, 'updateProfile']);
-            Route::post('/change-password', [AuthController::class, 'changePassword']);
+
+            // User Profile
+            Route::get('/profile', [UserController::class, 'profile']);
+            Route::put('/profile', [UserController::class, 'updateProfile']);
+            Route::post('/change-password', [UserController::class, 'updatePassword']);
+            Route::post('/upload-photo', [UserController::class, 'uploadPhoto']);
+            Route::get('/waste-history', [UserController::class, 'wasteHistory']);
+            Route::get('/user-statistics', [UserController::class, 'statistics']);
 
             // Users
             Route::apiResource('users', UserController::class);

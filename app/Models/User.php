@@ -11,10 +11,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, CommonScopes, RecyclableTrait;
+    use HasApiTokens, HasFactory, Notifiable, CommonScopes, RecyclableTrait, SoftDeletes;
 
     /**
      * Primary key yang digunakan oleh tabel.
@@ -37,7 +38,8 @@ class User extends Authenticatable
         'foto_profil',
         'tanggal_registrasi',
         'status_akun',
-        'preferensi_sampah'
+        'role',
+        'preferensi_sampah',
     ];
 
     /**
@@ -298,5 +300,13 @@ class User extends Authenticatable
         }
 
         return in_array($this->role, (array) $roles);
+    }
+
+    /**
+     * Get the deleted records associated with the user.
+     */
+    public function deletedRecords()
+    {
+        return $this->hasMany(DeletedRecord::class, 'user_id', 'user_id');
     }
 }

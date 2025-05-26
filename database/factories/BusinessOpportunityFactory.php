@@ -33,11 +33,13 @@ class BusinessOpportunityFactory extends Factory
         return [
             'judul' => 'Usaha ' . $this->faker->randomElement($categories),
             'deskripsi' => $this->faker->paragraphs(3, true),
-            'kategori' => $this->faker->randomElement($categories),
-            'investasi_awal' => $this->faker->randomElement($investasi),
-            'potensi_pendapatan' => $this->faker->paragraph(),
-            'tantangan' => $this->faker->paragraphs(2, true),
-            'saran_implementasi' => $this->faker->paragraphs(2, true),
+            'jenis_sampah_terkait' => $this->faker->randomElement($categories),
+            'investasi_minimal' => $this->faker->randomElement($investasi),
+            'investasi_maksimal' => $this->faker->randomElement($investasi),
+            'potensi_keuntungan' => $this->faker->paragraph(),
+            'sumber_informasi' => 'Penelitian ' . $this->faker->words(2, true),
+            'tanggal_publikasi' => now(),
+            'status' => $this->faker->randomElement(['AKTIF', 'TIDAK_AKTIF']),
         ];
     }
 }

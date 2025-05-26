@@ -29,7 +29,9 @@ import {
   ListItemAvatar,
   ListItemSecondaryAction,
   Tooltip,
-  Pagination
+  Pagination,
+  CircularProgress,
+  Alert
 } from '@mui/material';
 import { 
   Search as SearchIcon, 
@@ -43,165 +45,135 @@ import {
   Favorite as FavoriteIcon,
   FavoriteBorder as FavoriteBorderIcon,
   InfoOutlined as InfoOutlinedIcon,
+  Sort as SortIcon
 } from '@mui/icons-material';
 import { gsap } from 'gsap';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
-// Data dummy untuk kategori sampah
-const wasteCategories = [
-  { id: 1, name: 'Plastik', count: 15, color: '#2196F3', icon: '🥤' },
-  { id: 2, name: 'Kertas', count: 8, color: '#FF9800', icon: '📄' },
-  { id: 3, name: 'Besi', count: 12, color: '#607D8B', icon: '🔧' },
-  { id: 4, name: 'Allumunium', count: 6, color: '#4CAF50', icon: '🍾' },
-  { id: 5, name: 'Elektronik', count: 9, color: '#9C27B0', icon: '💻' },
-];
+// Definisi icon kategori sebagai fallback
+const categoryIcons = {
+  'Plastik': '🥤',
+  'Kertas': '📄',
+  'Besi': '🔧',
+  'Alumunium': '🍾',
+  'Elektronik': '💻',
+  'default': '♻️'
+};
 
-// Data dummy untuk sampah bernilai
-const wasteItems = [
-  {
-    id: 1,
-    name: 'Botol Plastik',
-    description: 'Botol plastik minuman bekas yang dapat didaur ulang menjadi berbagai produk baru. Termasuk kategori plastik yang paling banyak dicari oleh pengepul.',
-    imageUrl: '/assets/images/waste/botol-plastik.jpeg',
-    category: 'Plastik',
-    categoryId: 1,
-    priceRange: { min: 1000, max: 4000 },
-    unit: 'kg'
-  },
-  {
-    id: 2,
-    name: 'Kardus Bekas',
-    description: 'Kardus bekas packaging yang dapat didaur ulang atau digunakan kembali untuk berbagai keperluan. Sangat diminati oleh industri daur ulang kertas.',
-    imageUrl: '/assets/images/waste/kardus.jpg',
-    category: 'Kertas',
-    categoryId: 2,
-    priceRange: { min: 800, max: 2000 },
-    unit: 'kg'
-  },
-  {
-    id: 3,
-    name: 'Kaleng Aluminium',
-    description: 'Kaleng minuman aluminium yang memiliki nilai ekonomis tinggi dan mudah didaur ulang. Logam aluminium dapat didaur ulang berkali-kali tanpa menurunkan kualitasnya.',
-    imageUrl: '/assets/images/waste/kaleng.jpeg',
-    category: 'Alumunium',
-    categoryId: 4,
-    priceRange: { min: 12000, max: 18000 },
-    unit: 'kg'
-  }
-];
+// Definisi warna kategori sebagai fallback
+const categoryColors = {
+  'Plastik': '#2196F3',
+  'Kertas': '#FF9800',
+  'Besi': '#607D8B',
+  'Alumunium': '#4CAF50',
+  'Elektronik': '#9C27B0',
+  'default': '#3f51b5'
+};
 
 // Komponen untuk card kategori
 const CategoryCard = ({ category, isSelected, onClick }) => {
+  const theme = useTheme();
   const cardRef = useRef(null);
   
-  useEffect(() => {
-    const element = cardRef.current;
-    
-    const handleMouseEnter = () => {
-      if (!isSelected) {
-        gsap.to(element, { 
-          y: -6, 
-          boxShadow: '0 8px 16px rgba(0,0,0,0.08)', 
-          duration: 0.3, 
-          ease: "power2.out" 
-        });
-      }
-    };
-    
-    const handleMouseLeave = () => {
-      if (!isSelected) {
-        gsap.to(element, { 
-          y: 0, 
-          boxShadow: '0 2px 8px rgba(0,0,0,0.06)', 
-          duration: 0.3, 
-          ease: "power1.out" 
-        });
-      }
-    };
-
-    if (element) {
-      element.addEventListener('mouseenter', handleMouseEnter);
-      element.addEventListener('mouseleave', handleMouseLeave);
-      
-      return () => {
-        element.removeEventListener('mouseenter', handleMouseEnter);
-        element.removeEventListener('mouseleave', handleMouseLeave);
-      };
-    }
-  }, [isSelected]);
+  const handleCardClick = () => {
+    onClick(category.id);
+  };
+  
+  const handleMouseEnter = () => {
+    gsap.to(cardRef.current, { 
+      y: -5, 
+      boxShadow: '0 6px 12px rgba(0,0,0,0.1)', 
+      duration: 0.3 
+    });
+  };
+  
+  const handleMouseLeave = () => {
+    gsap.to(cardRef.current, { 
+      y: 0, 
+      boxShadow: '0 2px 4px rgba(0,0,0,0.05)', 
+      duration: 0.3 
+    });
+  };
   
   return (
-    <Card
+    <Paper
       ref={cardRef}
-      onClick={() => onClick(category.id)}
-      sx={{
-        cursor: 'pointer',
+      onClick={handleCardClick}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      elevation={0}
+      sx={{ 
+        p: 2,
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
-        p: 2.5,
-        borderRadius: '12px',
-        boxShadow: isSelected 
-          ? `0 0 0 2px ${category.color}, 0 4px 12px rgba(0,0,0,0.08)` 
-          : '0 2px 8px rgba(0,0,0,0.06)',
-        bgcolor: isSelected ? `${category.color}10` : 'background.paper',
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        transform: isSelected ? 'translateY(-6px)' : 'none',
+        cursor: 'pointer',
+        borderRadius: 2,
+        transition: 'all 0.3s ease',
         border: '1px solid',
-        borderColor: isSelected ? category.color : 'grey.200',
-        position: 'relative',
-        overflow: 'hidden',
-        '&::after': {
-          content: '""',
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          width: '100%',
-          height: '3px',
-          backgroundColor: category.color,
-          transform: isSelected ? 'scaleX(1)' : 'scaleX(0)',
-          transition: 'transform 0.3s ease',
-          transformOrigin: 'left'
+        borderColor: isSelected ? 'primary.main' : 'grey.200',
+        bgcolor: isSelected ? 'primary.lighter' : 'background.paper',
+        color: isSelected ? 'primary.main' : 'text.primary',
+        boxShadow: isSelected 
+          ? '0 4px 12px rgba(0,0,0,0.08)' 
+          : '0 2px 4px rgba(0,0,0,0.05)',
+        '& svg': {
+          color: isSelected ? 'primary.main' : 'action.active',
+          transition: 'color 0.3s ease',
         },
+        '&:hover': {
+          borderColor: 'primary.main',
+          '& svg': {
+            color: 'primary.main'
+          }
+        }
       }}
     >
-      <Box 
-        sx={{ 
-          width: 60, 
-          height: 60, 
-          borderRadius: '50%', 
-          bgcolor: `${category.color}15`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          mb: 2,
-          border: '2px solid',
-          borderColor: category.color,
-          fontSize: '1.8rem'
+      <Avatar
+        sx={{
+          width: 56,
+          height: 56,
+          mb: 1,
+          bgcolor: isSelected ? 'primary.lighter' : 'grey.100',
+          border: '1px solid',
+          borderColor: isSelected ? 'primary.main' : 'transparent',
         }}
       >
-        {category.icon}
-      </Box>
-      <Typography variant="subtitle1" fontWeight={600} textAlign="center">
-        {category.name}
+        <Box
+          component="img"
+          src={category.ikon || "/assets/images/waste/recycle-icon.png"}
+          alt={category.nama}
+          sx={{ width: 32, height: 32 }}
+          onError={(e) => {
+            e.target.src = "/assets/images/waste/recycle-icon.png";
+          }}
+        />
+      </Avatar>
+      <Typography 
+        variant="body2" 
+        component="span" 
+        align="center"
+        sx={{ 
+          fontWeight: isSelected ? 700 : 500,
+          fontSize: '0.875rem',
+          mt: 0.5
+        }}
+      >
+        {category.nama}
       </Typography>
-      <Typography variant="body2" color="text.secondary" textAlign="center">
-        {category.count} jenis
-      </Typography>
-    </Card>
+    </Paper>
   );
 };
 
 // Komponen untuk tampilan grid
 const GridItemCard = ({ item, index, onToggleFavorite, favorites }) => {
-  const cardRef = useRef(null);
   const theme = useTheme();
-  const isFavorite = favorites.includes(item.id);
   const navigate = useNavigate();
+  const cardRef = useRef(null);
+  const isFavorite = favorites.includes(item.id);
   
-  // Efek animasi dengan GSAP
   useEffect(() => {
     const element = cardRef.current;
     
@@ -267,8 +239,6 @@ const GridItemCard = ({ item, index, onToggleFavorite, favorites }) => {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Content remains the same */}
-      
       {/* Favorite Button */}
       <IconButton 
         size="small" 
@@ -290,8 +260,8 @@ const GridItemCard = ({ item, index, onToggleFavorite, favorites }) => {
       {/* Image */}
       <Box sx={{ position: 'relative', pt: '56.25%' /* 16:9 aspect ratio */ }}>
         <img 
-          src={item.imageUrl} 
-          alt={item.name}
+          src={item.gambar || '/assets/images/waste/default-waste.jpg'} 
+          alt={item.nama}
           style={{
             position: 'absolute',
             top: 0,
@@ -300,9 +270,12 @@ const GridItemCard = ({ item, index, onToggleFavorite, favorites }) => {
             height: '100%',
             objectFit: 'cover'
           }}
+          onError={(e) => {
+            e.target.src = '/assets/images/waste/default-waste.jpg';
+          }}
         />
         <Chip 
-          label={item.category} 
+          label={item.kategori?.nama || 'Uncategorized'} 
           size="small" 
           sx={{ 
             position: 'absolute', 
@@ -321,13 +294,13 @@ const GridItemCard = ({ item, index, onToggleFavorite, favorites }) => {
       {/* Content */}
       <Box sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
         <Typography variant="h6" component="h2" sx={{ mb: 1, fontWeight: 600 }}>
-          {item.name}
+          {item.nama}
         </Typography>
         
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2, flexGrow: 1 }}>
-          {item.description.length > 80 
-            ? `${item.description.substring(0, 80)}...` 
-            : item.description}
+          {item.deskripsi && item.deskripsi.length > 80 
+            ? `${item.deskripsi.substring(0, 80)}...` 
+            : item.deskripsi}
         </Typography>
         
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -346,7 +319,7 @@ const GridItemCard = ({ item, index, onToggleFavorite, favorites }) => {
                 color: theme.palette.success.main
               }}
             >
-              {`Rp ${item.priceRange.min.toLocaleString()} - ${item.priceRange.max.toLocaleString()}`}
+              Harga tidak tersedia
             </Typography>
           </Box>
           <Tooltip title="Lihat Detail">
@@ -365,6 +338,11 @@ const ListItemRow = ({ item, index, onToggleFavorite, favorites }) => {
   const theme = useTheme();
   const itemRef = useRef(null);
   const isFavorite = favorites.includes(item.id);
+  const navigate = useNavigate();
+  
+  // Tetapkan warna kategori
+  const categoryName = item.kategori?.nama;
+  const categoryColor = categoryName ? (categoryColors[categoryName] || categoryColors.default) : categoryColors.default;
   
   useEffect(() => {
     const element = itemRef.current;
@@ -384,10 +362,6 @@ const ListItemRow = ({ item, index, onToggleFavorite, favorites }) => {
       }
     );
   }, [index]);
-  
-  // Find category color
-  const categoryData = wasteCategories.find(cat => cat.name === item.category);
-  const categoryColor = categoryData ? categoryData.color : theme.palette.primary.main;
   
   // Handle favorite toggle with animation
   const handleFavoriteClick = (e) => {
@@ -418,6 +392,10 @@ const ListItemRow = ({ item, index, onToggleFavorite, favorites }) => {
     onToggleFavorite(item.id);
   };
 
+  const handleItemClick = () => {
+    navigate(`/katalog/detail-sampah/${item.id}`);
+  };
+
   return (
     <Card 
       ref={itemRef}
@@ -432,33 +410,39 @@ const ListItemRow = ({ item, index, onToggleFavorite, favorites }) => {
           transform: 'translateY(-6px)'
         },
         border: '1px solid',
-        borderColor: 'grey.100'
+        borderColor: 'grey.100',
+        cursor: 'pointer'
       }}
+      onClick={handleItemClick}
     >
       <ListItem component="div" disablePadding>
         <ListItemAvatar sx={{ minWidth: 200, display: 'flex', alignItems: 'center', p: 2 }}>
           <Box sx={{ position: 'relative', width: '100%', height: 140 }}>
             <img 
-              src={item.imageUrl} 
-              alt={item.name}
+              src={item.gambar || '/assets/images/waste/default-waste.jpg'} 
+              alt={item.nama}
               style={{ 
                 width: '100%', 
                 height: '100%', 
                 objectFit: 'cover',
                 borderRadius: 8
               }}
+              onError={(e) => {
+                e.target.src = '/assets/images/waste/default-waste.jpg';
+              }}
             />
             <Chip 
-              label={item.category} 
-              size="small" 
+              label={item.kategori?.nama || 'Uncategorized'} 
+              size="small"
               sx={{ 
                 position: 'absolute', 
                 top: 8, 
                 left: 8,
-                fontWeight: 600,
-                backgroundColor: categoryColor,
+                backgroundColor: theme.palette.primary.main,
                 color: 'white',
-                px: 1,
+                fontWeight: 500,
+                fontSize: '0.7rem',
+                height: 24,
                 borderRadius: '8px'
               }} 
             />
@@ -466,68 +450,63 @@ const ListItemRow = ({ item, index, onToggleFavorite, favorites }) => {
         </ListItemAvatar>
         
         <ListItemText 
+          sx={{ py: 2, pr: 2 }}
           primary={
-            <Typography variant="h6" fontWeight={700}>
-              {item.name}
+            <Typography variant="h6" component="h2" gutterBottom sx={{ fontWeight: 600 }}>
+              {item.nama}
             </Typography>
           }
           secondary={
-            <Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
-                {item.description.length > 180 
-                  ? `${item.description.substring(0, 180)}...` 
-                  : item.description
-                }
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                {item.deskripsi && item.deskripsi.length > 150 
+                  ? `${item.deskripsi.substring(0, 150)}...` 
+                  : item.deskripsi}
               </Typography>
               
               <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                <PriceIcon sx={{ color: 'success.main', mr: 1, fontSize: 20 }} />
-                <Typography variant="subtitle1" color="success.main" fontWeight={700}>
-                  Rp {item.priceRange.min.toLocaleString()} - {item.priceRange.max.toLocaleString()}
-                  <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
-                    /{item.unit}
-                  </Typography>
+                <PriceIcon 
+                  sx={{ 
+                    fontSize: 16, 
+                    color: theme.palette.success.main,
+                    mr: 0.5 
+                  }} 
+                />
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    fontWeight: 700, 
+                    color: theme.palette.success.main
+                  }}
+                >
+                  Harga tidak tersedia
                 </Typography>
               </Box>
             </Box>
           }
-          sx={{ py: 2, pr: 2 }}
         />
         
-        <ListItemSecondaryAction sx={{ right: 16, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', py: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', pr: 2 }}>
           <IconButton 
-            edge="end" 
             onClick={handleFavoriteClick}
-            sx={{ 
-              mb: 'auto',
-              color: isFavorite ? 'error.main' : 'grey.400'
-            }}
+            sx={{ mb: 1 }}
           >
-            {isFavorite ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+            {isFavorite ? <FavoriteIcon color="error" /> : <FavoriteBorderIcon />}
           </IconButton>
           
-          <Button
-            component={Link}
-            to={`/katalog/detail-sampah/${item.id}`}
-            variant="outlined"
-            size="small"
-            endIcon={<ArrowForwardIcon />}
-            sx={{
-              borderRadius: 8,
-              px: 2,
-              py: 0.5,
-              textTransform: 'none',
-              fontWeight: 600,
-              borderWidth: 2,
-              mt: 'auto',
-              '&:hover': {
-                borderWidth: 2
-              }
+          <Button 
+            variant="outlined" 
+            size="small" 
+            sx={{ 
+              borderRadius: 2,
+              minWidth: 100,
+              fontSize: '0.75rem'
             }}
+            onClick={handleItemClick}
           >
             Detail
           </Button>
-        </ListItemSecondaryAction>
+        </Box>
       </ListItem>
     </Card>
   );
@@ -545,6 +524,65 @@ const Katalog = () => {
   const [viewMode, setViewMode] = useState('grid');
   const [page, setPage] = useState(1);
   const itemsPerPage = 6; // Jumlah item per halaman
+  
+  // State untuk data dari API
+  const [wasteCategories, setWasteCategories] = useState([]);
+  const [wasteTypes, setWasteTypes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  // Mengambil data dari API saat komponen dimuat
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        // Ambil data kategori sampah
+        console.log('Fetching waste categories...');
+        const categoriesResponse = await axios.get('/api/v1/public/waste-categories');
+        
+        // Ambil data jenis sampah
+        console.log('Fetching waste types...');
+        const typesResponse = await axios.get('/api/v1/public/waste-types', {
+          params: { with_category: true }
+        });
+        
+        // Ambil data dengan cara lebih eksplisit
+        const categories = categoriesResponse.data.data || [];
+        const types = typesResponse.data.data || [];
+        
+        console.log('Categories:', categories);
+        console.log('Types:', types);
+        
+        // Update state dengan data yang diterima
+        setWasteCategories(categories);
+        setWasteTypes(types);
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError('Terjadi kesalahan saat mengambil data. Silakan coba lagi nanti.');
+        
+        // Jika gagal, gunakan data statis sebagai fallback
+        setWasteCategories(mockCategories);
+        setWasteTypes(mockTypes);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+    
+    // Load saved favorites from localStorage
+    const savedFavorites = localStorage.getItem('wasteTypeFavorites');
+    if (savedFavorites) {
+      setFavorites(JSON.parse(savedFavorites));
+    }
+  }, []);
+  
+  // Save favorites to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('wasteTypeFavorites', JSON.stringify(favorites));
+  }, [favorites]);
   
   // Handle view mode change
   const handleViewModeChange = (event, newViewMode) => {
@@ -600,39 +638,123 @@ const Katalog = () => {
     setPage(1); // Reset ke halaman pertama saat pengurutan berubah
   };
   
-  // Filter dan sort data
-  const filteredAndSortedItems = wasteItems
+  // Gabungkan data jenis sampah dengan kategorinya
+  const processedWasteTypes = wasteTypes.map(wasteType => {
+    // Pastikan wasteType adalah objek valid
+    if (!wasteType) return null;
+    
+    // Cari kategori yang sesuai jika belum di-load dengan API
+    const category = wasteType.kategori || 
+                   (wasteType.kategori_id && wasteCategories.find(cat => cat.id === wasteType.kategori_id)) ||
+                   null;
+    
+    return {
+      ...wasteType,
+      kategori: category,
+      kategori_id: wasteType.kategori_id || (category ? category.id : null)
+    };
+  }).filter(Boolean); // Hapus nilai null jika ada
+  
+  // Filter dan urutkan data sampah
+  const filteredAndSortedItems = processedWasteTypes
     .filter(item => {
-      // Filter by search query
-      const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           item.description.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      // Filter by category
-      const matchesCategory = selectedCategory === 'all' || item.categoryId === parseInt(selectedCategory);
-      
+      const matchesSearch = item.nama?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                        (item.deskripsi && item.deskripsi.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesCategory = selectedCategory === 'all' || item.kategori_id === selectedCategory;
       return matchesSearch && matchesCategory;
     })
     .sort((a, b) => {
       // Sort based on selected option
       switch(sortBy) {
         case 'name_asc':
-          return a.name.localeCompare(b.name);
+          return (a.nama || '').localeCompare(b.nama || '');
         case 'name_desc':
-          return b.name.localeCompare(a.name);
+          return (b.nama || '').localeCompare(a.nama || '');
         case 'price_asc':
-          return a.priceRange.min - b.priceRange.min;
+          return 0; // Nonaktifkan sementara pengurutan harga
         case 'price_desc':
-          return b.priceRange.min - a.priceRange.min;
+          return 0; // Nonaktifkan sementara pengurutan harga
         default:
           return 0;
       }
     });
   
+  // Data statis untuk ditampilkan jika tidak ada data dari API
+  const mockCategories = [
+    { id: 1, nama: 'Plastik', deskripsi: 'Berbagai jenis sampah plastik', ikon: '/assets/images/waste/plastic.png' },
+    { id: 2, nama: 'Kertas', deskripsi: 'Berbagai jenis sampah kertas', ikon: '/assets/images/waste/paper.png' },
+    { id: 3, nama: 'Logam', deskripsi: 'Berbagai jenis sampah logam', ikon: '/assets/images/waste/metal.png' },
+    { id: 4, nama: 'Elektronik', deskripsi: 'Berbagai jenis sampah elektronik', ikon: '/assets/images/waste/electronic.png' },
+    { id: 5, nama: 'Organik', deskripsi: 'Berbagai jenis sampah organik', ikon: '/assets/images/waste/organic.png' },
+    { id: 6, nama: 'Kaca', deskripsi: 'Berbagai jenis sampah kaca', ikon: '/assets/images/waste/glass.png' }
+  ];
+  
+  const mockTypes = [
+    { 
+      id: 1, 
+      nama: 'Botol Plastik PET', 
+      deskripsi: 'Botol plastik PET (Polyethylene Terephthalate) seperti botol air mineral atau minuman ringan.',
+      kategori_id: 1,
+      kategori: { id: 1, nama: 'Plastik' },
+      gambar: '/assets/images/waste/pet-bottle.jpg'
+    },
+    { 
+      id: 2, 
+      nama: 'Karton Kardus', 
+      deskripsi: 'Kardus bekas kemasan yang terbuat dari kertas tebal atau karton.',
+      kategori_id: 2,
+      kategori: { id: 2, nama: 'Kertas' },
+      gambar: '/assets/images/waste/cardboard.jpg'
+    },
+    { 
+      id: 3, 
+      nama: 'Kaleng Aluminium', 
+      deskripsi: 'Kaleng minuman yang terbuat dari aluminium.',
+      kategori_id: 3,
+      kategori: { id: 3, nama: 'Logam' },
+      gambar: '/assets/images/waste/aluminum-can.jpg'
+    },
+    { 
+      id: 4, 
+      nama: 'Limbah Elektronik', 
+      deskripsi: 'Perangkat elektronik bekas seperti ponsel, kabel, atau baterai.',
+      kategori_id: 4,
+      kategori: { id: 4, nama: 'Elektronik' },
+      gambar: '/assets/images/waste/electronic-waste.jpg'
+    },
+    { 
+      id: 5, 
+      nama: 'Sisa Makanan', 
+      deskripsi: 'Sisa makanan yang dapat dikomposkan menjadi pupuk organik.',
+      kategori_id: 5,
+      kategori: { id: 5, nama: 'Organik' },
+      gambar: '/assets/images/waste/food-waste.jpg'
+    },
+    { 
+      id: 6, 
+      nama: 'Botol Kaca', 
+      deskripsi: 'Botol kaca bekas yang dapat didaur ulang.',
+      kategori_id: 6,
+      kategori: { id: 6, nama: 'Kaca' },
+      gambar: '/assets/images/waste/glass-bottle.jpg'
+    }
+  ];
+  
+  // Gunakan data asli jika tersedia, jika tidak gunakan data statis
+  const displayCategories = wasteCategories.length > 0 ? wasteCategories : mockCategories;
+  const displayTypes = wasteTypes.length > 0 ? filteredAndSortedItems : 
+    mockTypes.filter(item => {
+      const matchesSearch = item.nama.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         (item.deskripsi && item.deskripsi.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesCategory = selectedCategory === 'all' || item.kategori_id === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  
   // Hitung jumlah halaman
-  const totalPages = Math.ceil(filteredAndSortedItems.length / itemsPerPage);
+  const totalPages = Math.ceil(displayTypes.length / itemsPerPage);
   
   // Potong data sesuai pagination
-  const paginatedItems = filteredAndSortedItems.slice(
+  const paginatedItems = displayTypes.slice(
     (page - 1) * itemsPerPage,
     page * itemsPerPage
   );
@@ -729,188 +851,233 @@ const Katalog = () => {
           )}
         </Paper>
         
-        {/* Category Filters */}
-        <Box sx={{ mb: 5 }}>
-          <Typography variant="subtitle1" fontWeight={700} gutterBottom sx={{ mb: 2, fontSize: '1.2rem' }}>
-            Kategori Sampah
-          </Typography>
-          <Grid container spacing={2.5}>
-            {wasteCategories.map((category) => (
-              <Grid item xs={6} sm={4} md={2} key={category.id}>
-                <CategoryCard 
-                  category={category} 
-                  isSelected={selectedCategory === category.id}
-                  onClick={handleCategoryChange}
-                />
-              </Grid>
-            ))}
+        {/* Loading State */}
+        {loading && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}>
+            <CircularProgress />
+          </Box>
+        )}
+        
+        {/* Error State */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 5 }}>
+            {error}
+          </Alert>
+        )}
+        
+        {/* Debug State */}
+        <Box sx={{ mb: 5, p: 2, border: '1px dashed', borderColor: 'grey.300', borderRadius: 2 }}>
+          <Typography variant="h6" gutterBottom>Debug Info:</Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <Typography variant="subtitle2">API Responses:</Typography>
+              <Typography variant="body2">• Categories: {wasteCategories.length} items</Typography>
+              <Typography variant="body2">• Types: {wasteTypes.length} items</Typography>
+              <Typography variant="body2">• Filtered Types: {filteredAndSortedItems.length} items</Typography>
+              <Typography variant="body2">• Currently Showing: {paginatedItems.length} items (page {page} of {totalPages})</Typography>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Typography variant="subtitle2">Filter Status:</Typography>
+              <Typography variant="body2">• Search: "{searchQuery}"</Typography>
+              <Typography variant="body2">• Category: {selectedCategory === 'all' ? 'All Categories' : 
+                `ID ${selectedCategory} (${wasteCategories.find(c => c.id === selectedCategory)?.nama || 'Unknown'})`}</Typography>
+              <Typography variant="body2">• Sort: {sortBy}</Typography>
+              <Typography variant="body2">• View Mode: {viewMode}</Typography>
+            </Grid>
           </Grid>
         </Box>
         
-        {/* Sort Controls dan View Toggle */}
-        <Box 
-          sx={{ 
-            mb: 4, 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            flexDirection: { xs: 'column', sm: 'row' },
-            gap: { xs: 2, sm: 0 }
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Typography 
-              variant="body2" 
-              color="text.secondary"
+        {/* Konten Utama - ditampilkan hanya jika tidak loading dan tidak error */}
+        {!loading && !error && (
+          <>
+            {/* Category Filters */}
+            <Box sx={{ mb: 5 }}>
+              <Typography variant="subtitle1" fontWeight={700} gutterBottom sx={{ mb: 2, fontSize: '1.2rem' }}>
+                Kategori Sampah ({wasteCategories.length})
+              </Typography>
+              <Grid container spacing={2.5}>
+                {displayCategories.length > 0 ? (
+                  displayCategories.map((category) => (
+                    <Grid item xs={6} sm={4} md={2} key={category.id}>
+                      <CategoryCard 
+                        category={category} 
+                        isSelected={selectedCategory === category.id}
+                        onClick={handleCategoryChange}
+                      />
+                    </Grid>
+                  ))
+                ) : (
+                  <Typography variant="body1" sx={{ p: 2 }}>Tidak ada kategori sampah yang tersedia.</Typography>
+                )}
+              </Grid>
+            </Box>
+            
+            {/* Sort Controls dan View Toggle */}
+            <Box 
               sx={{ 
-                fontWeight: 500,
-                fontSize: '0.95rem',
-                mr: 2
+                mb: 4, 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                flexDirection: { xs: 'column', sm: 'row' },
+                gap: { xs: 2, sm: 0 }
               }}
             >
-              Menampilkan {Math.min((page - 1) * itemsPerPage + 1, filteredAndSortedItems.length)}-
-              {Math.min(page * itemsPerPage, filteredAndSortedItems.length)} dari {filteredAndSortedItems.length} hasil
-            </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary"
+                  sx={{ 
+                    fontWeight: 500,
+                    fontSize: '0.95rem',
+                    mr: 2
+                  }}
+                >
+                  Menampilkan {Math.min((page - 1) * itemsPerPage + 1, displayTypes.length)}-
+                  {Math.min(page * itemsPerPage, displayTypes.length)} dari {displayTypes.length} hasil
+                </Typography>
+                
+                <ToggleButtonGroup
+                  value={viewMode}
+                  exclusive
+                  onChange={handleViewModeChange}
+                  aria-label="view mode"
+                  size="small"
+                >
+                  <ToggleButton value="grid" aria-label="grid view">
+                    <Tooltip title="Tampilan Grid">
+                      <GridViewIcon fontSize="small" />
+                    </Tooltip>
+                  </ToggleButton>
+                  <ToggleButton value="list" aria-label="list view">
+                    <Tooltip title="Tampilan List">
+                      <ListViewIcon fontSize="small" />
+                    </Tooltip>
+                  </ToggleButton>
+                </ToggleButtonGroup>
+              </Box>
+              
+              <FormControl variant="outlined" size="small" sx={{ minWidth: 200 }}>
+                <InputLabel id="sort-label">Urutkan</InputLabel>
+                <Select
+                  labelId="sort-label"
+                  value={sortBy}
+                  onChange={handleSortChange}
+                  label="Urutkan"
+                >
+                  <MenuItem value="name_asc">Nama (A-Z)</MenuItem>
+                  <MenuItem value="name_desc">Nama (Z-A)</MenuItem>
+                  <MenuItem value="price_asc">Harga (Rendah-Tinggi)</MenuItem>
+                  <MenuItem value="price_desc">Harga (Tinggi-Rendah)</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
             
-            <ToggleButtonGroup
-              value={viewMode}
-              exclusive
-              onChange={handleViewModeChange}
-              aria-label="view mode"
-              size="small"
-            >
-              <ToggleButton value="grid" aria-label="grid view">
-                <Tooltip title="Tampilan Grid">
-                  <GridViewIcon fontSize="small" />
-                </Tooltip>
-              </ToggleButton>
-              <ToggleButton value="list" aria-label="list view">
-                <Tooltip title="Tampilan List">
-                  <ListViewIcon fontSize="small" />
-                </Tooltip>
-              </ToggleButton>
-            </ToggleButtonGroup>
-          </Box>
-          
-          <FormControl variant="outlined" size="small" sx={{ minWidth: 200 }}>
-            <InputLabel id="sort-label">Urutkan</InputLabel>
-            <Select
-              labelId="sort-label"
-              value={sortBy}
-              onChange={handleSortChange}
-              label="Urutkan"
-            >
-              <MenuItem value="name_asc">Nama (A-Z)</MenuItem>
-              <MenuItem value="name_desc">Nama (Z-A)</MenuItem>
-              <MenuItem value="price_asc">Harga (Rendah-Tinggi)</MenuItem>
-              <MenuItem value="price_desc">Harga (Tinggi-Rendah)</MenuItem>
-            </Select>
-          </FormControl>
-        </Box>
-        
-        {/* Hasil Pencarian */}
-        <Box sx={{ mb: 4 }}>
-          {filteredAndSortedItems.length > 0 ? (
-            viewMode === 'grid' ? (
-              <Grid container spacing={3}>
-                {paginatedItems.map((item, index) => (
-                  <Grid item xs={12} sm={6} md={4} key={item.id}>
-                    <GridItemCard 
-                      item={item} 
-                      index={index} 
-                      onToggleFavorite={handleToggleFavorite}
-                      favorites={favorites}
-                    />
+            {/* Hasil Pencarian */}
+            <Box sx={{ mb: 4 }}>
+              {displayTypes.length > 0 ? (
+                viewMode === 'grid' ? (
+                  <Grid container spacing={3}>
+                    {paginatedItems.map((item, index) => (
+                      <Grid item xs={12} sm={6} md={4} key={item.id}>
+                        <GridItemCard 
+                          item={item} 
+                          index={index} 
+                          onToggleFavorite={handleToggleFavorite}
+                          favorites={favorites}
+                        />
+                      </Grid>
+                    ))}
                   </Grid>
-                ))}
-              </Grid>
-            ) : (
-              <List sx={{ width: '100%' }}>
-                {paginatedItems.map((item, index) => (
-                  <ListItemRow 
-                    key={item.id} 
-                    item={item} 
-                    index={index} 
-                    onToggleFavorite={handleToggleFavorite}
-                    favorites={favorites}
-                  />
-                ))}
-              </List>
-            )
-          ) : (
-            <Fade in={true} timeout={600}>
+                ) : (
+                  <List sx={{ width: '100%' }}>
+                    {paginatedItems.map((item, index) => (
+                      <ListItemRow 
+                        key={item.id} 
+                        item={item} 
+                        index={index} 
+                        onToggleFavorite={handleToggleFavorite}
+                        favorites={favorites}
+                      />
+                    ))}
+                  </List>
+                )
+              ) : (
+                <Fade in={true} timeout={600}>
+                  <Box 
+                    sx={{ 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      p: 8,
+                      textAlign: 'center',
+                      height: '350px',
+                      backgroundColor: 'grey.50',
+                      borderRadius: 4,
+                      border: '1px dashed',
+                      borderColor: 'grey.300'
+                    }}
+                  >
+                    <SearchIcon sx={{ fontSize: 72, color: 'grey.400', mb: 3 }} />
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                      Tidak ada hasil yang ditemukan
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary" sx={{ mb: 4, maxWidth: '500px' }}>
+                      Coba ubah kata kunci atau filter pencarian Anda untuk menemukan jenis sampah yang dicari
+                    </Typography>
+                    <Button 
+                      variant="contained"
+                      color="primary"
+                      size="large"
+                      onClick={() => {
+                        setSearchQuery('');
+                        setSelectedCategory('all');
+                      }}
+                      sx={{ 
+                        borderRadius: 8,
+                        px: 4,
+                        py: 1.25,
+                        fontWeight: 600
+                      }}
+                    >
+                      Reset Pencarian
+                    </Button>
+                  </Box>
+                </Fade>
+              )}
+            </Box>
+            
+            {/* Pagination */}
+            {displayTypes.length > 0 && totalPages > 1 && (
               <Box 
                 sx={{ 
                   display: 'flex', 
-                  flexDirection: 'column', 
-                  alignItems: 'center', 
                   justifyContent: 'center',
-                  p: 8,
-                  textAlign: 'center',
-                  height: '350px',
-                  backgroundColor: 'grey.50',
-                  borderRadius: 4,
-                  border: '1px dashed',
-                  borderColor: 'grey.300'
+                  my: 4,
+                  py: 2,
+                  borderTop: '1px solid',
+                  borderColor: 'grey.200'
                 }}
               >
-                <SearchIcon sx={{ fontSize: 72, color: 'grey.400', mb: 3 }} />
-                <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                  Tidak ada hasil yang ditemukan
-                </Typography>
-                <Typography variant="body1" color="text.secondary" sx={{ mb: 4, maxWidth: '500px' }}>
-                  Coba ubah kata kunci atau filter pencarian Anda untuk menemukan jenis sampah yang dicari
-                </Typography>
-                <Button 
-                  variant="contained"
+                <Pagination
+                  count={totalPages}
+                  page={page}
+                  onChange={handlePageChange}
                   color="primary"
                   size="large"
-                  onClick={() => {
-                    setSearchQuery('');
-                    setSelectedCategory('all');
+                  showFirstButton
+                  showLastButton
+                  sx={{
+                    '& .MuiPaginationItem-root': {
+                      fontSize: '1rem',
+                      fontWeight: 500
+                    }
                   }}
-                  sx={{ 
-                    borderRadius: 8,
-                    px: 4,
-                    py: 1.25,
-                    fontWeight: 600
-                  }}
-                >
-                  Reset Pencarian
-                </Button>
+                />
               </Box>
-            </Fade>
-          )}
-        </Box>
-        
-        {/* Pagination */}
-        {filteredAndSortedItems.length > 0 && totalPages > 1 && (
-          <Box 
-            sx={{ 
-              display: 'flex', 
-              justifyContent: 'center',
-              my: 4,
-              py: 2,
-              borderTop: '1px solid',
-              borderColor: 'grey.200'
-            }}
-          >
-            <Pagination
-              count={totalPages}
-              page={page}
-              onChange={handlePageChange}
-              color="primary"
-              size="large"
-              showFirstButton
-              showLastButton
-              sx={{
-                '& .MuiPaginationItem-root': {
-                  fontSize: '1rem',
-                  fontWeight: 500
-                }
-              }}
-            />
-          </Box>
+            )}
+          </>
         )}
       </Container>
     </Box>

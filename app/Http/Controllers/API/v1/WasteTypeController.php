@@ -255,15 +255,15 @@ class WasteTypeController extends Controller
         
         // Menggunakan cache untuk query
         $wasteTypes = CacheService::remember($cacheKey, self::CACHE_MINUTES, function () use ($request) {
-            $query = WasteType::where('status', 'AKTIF');
+            $query = WasteType::query();
             
             // Eager loading
             $relations = [];
             if ($request->has('with_category') && $request->with_category) {
                 $relations[] = 'category';
             }
-            if ($request->has('with_values') && $request->with_values) {
-                $relations[] = 'values';
+            if ($request->has('with_waste_values') && $request->with_waste_values) {
+                $relations[] = 'wasteValues';
             }
             if ($request->has('with_tutorials') && $request->with_tutorials) {
                 $relations[] = 'tutorials';
@@ -284,7 +284,7 @@ class WasteTypeController extends Controller
             
             // Filter by category
             if ($request->has('category_id')) {
-                $query->where('category_id', $request->category_id);
+                $query->where('kategori_id', $request->category_id);
             }
             
             // Filter by difficulty level

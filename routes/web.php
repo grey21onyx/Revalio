@@ -21,6 +21,11 @@ Route::get('/', function () {
 // API Documentation
 Route::get('/api-docs', [OpenAPIController::class, 'swaggerUI']);
 
+// Login route untuk redirect dari auth middleware
+Route::get('/login', function () {
+    return redirect('/#/login');
+})->name('login');
+
 // Route untuk menangani semua URL lainnya
 Route::get('/{any}', function () {
     return view('react-main');

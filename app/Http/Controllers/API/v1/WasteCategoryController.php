@@ -185,13 +185,11 @@ class WasteCategoryController extends Controller
      */
     public function public(Request $request)
     {
-        $query = WasteCategory::where('status', 'AKTIF');
+        $query = WasteCategory::query();
         
         // Eager loading
         if ($request->has('with_waste_types') && $request->with_waste_types) {
-            $query->with(['wasteTypes' => function($q) {
-                $q->where('status', 'AKTIF');
-            }]);
+            $query->with(['wasteTypes']);
         }
         
         // Search

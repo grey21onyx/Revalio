@@ -15,14 +15,13 @@ class WasteCategoryResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->category_id,
+            'id' => $this->kategori_id,
             'nama' => $this->nama_kategori,
             'deskripsi' => $this->deskripsi,
-            'ikon' => $this->ikon ? url('storage/app/public/' . $this->ikon) : null,
-            'status' => $this->status,
+            'ikon' => $this->ikon ? url('storage/' . $this->ikon) : null,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
-            'jenis_sampah' => $this->whenLoaded('wasteTypes', function() {
+            'wasteTypes' => $this->whenLoaded('wasteTypes', function() {
                 return WasteTypeResource::collection($this->wasteTypes);
             }),
         ];

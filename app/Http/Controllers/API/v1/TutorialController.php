@@ -4,8 +4,13 @@ namespace App\Http\Controllers\API\v1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\TutorialResource;
+use App\Http\Resources\CommentResource;
 use App\Models\Tutorial;
+use App\Models\TutorialComment;
+use App\Models\TutorialRating;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class TutorialController extends Controller
 {
@@ -18,63 +23,74 @@ class TutorialController extends Controller
     {
         $query = Tutorial::query();
         
-        // Eager loading
-        if ($request->has('with_waste_type') && $request->with_waste_type) {
-            $query->with('wasteType');
+        // Filter by type
+        if ($request->has('jenis_tutorial')) {
+            $query->where('jenis_tutorial', $request->jenis_tutorial);
         }
         
-        // Search
-        if ($request->has('search')) {
-            $searchTerm = $request->search;
-            $query->where(function($q) use ($searchTerm) {
-                $q->where('judul', 'like', "%{$searchTerm}%")
-                  ->orWhere('deskripsi', 'like', "%{$searchTerm}%")
-                  ->orWhere('alat_bahan', 'like', "%{$searchTerm}%");
-            });
-        }
-        
-        // Filter by waste type
-        if ($request->has('waste_type_id')) {
-            $query->where('waste_type_id', $request->waste_type_id);
-        }
-        
-        // Filter by difficulty level
+        // Filter by difficulty
         if ($request->has('tingkat_kesulitan')) {
-            if (is_array($request->tingkat_kesulitan)) {
+            if(is_array($request->tingkat_kesulitan)) {
                 $query->whereIn('tingkat_kesulitan', $request->tingkat_kesulitan);
             } else {
                 $query->where('tingkat_kesulitan', $request->tingkat_kesulitan);
             }
         }
         
-        // Filter by tutorial type
-        if ($request->has('tipe_tutorial')) {
-            $query->where('tipe_tutorial', $request->tipe_tutorial);
+        // Filter by time
+        if ($request->has('max_time')) {
+            $query->where('estimasi_waktu', '<=', $request->max_time);
         }
         
-        // Filter by status
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
+        // Filter by waste type
+        if ($request->has('waste_id')) {
+            $query->where('waste_id', $request->waste_id);
+        }
+        
+        // Search by title
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('judul', 'like', "%{$search}%")
+                  ->orWhere('deskripsi', 'like', "%{$search}%");
+            });
+        }
+        
+        // Filter tried/untried
+        if ($request->has('tried') && Auth::check()) {
+            $userId = Auth::id();
+            if ($request->tried === 'true' || $request->tried === true) {
+                $query->whereHas('completedByUsers', function($q) use ($userId) {
+                    $q->where('user_id', $userId);
+                });
+            } else {
+                $query->whereDoesntHave('completedByUsers', function($q) use ($userId) {
+                    $q->where('user_id', $userId);
+                });
+            }
         }
         
         // Sort
-        $sortBy = $request->input('sort_by', 'tanggal_publikasi');
-        $direction = $request->input('direction', 'desc');
-        $query->orderBy($sortBy, $direction);
+        $sortBy = $request->sort_by ?? 'created_at';
+        $sortOrder = $request->sort_order ?? 'desc';
+        $query->orderBy($sortBy, $sortOrder);
         
-        // Pagination
-        $perPage = $request->input('per_page', 15);
+        // Paginate
+        $perPage = $request->per_page ?? 12;
         $tutorials = $query->paginate($perPage);
         
-        return TutorialResource::collection($tutorials)
-            ->additional([
-                'meta' => [
-                    'total' => $tutorials->total(),
-                    'per_page' => $tutorials->perPage(),
-                    'current_page' => $tutorials->currentPage(),
-                    'last_page' => $tutorials->lastPage(),
-                ],
-            ]);
+        // Attach user specific data
+        if (Auth::check()) {
+            $userId = Auth::id();
+            $tutorials->getCollection()->transform(function($tutorial) use ($userId) {
+                $tutorial->is_completed = $tutorial->completedByUsers()->where('user_id', $userId)->exists();
+                $tutorial->is_saved = $tutorial->savedByUsers()->where('user_id', $userId)->exists();
+                $tutorial->user_rating = $tutorial->ratings()->where('user_id', $userId)->value('rating');
+                return $tutorial;
+            });
+        }
+        
+        return TutorialResource::collection($tutorials);
     }
 
     /**
@@ -131,16 +147,28 @@ class TutorialController extends Controller
      */
     public function show(Request $request, $id)
     {
-        $query = Tutorial::where('tutorial_id', $id);
+        $tutorial = Tutorial::with([
+            'wasteType',
+            'comments.user',
+            'ratings'
+        ])->findOrFail($id);
         
-        // Eager loading
-        if ($request->has('with_waste_type') && $request->with_waste_type) {
-            $query->with('wasteType');
+        // Increment view count
+        $tutorial->incrementViewCount();
+        
+        // Add user specific data
+        if (Auth::check()) {
+            $userId = Auth::id();
+            $tutorial->is_completed = $tutorial->completedByUsers()->where('user_id', $userId)->exists();
+            $tutorial->is_saved = $tutorial->savedByUsers()->where('user_id', $userId)->exists();
+            $tutorial->user_rating = $tutorial->ratings()->where('user_id', $userId)->value('rating');
+        } else {
+            $tutorial->is_completed = false;
+            $tutorial->is_saved = false;
+            $tutorial->user_rating = null;
         }
         
-        $tutorial = $query->firstOrFail();
-        
-        return response()->json(new TutorialResource($tutorial));
+        return new TutorialResource($tutorial);
     }
 
     /**
@@ -218,12 +246,11 @@ class TutorialController extends Controller
      */
     public function getByWasteType($wasteTypeId)
     {
-        $tutorials = Tutorial::where('waste_type_id', $wasteTypeId)
-            ->where('status', 'AKTIF')
-            ->orderBy('tanggal_publikasi', 'desc')
+        $tutorials = Tutorial::where('waste_id', $wasteTypeId)
+            ->orderBy('created_at', 'desc')
             ->get();
             
-        return response()->json(TutorialResource::collection($tutorials));
+        return TutorialResource::collection($tutorials);
     }
 
     /**
@@ -295,5 +322,148 @@ class TutorialController extends Controller
                     'last_page' => $tutorials->lastPage(),
                 ],
             ]);
+    }
+
+    /**
+     * Toggle status completed
+     */
+    public function toggleCompleted($id)
+    {
+        if (!Auth::check()) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+        
+        $user = Auth::user();
+        $tutorial = Tutorial::findOrFail($id);
+        
+        if ($tutorial->completedByUsers()->where('user_id', $user->user_id)->exists()) {
+            $tutorial->completedByUsers()->detach($user->user_id);
+            $message = 'Tutorial dihapus dari daftar selesai';
+            $isCompleted = false;
+        } else {
+            $tutorial->completedByUsers()->attach($user->user_id, ['completed_at' => now()]);
+            $message = 'Tutorial ditandai sebagai selesai';
+            $isCompleted = true;
+        }
+        
+        return response()->json([
+            'message' => $message,
+            'is_completed' => $isCompleted
+        ]);
+    }
+    
+    /**
+     * Toggle status saved
+     */
+    public function toggleSaved($id)
+    {
+        if (!Auth::check()) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+        
+        $user = Auth::user();
+        $tutorial = Tutorial::findOrFail($id);
+        
+        if ($tutorial->savedByUsers()->where('user_id', $user->user_id)->exists()) {
+            $tutorial->savedByUsers()->detach($user->user_id);
+            $message = 'Tutorial dihapus dari daftar simpan';
+            $isSaved = false;
+        } else {
+            $tutorial->savedByUsers()->attach($user->user_id);
+            $message = 'Tutorial disimpan';
+            $isSaved = true;
+        }
+        
+        return response()->json([
+            'message' => $message,
+            'is_saved' => $isSaved
+        ]);
+    }
+    
+    /**
+     * Rating tutorial
+     */
+    public function rate(Request $request, $id)
+    {
+        $this->validate($request, [
+            'rating' => 'required|integer|min:1|max:5'
+        ]);
+        
+        if (!Auth::check()) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+        
+        $user = Auth::user();
+        $tutorial = Tutorial::findOrFail($id);
+        
+        // Create or update rating
+        $tutorial->ratings()->updateOrCreate(
+            ['user_id' => $user->user_id],
+            ['rating' => $request->rating]
+        );
+        
+        // Update average rating
+        $tutorial->updateAverageRating();
+        
+        return response()->json([
+            'message' => 'Rating berhasil diperbarui',
+            'average_rating' => $tutorial->average_rating,
+            'user_rating' => $request->rating
+        ]);
+    }
+    
+    /**
+     * Tambah komentar tutorial
+     */
+    public function addComment(Request $request, $id)
+    {
+        $this->validate($request, [
+            'content' => 'required|string|max:1000'
+        ]);
+        
+        if (!Auth::check()) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+        
+        $user = Auth::user();
+        $tutorial = Tutorial::findOrFail($id);
+        
+        $comment = TutorialComment::create([
+            'user_id' => $user->user_id,
+            'tutorial_id' => $id,
+            'content' => $request->content,
+            'status' => 'AKTIF'
+        ]);
+        
+        // Reload with user relationship
+        $comment->load('user');
+        
+        return response()->json([
+            'message' => 'Komentar berhasil ditambahkan',
+            'comment' => new CommentResource($comment)
+        ], 201);
+    }
+    
+    /**
+     * Daftar komentar tutorial
+     */
+    public function getComments($id, Request $request)
+    {
+        $tutorial = Tutorial::findOrFail($id);
+        
+        $query = TutorialComment::with('user')
+            ->where('tutorial_id', $id)
+            ->where('status', 'AKTIF');
+        
+        // Sort
+        $sortField = $request->sort_field ?? 'created_at';
+        $sortOrder = $request->sort_order ?? 'desc';
+        $query->orderBy($sortField, $sortOrder);
+        
+        // Paginate
+        $perPage = $request->per_page ?? 10;
+        $comments = $query->paginate($perPage);
+        
+        return CommentResource::collection($comments);
     }
 } 

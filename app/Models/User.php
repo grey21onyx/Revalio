@@ -319,4 +319,39 @@ class User extends Authenticatable
         return $this->belongsToMany(WasteType::class, 'user_favorite_waste_types', 'user_id', 'waste_id')
                     ->withTimestamps();
     }
+
+    /**
+     * Tutorial yang sudah diselesaikan pengguna
+     */
+    public function completedTutorials(): BelongsToMany
+    {
+        return $this->belongsToMany(Tutorial::class, 'user_completed_tutorials', 'user_id', 'tutorial_id')
+                    ->withPivot('completed_at')
+                    ->withTimestamps();
+    }
+
+    /**
+     * Tutorial yang disimpan pengguna
+     */
+    public function savedTutorials(): BelongsToMany
+    {
+        return $this->belongsToMany(Tutorial::class, 'user_saved_tutorials', 'user_id', 'tutorial_id')
+                    ->withTimestamps();
+    }
+
+    /**
+     * Rating yang diberikan pengguna
+     */
+    public function tutorialRatings(): HasMany
+    {
+        return $this->hasMany(TutorialRating::class, 'user_id');
+    }
+
+    /**
+     * Komentar tutorial yang diberikan pengguna
+     */
+    public function tutorialComments(): HasMany
+    {
+        return $this->hasMany(TutorialComment::class, 'user_id');
+    }
 }

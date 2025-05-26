@@ -102,8 +102,9 @@ Route::prefix('v1')->group(function () {
             Route::get('/waste-values/history/{wasteTypeId}', [WasteValueController::class, 'getValueHistory']);
             
             // Tutorials
-            Route::apiResource('tutorials', TutorialController::class);
-            Route::get('/tutorials/waste-type/{wasteTypeId}', [TutorialController::class, 'getByWasteType']);
+            Route::get('tutorials', [TutorialController::class, 'index']);
+            Route::get('tutorials/{id}', [TutorialController::class, 'show']);
+            Route::get('tutorials/{id}/comments', [TutorialController::class, 'getComments']);
             
             // Articles
             Route::apiResource('articles', ArticleController::class);
@@ -136,6 +137,23 @@ Route::prefix('v1')->group(function () {
             
             // Business Opportunities
             Route::apiResource('business-opportunities', BusinessOpportunityController::class);
+            Route::get('/business-opportunities/waste-types', [BusinessOpportunityController::class, 'getWasteTypes']);
+            Route::get('/business-opportunities/investment-range', [BusinessOpportunityController::class, 'getInvestmentRange']);
+
+            // User tutorial interactions
+            Route::post('tutorials/{id}/complete', [TutorialController::class, 'toggleCompleted']);
+            Route::post('tutorials/{id}/save', [TutorialController::class, 'toggleSaved']);
+            Route::post('tutorials/{id}/rate', [TutorialController::class, 'rate']);
+            Route::post('tutorials/{id}/comments', [TutorialController::class, 'addComment']);
+
+            // Waste tracking
+            Route::get('waste-tracking', [UserWasteTrackingController::class, 'index']);
+            Route::get('waste-tracking/waste-types', [UserWasteTrackingController::class, 'getWasteTypes']);
+            Route::post('waste-tracking', [UserWasteTrackingController::class, 'store']);
+            Route::get('waste-tracking/stats', [UserWasteTrackingController::class, 'stats']);
+            Route::get('waste-tracking/{id}', [UserWasteTrackingController::class, 'show']);
+            Route::put('waste-tracking/{id}', [UserWasteTrackingController::class, 'update']);
+            Route::delete('waste-tracking/{id}', [UserWasteTrackingController::class, 'destroy']);
         });
         
         // Public Routes
@@ -149,6 +167,8 @@ Route::prefix('v1')->group(function () {
         Route::get('/waste-buyers/public', [WasteBuyerController::class, 'public']);
         Route::get('/waste-buyer-types/public', [WasteBuyerTypeController::class, 'public']);
         Route::get('/business-opportunities/public', [BusinessOpportunityController::class, 'public']);
+        Route::get('/business-opportunities/waste-types/public', [BusinessOpportunityController::class, 'getWasteTypes']);
+        Route::get('/business-opportunities/investment-range/public', [BusinessOpportunityController::class, 'getInvestmentRange']);
         
         // Monetization Routes
         Route::get('/monetization/tips', [MonetizationController::class, 'getMonetizationTips']);

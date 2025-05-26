@@ -5,84 +5,71 @@ namespace App\Http\Controllers\API\v1;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\WasteBuyerResource;
 use App\Models\WasteBuyer;
+use App\Models\WasteBuyerType;
+use App\Models\WasteType;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class WasteBuyerController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @param Request $request
+     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
      */
     public function index(Request $request)
     {
-        $query = WasteBuyer::query();
+        $query = WasteBuyer::with(['wasteTypes.wasteType']);
         
-        // Eager loading
-        if ($request->has('with_type') && $request->with_type) {
-            $query->with('buyerType');
+        // Filter by waste type
+        if ($request->has('waste_id')) {
+            $query->whereHas('wasteTypes', function($q) use ($request) {
+                $q->where('waste_id', $request->waste_id);
+            });
         }
         
-        // Search
-        if ($request->has('search')) {
-            $searchTerm = $request->search;
-            $query->where(function($q) use ($searchTerm) {
-                $q->where('nama', 'like', "%{$searchTerm}%")
-                  ->orWhere('alamat', 'like', "%{$searchTerm}%")
-                  ->orWhere('kota', 'like', "%{$searchTerm}%")
-                  ->orWhere('provinsi', 'like', "%{$searchTerm}%");
+        // Filter by location (city or province)
+        if ($request->has('location')) {
+            $location = $request->location;
+            $query->where(function($q) use ($location) {
+                $q->where('kota', 'like', "%{$location}%")
+                  ->orWhere('provinsi', 'like', "%{$location}%")
+                  ->orWhere('alamat', 'like', "%{$location}%");
             });
+        }
+        
+        // Filter by buyer type
+        if ($request->has('jenis_pembeli')) {
+            $query->where('jenis_pembeli', $request->jenis_pembeli);
+        }
+        
+        // Filter by rating minimum
+        if ($request->has('rating_min') && is_numeric($request->rating_min)) {
+            $query->where('rating', '>=', $request->rating_min);
         }
         
         // Filter by status
         if ($request->has('status')) {
             $query->where('status', $request->status);
-        }
-        
-        // Filter by type
-        if ($request->has('buyer_type_id')) {
-            $query->where('buyer_type_id', $request->buyer_type_id);
-        }
-        
-        // Filter by location
-        if ($request->has('kota')) {
-            $query->where('kota', $request->kota);
-        }
-        
-        if ($request->has('provinsi')) {
-            $query->where('provinsi', $request->provinsi);
-        }
-        
-        // Filter by waste type
-        if ($request->has('waste_type')) {
-            $wasteType = $request->waste_type;
-            $query->where(function($q) use ($wasteType) {
-                $q->where('jenis_sampah_diterima', 'like', "%{$wasteType}%")
-                  ->orWhere('jenis_sampah_diterima', 'like', "%,{$wasteType},%")
-                  ->orWhere('jenis_sampah_diterima', 'like', "{$wasteType},%")
-                  ->orWhere('jenis_sampah_diterima', 'like', "%,{$wasteType}");
-            });
-        }
-        
-        // Sort by distance if lat/lng provided
-        if ($request->has('lat') && $request->has('lng')) {
-            // Implement distance-based sorting here if database supports it
-            // For MySQL, would use ST_Distance_Sphere or similar function
         } else {
-            // Default sort by name
-            $sortBy = $request->input('sort_by', 'nama');
-            $direction = $request->input('direction', 'asc');
-            if ($sortBy === 'rating') {
-                $query->orderBy('rating', 'desc');
-            } else {
-                $query->orderBy($sortBy, $direction);
-            }
+            // Default to active buyers only
+            $query->where('status', 'AKTIF');
+        }
+        
+        // Sorting
+        $sortField = $request->input('sort_by', 'nama_pembeli');
+        $sortOrder = $request->input('sort_order', 'asc');
+        
+        if ($sortField === 'rating') {
+            $query->orderBy('rating', $sortOrder);
+        } else {
+            $query->orderBy($sortField, $sortOrder);
         }
         
         // Pagination
-        $perPage = $request->input('per_page', 15);
+        $perPage = $request->input('per_page', 10);
         $buyers = $query->paginate($perPage);
         
         return WasteBuyerResource::collection($buyers)
@@ -92,189 +79,224 @@ class WasteBuyerController extends Controller
                     'per_page' => $buyers->perPage(),
                     'current_page' => $buyers->currentPage(),
                     'last_page' => $buyers->lastPage(),
-                ],
+                ]
             ]);
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function store(Request $request)
     {
-        // Only admin should be able to add buyers
-        if (!$request->user()->is_admin) {
-            return response()->json([
-                'message' => 'Anda tidak memiliki izin untuk menambahkan pembeli sampah'
-            ], 403);
+        // Verify user is authenticated and has admin role
+        if (!Auth::check() || !Auth::user()->isAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
         }
         
         $request->validate([
-            'nama' => 'required|string|max:255',
-            'alamat' => 'required|string',
+            'nama_pembeli' => 'required|string|max:100',
+            'jenis_pembeli' => 'required|string|max:50',
+            'alamat' => 'required|string|max:255',
             'kota' => 'required|string|max:100',
             'provinsi' => 'required|string|max:100',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
             'kontak' => 'required|string|max:50',
-            'email' => 'nullable|email|max:255',
-            'website' => 'nullable|url|max:255',
-            'jam_operasional' => 'nullable|string',
-            'jenis_sampah_diterima' => 'required|string',
-            'persyaratan_pembelian' => 'nullable|string',
-            'kisaran_harga' => 'nullable|string',
-            'metode_pembayaran' => 'nullable|string',
-            'buyer_type_id' => 'required|exists:waste_buyer_types,type_id',
+            'deskripsi' => 'nullable|string',
+            'jam_operasional' => 'nullable|string|max:255',
+            'website' => 'nullable|string|max:255',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            'rating' => 'nullable|numeric|min:0|max:5',
-            'status' => 'nullable|string|in:AKTIF,TIDAK_AKTIF,PENDING',
+            'waste_types' => 'required|array',
+            'waste_types.*.waste_id' => 'required|exists:waste_types,waste_id',
+            'waste_types.*.harga_beli' => 'required|numeric|min:0',
         ]);
-
-        $data = $request->except('foto');
         
-        if (!isset($data['status'])) {
-            $data['status'] = 'AKTIF';
-        }
+        DB::beginTransaction();
         
-        if (!isset($data['rating'])) {
-            $data['rating'] = 0;
+        try {
+            // Handle image upload
+            $fotoPath = null;
+            if ($request->hasFile('foto')) {
+                $foto = $request->file('foto');
+                $fileName = 'buyer_' . time() . '.' . $foto->getClientOriginalExtension();
+                $fotoPath = $foto->storeAs('waste_buyers', $fileName, 'public');
+            }
+            
+            // Create waste buyer record
+            $wasteBuyer = WasteBuyer::create([
+                'nama_pembeli' => $request->nama_pembeli,
+                'jenis_pembeli' => $request->jenis_pembeli,
+                'alamat' => $request->alamat,
+                'kota' => $request->kota,
+                'provinsi' => $request->provinsi,
+                'latitude' => $request->latitude,
+                'longitude' => $request->longitude,
+                'kontak' => $request->kontak,
+                'deskripsi' => $request->deskripsi,
+                'jam_operasional' => $request->jam_operasional,
+                'website' => $request->website,
+                'foto' => $fotoPath,
+                'rating' => 0,
+                'jumlah_rating' => 0,
+                'status' => 'AKTIF',
+            ]);
+            
+            // Add waste types with prices
+            foreach ($request->waste_types as $wasteType) {
+                WasteBuyerType::create([
+                    'buyer_id' => $wasteBuyer->buyer_id,
+                    'waste_id' => $wasteType['waste_id'],
+                    'harga_beli' => $wasteType['harga_beli'],
+                ]);
+            }
+            
+            DB::commit();
+            
+            // Reload with waste types
+            $wasteBuyer->load('wasteTypes.wasteType');
+            
+            return response()->json([
+                'message' => 'Pembeli sampah berhasil dibuat',
+                'waste_buyer' => new WasteBuyerResource($wasteBuyer)
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Gagal membuat pembeli sampah',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        // Handle file upload
-        if ($request->hasFile('foto')) {
-            $file = $request->file('foto');
-            $filename = 'buyer_' . time() . '.' . $file->getClientOriginalExtension();
-            $file->storeAs('public/buyers', $filename);
-            $data['foto'] = 'buyers/' . $filename;
-        }
-
-        $buyer = WasteBuyer::create($data);
-
-        return response()->json([
-            'message' => 'Pembeli sampah berhasil dibuat',
-            'waste_buyer' => new WasteBuyerResource($buyer)
-        ], 201);
     }
 
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
+     * @param Request $request
+     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function show(Request $request, $id)
     {
-        $query = WasteBuyer::where('buyer_id', $id);
+        $wasteBuyer = WasteBuyer::with(['wasteTypes.wasteType'])
+            ->findOrFail($id);
         
-        // Eager loading
-        if ($request->has('with_type') && $request->with_type) {
-            $query->with('buyerType');
-        }
-        
-        $buyer = $query->firstOrFail();
-        
-        return response()->json(new WasteBuyerResource($buyer));
+        return response()->json([
+            'waste_buyer' => new WasteBuyerResource($wasteBuyer)
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
+     * @param Request $request
+     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function update(Request $request, $id)
     {
-        // Only admin should be able to update buyers
-        if (!$request->user()->is_admin) {
-            return response()->json([
-                'message' => 'Anda tidak memiliki izin untuk memperbarui pembeli sampah'
-            ], 403);
+        // Verify user is authenticated and has admin role
+        if (!Auth::check() || !Auth::user()->isAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
         }
         
-        $buyer = WasteBuyer::findOrFail($id);
+        $wasteBuyer = WasteBuyer::findOrFail($id);
         
         $request->validate([
-            'nama' => 'sometimes|string|max:255',
-            'alamat' => 'sometimes|string',
-            'kota' => 'sometimes|string|max:100',
-            'provinsi' => 'sometimes|string|max:100',
-            'kontak' => 'sometimes|string|max:50',
-            'email' => 'nullable|email|max:255',
-            'website' => 'nullable|url|max:255',
-            'jam_operasional' => 'nullable|string',
-            'jenis_sampah_diterima' => 'sometimes|string',
-            'persyaratan_pembelian' => 'nullable|string',
-            'kisaran_harga' => 'nullable|string',
-            'metode_pembayaran' => 'nullable|string',
-            'buyer_type_id' => 'sometimes|exists:waste_buyer_types,type_id',
+            'nama_pembeli' => 'sometimes|required|string|max:100',
+            'jenis_pembeli' => 'sometimes|required|string|max:50',
+            'alamat' => 'sometimes|required|string|max:255',
+            'kota' => 'sometimes|required|string|max:100',
+            'provinsi' => 'sometimes|required|string|max:100',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'kontak' => 'sometimes|required|string|max:50',
+            'deskripsi' => 'nullable|string',
+            'jam_operasional' => 'nullable|string|max:255',
+            'website' => 'nullable|string|max:255',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            'rating' => 'nullable|numeric|min:0|max:5',
-            'status' => 'nullable|string|in:AKTIF,TIDAK_AKTIF,PENDING',
+            'waste_types' => 'sometimes|required|array',
+            'waste_types.*.waste_id' => 'required|exists:waste_types,waste_id',
+            'waste_types.*.harga_beli' => 'required|numeric|min:0',
+            'status' => 'sometimes|string|in:AKTIF,TIDAK_AKTIF',
         ]);
-
-        $data = $request->except(['foto', '_method']);
-
-        // Handle file upload
-        if ($request->hasFile('foto')) {
-            // Delete old image if exists
-            if ($buyer->foto) {
-                Storage::delete('public/' . $buyer->foto);
+        
+        DB::beginTransaction();
+        
+        try {
+            // Handle image upload if needed
+            if ($request->hasFile('foto')) {
+                $foto = $request->file('foto');
+                $fileName = 'buyer_' . time() . '.' . $foto->getClientOriginalExtension();
+                $fotoPath = $foto->storeAs('waste_buyers', $fileName, 'public');
+                $wasteBuyer->foto = $fotoPath;
             }
             
-            $file = $request->file('foto');
-            $filename = 'buyer_' . time() . '.' . $file->getClientOriginalExtension();
-            $file->storeAs('public/buyers', $filename);
-            $data['foto'] = 'buyers/' . $filename;
+            // Update waste buyer record
+            $wasteBuyer->fill($request->except(['foto', 'waste_types']));
+            $wasteBuyer->save();
+            
+            // Update waste types if provided
+            if ($request->has('waste_types')) {
+                // Remove existing waste types
+                WasteBuyerType::where('buyer_id', $id)->delete();
+                
+                // Add new waste types
+                foreach ($request->waste_types as $wasteType) {
+                    WasteBuyerType::create([
+                        'buyer_id' => $wasteBuyer->buyer_id,
+                        'waste_id' => $wasteType['waste_id'],
+                        'harga_beli' => $wasteType['harga_beli'],
+                    ]);
+                }
+            }
+            
+            DB::commit();
+            
+            // Reload with waste types
+            $wasteBuyer->load('wasteTypes.wasteType');
+            
+            return response()->json([
+                'message' => 'Pembeli sampah berhasil diperbarui',
+                'waste_buyer' => new WasteBuyerResource($wasteBuyer)
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Gagal memperbarui pembeli sampah',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $buyer->update($data);
-
-        return response()->json([
-            'message' => 'Pembeli sampah berhasil diperbarui',
-            'waste_buyer' => new WasteBuyerResource($buyer)
-        ]);
     }
 
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
+     * @param Request $request
+     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function destroy(Request $request, $id)
     {
-        // Only admin should be able to delete buyers
-        if (!$request->user()->is_admin) {
-            return response()->json([
-                'message' => 'Anda tidak memiliki izin untuk menghapus pembeli sampah'
-            ], 403);
+        // Verify user is authenticated and has admin role
+        if (!Auth::check() || !Auth::user()->isAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
         }
         
-        $buyer = WasteBuyer::findOrFail($id);
+        $wasteBuyer = WasteBuyer::findOrFail($id);
         
-        // Check if buyer has RecyclableTrait
-        if (method_exists($buyer, 'recycle')) {
-            $buyer->recycle();
-            $message = 'Pembeli sampah berhasil dipindahkan ke recycle bin';
-        } else {
-            // Delete image if exists
-            if ($buyer->foto) {
-                Storage::delete('public/' . $buyer->foto);
-            }
-            
-            $buyer->delete();
-            $message = 'Pembeli sampah berhasil dihapus';
-        }
-
+        // Set status to inactive instead of delete
+        $wasteBuyer->update(['status' => 'TIDAK_AKTIF']);
+        
         return response()->json([
-            'message' => $message
+            'message' => 'Pembeli sampah berhasil dinonaktifkan'
         ]);
     }
-    
+
     /**
-     * Get cities with waste buyers.
+     * Get all distinct cities from waste buyers.
      *
      * @return \Illuminate\Http\JsonResponse
      */
@@ -283,17 +305,17 @@ class WasteBuyerController extends Controller
         $cities = WasteBuyer::where('status', 'AKTIF')
             ->select('kota')
             ->distinct()
-            ->orderBy('kota')
+            ->orderBy('kota', 'asc')
             ->get()
             ->pluck('kota');
-            
+        
         return response()->json([
-            'data' => $cities
+            'cities' => $cities
         ]);
     }
-    
+
     /**
-     * Get provinces with waste buyers.
+     * Get all distinct provinces from waste buyers.
      *
      * @return \Illuminate\Http\JsonResponse
      */
@@ -302,104 +324,93 @@ class WasteBuyerController extends Controller
         $provinces = WasteBuyer::where('status', 'AKTIF')
             ->select('provinsi')
             ->distinct()
-            ->orderBy('provinsi')
+            ->orderBy('provinsi', 'asc')
             ->get()
             ->pluck('provinsi');
-            
+        
         return response()->json([
-            'data' => $provinces
+            'provinces' => $provinces
         ]);
     }
-    
+
     /**
      * Rate a waste buyer.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
+     * @param Request $request
+     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function rate(Request $request, $id)
     {
-        $buyer = WasteBuyer::findOrFail($id);
+        if (!Auth::check()) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
         
         $request->validate([
-            'rating' => 'required|numeric|min:1|max:5',
+            'rating' => 'required|integer|min:1|max:5',
         ]);
-
-        // In a real app, we would store individual ratings and calculate average
-        // For now, we'll just update the rating directly (simplified)
-        $buyer->rating = ($buyer->rating + $request->rating) / 2;
-        $buyer->save();
-
+        
+        $wasteBuyer = WasteBuyer::findOrFail($id);
+        
+        // Update rating
+        $currentTotal = $wasteBuyer->rating * $wasteBuyer->jumlah_rating;
+        $newTotal = $currentTotal + $request->rating;
+        $wasteBuyer->jumlah_rating += 1;
+        $wasteBuyer->rating = $newTotal / $wasteBuyer->jumlah_rating;
+        $wasteBuyer->save();
+        
         return response()->json([
-            'message' => 'Rating berhasil diberikan',
-            'new_rating' => $buyer->rating
+            'message' => 'Rating berhasil ditambahkan',
+            'new_rating' => $wasteBuyer->rating,
+            'rating_count' => $wasteBuyer->jumlah_rating
         ]);
     }
-    
+
     /**
-     * Display a listing of waste buyers for public access.
+     * Display a listing of public waste buyers.
      *
      * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
      */
     public function public(Request $request)
     {
-        $query = WasteBuyer::where('status', 'AKTIF');
-        
-        // Eager loading
-        if ($request->has('with_type') && $request->with_type) {
-            $query->with('buyerType');
-        }
-        
-        // Search
-        if ($request->has('search')) {
-            $searchTerm = $request->search;
-            $query->where(function($q) use ($searchTerm) {
-                $q->where('nama', 'like', "%{$searchTerm}%")
-                  ->orWhere('alamat', 'like', "%{$searchTerm}%")
-                  ->orWhere('kota', 'like', "%{$searchTerm}%")
-                  ->orWhere('provinsi', 'like', "%{$searchTerm}%");
-            });
-        }
-        
-        // Filter by type
-        if ($request->has('buyer_type_id')) {
-            $query->where('buyer_type_id', $request->buyer_type_id);
-        }
-        
-        // Filter by location
-        if ($request->has('kota')) {
-            $query->where('kota', $request->kota);
-        }
-        
-        if ($request->has('provinsi')) {
-            $query->where('provinsi', $request->provinsi);
-        }
+        $query = WasteBuyer::with(['wasteTypes.wasteType'])
+            ->where('status', 'AKTIF');
         
         // Filter by waste type
-        if ($request->has('waste_type')) {
-            $wasteType = $request->waste_type;
-            $query->where(function($q) use ($wasteType) {
-                $q->where('jenis_sampah_diterima', 'like', "%{$wasteType}%")
-                  ->orWhere('jenis_sampah_diterima', 'like', "%,{$wasteType},%")
-                  ->orWhere('jenis_sampah_diterima', 'like', "{$wasteType},%")
-                  ->orWhere('jenis_sampah_diterima', 'like', "%,{$wasteType}");
+        if ($request->has('waste_id')) {
+            $query->whereHas('wasteTypes', function($q) use ($request) {
+                $q->where('waste_id', $request->waste_id);
             });
         }
         
-        // Sort
-        $sortBy = $request->input('sort_by', 'nama');
-        $direction = $request->input('direction', 'asc');
+        // Filter by location (city or province)
+        if ($request->has('location')) {
+            $location = $request->location;
+            $query->where(function($q) use ($location) {
+                $q->where('kota', 'like', "%{$location}%")
+                  ->orWhere('provinsi', 'like', "%{$location}%")
+                  ->orWhere('alamat', 'like', "%{$location}%");
+            });
+        }
         
-        if ($sortBy === 'rating') {
-            $query->orderBy('rating', 'desc');
+        // Filter by buyer type
+        if ($request->has('jenis_pembeli')) {
+            $query->where('jenis_pembeli', $request->jenis_pembeli);
+        }
+        
+        // Sorting
+        $sortField = $request->input('sort_by', 'nama_pembeli');
+        $sortOrder = $request->input('sort_order', 'asc');
+        
+        if ($sortField === 'rating') {
+            $query->orderBy('rating', $sortOrder);
         } else {
-            $query->orderBy($sortBy, $direction);
+            $query->orderBy($sortField, $sortOrder);
         }
         
         // Pagination
-        $perPage = $request->input('per_page', 15);
+        $perPage = $request->input('per_page', 10);
         $buyers = $query->paginate($perPage);
         
         return WasteBuyerResource::collection($buyers)
@@ -409,7 +420,7 @@ class WasteBuyerController extends Controller
                     'per_page' => $buyers->perPage(),
                     'current_page' => $buyers->currentPage(),
                     'last_page' => $buyers->lastPage(),
-                ],
+                ]
             ]);
     }
 } 

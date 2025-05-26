@@ -6,6 +6,7 @@ use App\Traits\CommonScopes;
 use App\Traits\RecyclableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class BusinessOpportunity extends Model
 {
@@ -33,11 +34,14 @@ class BusinessOpportunity extends Model
     protected $fillable = [
         'judul',
         'deskripsi',
-        'kategori',
-        'investasi_awal',
-        'potensi_pendapatan',
-        'tantangan',
-        'saran_implementasi',
+        'jenis_sampah_terkait',
+        'investasi_minimal',
+        'investasi_maksimal',
+        'potensi_keuntungan',
+        'gambar',
+        'sumber_informasi',
+        'tanggal_publikasi',
+        'status',
     ];
     
     /**
@@ -46,20 +50,32 @@ class BusinessOpportunity extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'investasi_awal' => 'decimal:2',
+        'investasi_minimal' => 'decimal:2',
+        'investasi_maksimal' => 'decimal:2',
+        'tanggal_publikasi' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
-    
-    /**
-     * Menentukan bahwa model hanya menggunakan timestamp updated_at.
-     *
-     * @var bool
-     */
-    public $timestamps = false;
     
     /**
      * Field yang dapat dicari
      *
      * @var array<string>
      */
-    protected $searchableFields = ['judul', 'deskripsi', 'kategori', 'potensi_pendapatan', 'tantangan'];
+    protected $searchableFields = ['judul', 'deskripsi', 'jenis_sampah_terkait', 'potensi_keuntungan'];
+    
+    /**
+     * Relasi many-to-many dengan WasteType.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function wasteTypes(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            WasteType::class,
+            'business_opportunity_waste_types',
+            'peluang_id',
+            'waste_id'
+        )->withTimestamps();
+    }
 } 

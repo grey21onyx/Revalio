@@ -5,49 +5,68 @@ namespace App\Http\Controllers\API\v1;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ForumCommentResource;
 use App\Models\ForumComment;
-use App\Models\ForumLike;
 use App\Models\ForumThread;
+use App\Models\Like;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class ForumCommentController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @param  int  $threadId
-     * @return \Illuminate\Http\JsonResponse
+     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
      */
     public function index(Request $request, $threadId)
     {
-        // Verify thread exists
+        // Check if thread exists
         $thread = ForumThread::findOrFail($threadId);
         
-        $query = ForumComment::where('thread_id', $threadId)
-            ->whereNull('parent_id'); // Only top-level comments
+        $query = ForumComment::with(['user'])
+            ->where('thread_id', $threadId)
+            ->where('status', 'AKTIF')
+            ->whereNull('parent_komentar_id'); // Hanya komentar tingkat atas
         
-        // Eager loading
-        $relations = ['user'];
-        if ($request->has('with_replies') && $request->with_replies) {
-            $relations[] = 'replies.user';
-        }
-        
-        $query->with($relations);
-        
-        // Count likes
-        if ($request->has('with_counts') && $request->with_counts) {
-            $query->withCount('likes');
-        }
-        
-        // Sort
-        $sortBy = $request->input('sort_by', 'tanggal_posting');
-        $direction = $request->input('direction', 'desc');
-        $query->orderBy($sortBy, $direction);
+        // Sorting
+        $sortField = $request->input('sort_by', 'tanggal_komentar');
+        $sortOrder = $request->input('sort_order', 'asc');
+        $query->orderBy($sortField, $sortOrder);
         
         // Pagination
-        $perPage = $request->input('per_page', 15);
+        $perPage = $request->input('per_page', 20);
         $comments = $query->paginate($perPage);
+        
+        // Load replies for each comment
+        $comments->getCollection()->transform(function($comment) use ($sortOrder) {
+            $comment->replies = ForumComment::with(['user'])
+                ->where('parent_komentar_id', $comment->komentar_id)
+                ->where('status', 'AKTIF')
+                ->orderBy('tanggal_komentar', $sortOrder)
+                ->get();
+                
+            // If user is authenticated, check if they liked each reply
+            if (Auth::check()) {
+                $userId = Auth::id();
+                $comment->replies->transform(function($reply) use ($userId) {
+                    $reply->is_liked = $reply->likes()->where('user_id', $userId)->exists();
+                    return $reply;
+                });
+            }
+            
+            return $comment;
+        });
+        
+        // If user is authenticated, check if they liked each comment
+        if (Auth::check()) {
+            $userId = Auth::id();
+            $comments->getCollection()->transform(function($comment) use ($userId) {
+                $comment->is_liked = $comment->likes()->where('user_id', $userId)->exists();
+                return $comment;
+            });
+        }
         
         return ForumCommentResource::collection($comments)
             ->additional([
@@ -56,53 +75,54 @@ class ForumCommentController extends Controller
                     'per_page' => $comments->perPage(),
                     'current_page' => $comments->currentPage(),
                     'last_page' => $comments->lastPage(),
-                    'thread_id' => $threadId,
-                ],
+                ]
             ]);
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @param  int  $threadId
      * @return \Illuminate\Http\JsonResponse
      */
     public function store(Request $request, $threadId)
     {
-        // Verify thread exists
-        $thread = ForumThread::findOrFail($threadId);
+        if (!Auth::check()) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+        
+        // Check if thread exists and is active
+        $thread = ForumThread::where('thread_id', $threadId)
+            ->where('status', 'AKTIF')
+            ->firstOrFail();
         
         $request->validate([
-            'konten' => 'required|string',
-            'gambar' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            'parent_id' => 'nullable|exists:forum_comments,comment_id',
+            'konten' => 'required|string|max:5000',
+            'parent_komentar_id' => 'nullable|exists:forum_comments,komentar_id'
         ]);
-
-        $data = $request->except('gambar');
-        $data['thread_id'] = $threadId;
-        $data['user_id'] = $request->user()->user_id;
-        $data['tanggal_posting'] = now();
-        $data['status'] = 'AKTIF';
-
-        // Handle file upload
-        if ($request->hasFile('gambar')) {
-            $file = $request->file('gambar');
-            $filename = 'comment_' . time() . '.' . $file->getClientOriginalExtension();
-            $file->storeAs('public/comments', $filename);
-            $data['gambar'] = 'comments/' . $filename;
+        
+        // If this is a reply, ensure parent comment exists and belongs to the thread
+        if ($request->has('parent_komentar_id') && $request->parent_komentar_id) {
+            $parentComment = ForumComment::where('komentar_id', $request->parent_komentar_id)
+                ->where('thread_id', $threadId)
+                ->firstOrFail();
         }
-
-        $comment = ForumComment::create($data);
-
-        // Load the comment with user
+        
+        $comment = ForumComment::create([
+            'thread_id' => $threadId,
+            'user_id' => Auth::id(),
+            'konten' => $request->konten,
+            'parent_komentar_id' => $request->parent_komentar_id,
+            'tanggal_komentar' => now(),
+            'status' => 'AKTIF'
+        ]);
+        
+        // Load the user
         $comment->load('user');
-        if ($comment->parent_id) {
-            $comment->load('parent.user');
-        }
-
+        
         return response()->json([
-            'message' => 'Komentar berhasil dibuat',
+            'message' => 'Komentar berhasil ditambahkan',
             'comment' => new ForumCommentResource($comment)
         ], 201);
     }
@@ -110,89 +130,106 @@ class ForumCommentController extends Controller
     /**
      * Display the specified resource.
      *
+     * @param  Request  $request
      * @param  int  $threadId
      * @param  int  $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function show(Request $request, $threadId, $id)
     {
-        $comment = ForumComment::where('thread_id', $threadId)
-            ->where('comment_id', $id)
+        // Check if thread exists
+        $thread = ForumThread::findOrFail($threadId);
+        
+        // Get comment with user
+        $comment = ForumComment::with(['user'])
+            ->where('thread_id', $threadId)
+            ->where('komentar_id', $id)
             ->firstOrFail();
         
-        // Eager loading
-        $relations = ['user'];
-        if ($request->has('with_replies') && $request->with_replies) {
-            $relations[] = 'replies.user';
-        }
-        
-        $comment->load($relations);
-        
-        // Count likes
-        $comment->loadCount('likes');
-        
-        // Check if user has liked this comment
-        if ($request->user()) {
-            $comment->user_has_liked = ForumLike::where('user_id', $request->user()->user_id)
-                ->where('comment_id', $comment->comment_id)
-                ->exists();
+        // If user is authenticated, check if they liked the comment
+        if (Auth::check()) {
+            $userId = Auth::id();
+            $comment->is_liked = $comment->likes()->where('user_id', $userId)->exists();
         } else {
-            $comment->user_has_liked = false;
+            $comment->is_liked = false;
         }
         
-        return response()->json(new ForumCommentResource($comment));
+        // Load replies if this is a parent comment
+        if (!$comment->parent_komentar_id) {
+            $replies = ForumComment::with(['user'])
+                ->where('parent_komentar_id', $comment->komentar_id)
+                ->orderBy('tanggal_komentar', 'asc')
+                ->get();
+                
+            if (Auth::check()) {
+                $userId = Auth::id();
+                $replies->transform(function($reply) use ($userId) {
+                    $reply->is_liked = $reply->likes()->where('user_id', $userId)->exists();
+                    return $reply;
+                });
+            }
+            
+            $comment->replies = $replies;
+        }
+        
+        return response()->json([
+            'comment' => new ForumCommentResource($comment)
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @param  int  $threadId
      * @param  int  $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function update(Request $request, $threadId, $id)
     {
+        if (!Auth::check()) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+        
+        // Check if thread exists
+        $thread = ForumThread::findOrFail($threadId);
+        
+        // Get comment
         $comment = ForumComment::where('thread_id', $threadId)
-            ->where('comment_id', $id)
+            ->where('komentar_id', $id)
             ->firstOrFail();
         
-        // Check if user is authorized to update
-        if ($request->user()->user_id !== $comment->user_id && !$request->user()->is_admin) {
-            return response()->json([
-                'message' => 'Anda tidak memiliki izin untuk mengedit komentar ini'
-            ], 403);
+        // Check if user is authorized to update this comment
+        if (Auth::id() !== $comment->user_id && !Auth::user()->isAdmin()) {
+            return response()->json(['message' => 'Forbidden'], 403);
         }
         
         $request->validate([
-            'konten' => 'required|string',
-            'gambar' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            'status' => 'nullable|string|in:AKTIF,TERVERIFIKASI,DITOLAK,SPAM',
+            'konten' => 'required|string|max:5000',
+            'status' => 'sometimes|string|in:AKTIF,TIDAK_AKTIF',
         ]);
-
-        $data = $request->except(['gambar', '_method']);
-
-        // Handle file upload
-        if ($request->hasFile('gambar')) {
-            // Delete old image if exists
-            if ($comment->gambar) {
-                Storage::delete('public/' . $comment->gambar);
-            }
-            
-            $file = $request->file('gambar');
-            $filename = 'comment_' . time() . '.' . $file->getClientOriginalExtension();
-            $file->storeAs('public/comments', $filename);
-            $data['gambar'] = 'comments/' . $filename;
+        
+        $data = $request->only(['konten']);
+        
+        // Only admins can change status
+        if ($request->has('status') && Auth::user()->isAdmin()) {
+            $data['status'] = $request->status;
         }
-
+        
+        // Update comment
         $comment->update($data);
-
-        // Load the comment with user
+        
+        // Reload the user
         $comment->load('user');
-        if ($comment->parent_id) {
-            $comment->load('parent.user');
+        
+        // If user is authenticated, check if they liked the comment
+        if (Auth::check()) {
+            $userId = Auth::id();
+            $comment->is_liked = $comment->likes()->where('user_id', $userId)->exists();
+        } else {
+            $comment->is_liked = false;
         }
-
+        
         return response()->json([
             'message' => 'Komentar berhasil diperbarui',
             'comment' => new ForumCommentResource($comment)
@@ -202,124 +239,158 @@ class ForumCommentController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @param  int  $threadId
      * @param  int  $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function destroy(Request $request, $threadId, $id)
     {
+        if (!Auth::check()) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+        
+        // Check if thread exists
+        $thread = ForumThread::findOrFail($threadId);
+        
+        // Get comment
         $comment = ForumComment::where('thread_id', $threadId)
-            ->where('comment_id', $id)
+            ->where('komentar_id', $id)
             ->firstOrFail();
         
-        // Check if user is authorized to delete
-        if ($request->user()->user_id !== $comment->user_id && !$request->user()->is_admin) {
-            return response()->json([
-                'message' => 'Anda tidak memiliki izin untuk menghapus komentar ini'
-            ], 403);
+        // Check if user is authorized to delete this comment
+        if (Auth::id() !== $comment->user_id && !Auth::user()->isAdmin()) {
+            return response()->json(['message' => 'Forbidden'], 403);
         }
         
-        // Check if comment has RecyclableTrait
-        if (method_exists($comment, 'recycle')) {
-            $comment->recycle();
-            $message = 'Komentar berhasil dipindahkan ke recycle bin';
-        } else {
-            // Delete image if exists
-            if ($comment->gambar) {
-                Storage::delete('public/' . $comment->gambar);
+        // If this is a parent comment, update status for all replies too
+        DB::beginTransaction();
+        try {
+            // Set comment status to TIDAK_AKTIF instead of hard delete
+            $comment->update(['status' => 'TIDAK_AKTIF']);
+            
+            // Update all replies if this is a parent comment
+            if (!$comment->parent_komentar_id) {
+                ForumComment::where('parent_komentar_id', $comment->komentar_id)
+                    ->update(['status' => 'TIDAK_AKTIF']);
             }
             
-            $comment->delete();
-            $message = 'Komentar berhasil dihapus';
+            DB::commit();
+            
+            return response()->json([
+                'message' => 'Komentar berhasil dihapus'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'message' => 'Gagal menghapus komentar',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        return response()->json([
-            'message' => $message
-        ]);
     }
-    
+
     /**
      * Get replies for a comment.
      *
-     * @param  int  $threadId
-     * @param  int  $commentId
-     * @return \Illuminate\Http\JsonResponse
+     * @param Request $request
+     * @param int $threadId
+     * @param int $commentId
+     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
      */
     public function getReplies(Request $request, $threadId, $commentId)
     {
-        // Verify comment exists and belongs to the thread
+        // Check if thread exists
+        $thread = ForumThread::findOrFail($threadId);
+        
+        // Check if parent comment exists
         $parentComment = ForumComment::where('thread_id', $threadId)
-            ->where('comment_id', $commentId)
+            ->where('komentar_id', $commentId)
             ->firstOrFail();
         
-        $query = ForumComment::where('parent_id', $commentId)
-            ->with('user')
-            ->withCount('likes');
+        // Get replies
+        $query = ForumComment::with(['user'])
+            ->where('thread_id', $threadId)
+            ->where('parent_komentar_id', $commentId)
+            ->where('status', 'AKTIF');
         
-        // Sort
-        $sortBy = $request->input('sort_by', 'tanggal_posting');
-        $direction = $request->input('direction', 'asc');
-        $query->orderBy($sortBy, $direction);
+        // Sorting
+        $sortOrder = $request->input('sort_order', 'asc');
+        $query->orderBy('tanggal_komentar', $sortOrder);
         
-        // Pagination
-        $perPage = $request->input('per_page', 15);
-        $replies = $query->paginate($perPage);
-        
-        return ForumCommentResource::collection($replies)
-            ->additional([
-                'meta' => [
-                    'total' => $replies->total(),
-                    'per_page' => $replies->perPage(),
-                    'current_page' => $replies->currentPage(),
-                    'last_page' => $replies->lastPage(),
-                    'thread_id' => $threadId,
-                    'parent_comment_id' => $commentId,
-                ],
-            ]);
+        // Pagination (optional)
+        if ($request->has('per_page')) {
+            $perPage = $request->input('per_page');
+            $replies = $query->paginate($perPage);
+            
+            // If user is authenticated, check if they liked each reply
+            if (Auth::check()) {
+                $userId = Auth::id();
+                $replies->getCollection()->transform(function($reply) use ($userId) {
+                    $reply->is_liked = $reply->likes()->where('user_id', $userId)->exists();
+                    return $reply;
+                });
+            }
+            
+            return ForumCommentResource::collection($replies);
+        } else {
+            // Get all replies without pagination
+            $replies = $query->get();
+            
+            // If user is authenticated, check if they liked each reply
+            if (Auth::check()) {
+                $userId = Auth::id();
+                $replies->transform(function($reply) use ($userId) {
+                    $reply->is_liked = $reply->likes()->where('user_id', $userId)->exists();
+                    return $reply;
+                });
+            }
+            
+            return ForumCommentResource::collection($replies);
+        }
     }
-    
+
     /**
-     * Like or unlike a comment.
+     * Toggle like for a comment.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $threadId
-     * @param  int  $id
+     * @param Request $request
+     * @param int $threadId
+     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function toggleLike(Request $request, $threadId, $id)
     {
-        $comment = ForumComment::where('thread_id', $threadId)
-            ->where('comment_id', $id)
-            ->firstOrFail();
-            
-        $userId = $request->user()->user_id;
+        if (!Auth::check()) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
         
-        $existingLike = ForumLike::where('comment_id', $id)
-            ->where('user_id', $userId)
-            ->first();
-            
-        if ($existingLike) {
-            $existingLike->delete();
-            $message = 'Like dibatalkan';
-            $liked = false;
+        // Check if thread exists
+        $thread = ForumThread::findOrFail($threadId);
+        
+        // Get comment
+        $comment = ForumComment::where('thread_id', $threadId)
+            ->where('komentar_id', $id)
+            ->firstOrFail();
+        
+        $user = Auth::user();
+        
+        if ($comment->isLikedBy($user)) {
+            $comment->unlike($user);
+            $message = 'Like berhasil dihapus';
+            $isLiked = false;
         } else {
-            ForumLike::create([
-                'comment_id' => $id,
-                'user_id' => $userId,
-                'tanggal_like' => now()
-            ]);
-            $message = 'Komentar disukai';
-            $liked = true;
+            $comment->like($user);
+            $message = 'Komentar berhasil disukai';
+            $isLiked = true;
         }
         
         // Get updated like count
-        $likeCount = ForumLike::where('comment_id', $id)->count();
+        $comment->loadCount('likes');
         
         return response()->json([
             'message' => $message,
-            'liked' => $liked,
-            'likes_count' => $likeCount
+            'is_liked' => $isLiked,
+            'likes_count' => $comment->likes_count
         ]);
     }
 } 

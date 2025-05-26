@@ -7,6 +7,8 @@ use App\Traits\RecyclableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Tutorial extends Model
 {
@@ -96,6 +98,74 @@ class Tutorial extends Model
      */
     public function wasteType(): BelongsTo
     {
-        return $this->belongsTo(WasteType::class, 'waste_id', 'waste_id');
+        return $this->belongsTo(WasteType::class, 'waste_id');
+    }
+    
+    /**
+     * Relasi dengan pengguna yang telah menyelesaikan tutorial
+     */
+    public function completedByUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'user_completed_tutorials', 'tutorial_id', 'user_id')
+                    ->withPivot('completed_at')
+                    ->withTimestamps();
+    }
+    
+    /**
+     * Relasi dengan pengguna yang menyimpan tutorial
+     */
+    public function savedByUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'user_saved_tutorials', 'tutorial_id', 'user_id')
+                    ->withTimestamps();
+    }
+    
+    /**
+     * Relasi dengan rating yang diberikan pengguna
+     */
+    public function ratings(): HasMany
+    {
+        return $this->hasMany(TutorialRating::class, 'tutorial_id');
+    }
+    
+    /**
+     * Relasi dengan komentar yang diberikan pengguna
+     */
+    public function comments(): HasMany
+    {
+        return $this->hasMany(TutorialComment::class, 'tutorial_id');
+    }
+    
+    /**
+     * Increment view count
+     */
+    public function incrementViewCount(): void
+    {
+        $this->increment('view_count');
+    }
+    
+    /**
+     * Calculate and update average rating
+     */
+    public function updateAverageRating(): void
+    {
+        $this->average_rating = $this->ratings()->avg('rating') ?? 0;
+        $this->save();
+    }
+    
+    /**
+     * Get the tutorials by waste type
+     */
+    public function scopeByWasteType($query, $wasteTypeId)
+    {
+        return $query->where('waste_id', $wasteTypeId);
+    }
+    
+    /**
+     * Get popular tutorials (by view count)
+     */
+    public function scopePopular($query, $limit = 5)
+    {
+        return $query->orderBy('view_count', 'desc')->limit($limit);
     }
 } 

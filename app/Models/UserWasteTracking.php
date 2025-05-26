@@ -49,8 +49,8 @@ class UserWasteTracking extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'jumlah' => 'decimal:2',
-        'nilai_estimasi' => 'decimal:2',
+        'jumlah' => 'float',
+        'nilai_estimasi' => 'float',
         'tanggal_pencatatan' => 'datetime',
     ];
     
@@ -76,15 +76,47 @@ class UserWasteTracking extends Model
     protected $dateColumn = 'tanggal_pencatatan';
     
     /**
-     * Method tambahan untuk memfilter berdasarkan status pengelolaan
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $status
-     * @return \Illuminate\Database\Eloquent\Builder
+     * Total nilai estimasi tracking sampah
+     */
+    public static function getTotalNilai($userId = null)
+    {
+        $query = self::query();
+        
+        if ($userId) {
+            $query->where('user_id', $userId);
+        }
+        
+        return $query->sum('nilai_estimasi');
+    }
+    
+    /**
+     * Total jumlah sampah yang dikelola
+     */
+    public static function getTotalJumlah($userId = null)
+    {
+        $query = self::query();
+        
+        if ($userId) {
+            $query->where('user_id', $userId);
+        }
+        
+        return $query->sum('jumlah');
+    }
+    
+    /**
+     * Filter berdasarkan status pengelolaan
      */
     public function scopeWithStatus($query, $status)
     {
         return $query->where('status_pengelolaan', $status);
+    }
+    
+    /**
+     * Filter berdasarkan rentang tanggal
+     */
+    public function scopeInDateRange($query, $startDate, $endDate)
+    {
+        return $query->whereBetween('tanggal_pencatatan', [$startDate, $endDate]);
     }
     
     /**
@@ -94,7 +126,7 @@ class UserWasteTracking extends Model
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id', 'user_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
     
     /**
@@ -104,6 +136,6 @@ class UserWasteTracking extends Model
      */
     public function wasteType(): BelongsTo
     {
-        return $this->belongsTo(WasteType::class, 'waste_id', 'waste_id');
+        return $this->belongsTo(WasteType::class, 'waste_id');
     }
 } 

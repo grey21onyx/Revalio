@@ -17,19 +17,26 @@ class UserWasteTrackingResource extends JsonResource
         return [
             'id' => $this->tracking_id,
             'user_id' => $this->user_id,
-            'waste_type_id' => $this->waste_type_id,
+            'waste_id' => $this->waste_id,
+            'waste_type' => $this->whenLoaded('wasteType', function() {
+                return [
+                    'id' => $this->wasteType->waste_id,
+                    'name' => $this->wasteType->nama_sampah,
+                    'category' => $this->wasteType->category ? [
+                        'id' => $this->wasteType->category->kategori_id,
+                        'name' => $this->wasteType->category->nama_kategori
+                    ] : null
+                ];
+            }),
             'jumlah' => $this->jumlah,
             'satuan' => $this->satuan,
-            'tanggal_dicatat' => $this->tanggal_dicatat,
-            'estimasi_nilai' => $this->estimasi_nilai,
+            'tanggal_pencatatan' => $this->tanggal_pencatatan->format('Y-m-d H:i:s'),
+            'status_pengelolaan' => $this->status_pengelolaan,
+            'nilai_estimasi' => $this->nilai_estimasi,
             'catatan' => $this->catatan,
-            'foto' => $this->foto ? url('storage/app/public/' . $this->foto) : null,
-            'user' => $this->whenLoaded('user', function() {
-                return new UserResource($this->user);
-            }),
-            'jenis_sampah' => $this->whenLoaded('wasteType', function() {
-                return new WasteTypeResource($this->wasteType);
-            }),
+            'foto' => $this->foto ? asset('storage/' . $this->foto) : null,
+            'created_at' => $this->created_at->format('Y-m-d H:i:s'),
+            'updated_at' => $this->updated_at ? $this->updated_at->format('Y-m-d H:i:s') : null,
         ];
     }
 } 

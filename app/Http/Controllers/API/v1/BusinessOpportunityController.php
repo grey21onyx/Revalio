@@ -5,8 +5,11 @@ namespace App\Http\Controllers\API\v1;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\BusinessOpportunityResource;
 use App\Models\BusinessOpportunity;
+use App\Models\WasteType;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class BusinessOpportunityController extends Controller
 {
@@ -19,7 +22,7 @@ class BusinessOpportunityController extends Controller
     {
         $query = BusinessOpportunity::query();
         
-        // Search
+        // Filter: Search
         if ($request->has('search')) {
             $searchTerm = $request->search;
             $query->where(function($q) use ($searchTerm) {
@@ -29,12 +32,12 @@ class BusinessOpportunityController extends Controller
             });
         }
         
-        // Filter by status
+        // Filter: Status
         if ($request->has('status')) {
             $query->where('status', $request->status);
         }
         
-        // Filter by investment range
+        // Filter: Investment range
         if ($request->has('min_investment')) {
             $query->where('investasi_minimal', '>=', $request->min_investment);
         }
@@ -43,7 +46,7 @@ class BusinessOpportunityController extends Controller
             $query->where('investasi_maksimal', '<=', $request->max_investment);
         }
         
-        // Filter by waste type
+        // Filter: Waste type
         if ($request->has('waste_type')) {
             $wasteType = $request->waste_type;
             $query->where(function($q) use ($wasteType) {
@@ -51,13 +54,32 @@ class BusinessOpportunityController extends Controller
                   ->orWhere('jenis_sampah_terkait', 'like', "%,{$wasteType},%")
                   ->orWhere('jenis_sampah_terkait', 'like', "{$wasteType},%")
                   ->orWhere('jenis_sampah_terkait', 'like', "%,{$wasteType}");
+            })
+            ->orWhereHas('wasteTypes', function($q) use ($wasteType) {
+                $q->where('waste_type', 'like', "%{$wasteType}%");
+            });
+        }
+        
+        // Filter: By specific waste type ID
+        if ($request->has('waste_id')) {
+            $query->whereHas('wasteTypes', function($q) use ($request) {
+                $q->where('waste_types.waste_id', $request->waste_id);
             });
         }
         
         // Sort
         $sortBy = $request->input('sort_by', 'tanggal_publikasi');
         $direction = $request->input('direction', 'desc');
-        $query->orderBy($sortBy, $direction);
+        $validSortFields = ['judul', 'tanggal_publikasi', 'investasi_minimal', 'investasi_maksimal'];
+        
+        if (in_array($sortBy, $validSortFields)) {
+            $query->orderBy($sortBy, $direction);
+        } else {
+            $query->orderBy('tanggal_publikasi', 'desc');
+        }
+        
+        // Eager load waste types
+        $query->with('wasteTypes');
         
         // Pagination
         $perPage = $request->input('per_page', 15);
@@ -83,7 +105,7 @@ class BusinessOpportunityController extends Controller
     public function store(Request $request)
     {
         // Only admin should be able to add business opportunities
-        if (!$request->user()->is_admin) {
+        if (!Auth::check() || !Auth::user()->isAdmin()) {
             return response()->json([
                 'message' => 'Anda tidak memiliki izin untuk menambahkan peluang bisnis'
             ], 403);
@@ -92,16 +114,18 @@ class BusinessOpportunityController extends Controller
         $request->validate([
             'judul' => 'required|string|max:255',
             'deskripsi' => 'required|string',
-            'jenis_sampah_terkait' => 'required|string',
+            'jenis_sampah_terkait' => 'nullable|string',
             'investasi_minimal' => 'required|numeric|min:0',
             'investasi_maksimal' => 'required|numeric|min:0|gte:investasi_minimal',
             'potensi_keuntungan' => 'required|string',
             'gambar' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'sumber_informasi' => 'nullable|string|max:255',
             'status' => 'nullable|string|in:AKTIF,TIDAK_AKTIF',
+            'waste_types' => 'nullable|array',
+            'waste_types.*' => 'exists:waste_types,waste_id',
         ]);
 
-        $data = $request->except('gambar');
+        $data = $request->except(['gambar', 'waste_types']);
         
         if (!isset($data['status'])) {
             $data['status'] = 'AKTIF';
@@ -109,20 +133,41 @@ class BusinessOpportunityController extends Controller
         
         $data['tanggal_publikasi'] = now();
 
-        // Handle file upload
-        if ($request->hasFile('gambar')) {
-            $file = $request->file('gambar');
-            $filename = 'opportunity_' . time() . '.' . $file->getClientOriginalExtension();
-            $file->storeAs('public/opportunities', $filename);
-            $data['gambar'] = 'opportunities/' . $filename;
+        DB::beginTransaction();
+        
+        try {
+            // Handle file upload
+            if ($request->hasFile('gambar')) {
+                $file = $request->file('gambar');
+                $filename = 'opportunity_' . time() . '.' . $file->getClientOriginalExtension();
+                $path = $file->storeAs('opportunities', $filename, 'public');
+                $data['gambar'] = $path;
+            }
+
+            $opportunity = BusinessOpportunity::create($data);
+            
+            // Sync waste types
+            if ($request->has('waste_types') && is_array($request->waste_types)) {
+                $opportunity->wasteTypes()->sync($request->waste_types);
+            }
+            
+            DB::commit();
+            
+            // Reload with waste types
+            $opportunity->load('wasteTypes');
+            
+            return response()->json([
+                'message' => 'Peluang bisnis berhasil dibuat',
+                'data' => new BusinessOpportunityResource($opportunity)
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'message' => 'Gagal membuat peluang bisnis',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $opportunity = BusinessOpportunity::create($data);
-
-        return response()->json([
-            'message' => 'Peluang bisnis berhasil dibuat',
-            'opportunity' => new BusinessOpportunityResource($opportunity)
-        ], 201);
     }
 
     /**
@@ -133,9 +178,11 @@ class BusinessOpportunityController extends Controller
      */
     public function show($id)
     {
-        $opportunity = BusinessOpportunity::findOrFail($id);
+        $opportunity = BusinessOpportunity::with('wasteTypes')->findOrFail($id);
         
-        return response()->json(new BusinessOpportunityResource($opportunity));
+        return response()->json([
+            'data' => new BusinessOpportunityResource($opportunity)
+        ]);
     }
 
     /**
@@ -148,7 +195,7 @@ class BusinessOpportunityController extends Controller
     public function update(Request $request, $id)
     {
         // Only admin should be able to update business opportunities
-        if (!$request->user()->is_admin) {
+        if (!Auth::check() || !Auth::user()->isAdmin()) {
             return response()->json([
                 'message' => 'Anda tidak memiliki izin untuk memperbarui peluang bisnis'
             ], 403);
@@ -159,36 +206,59 @@ class BusinessOpportunityController extends Controller
         $request->validate([
             'judul' => 'sometimes|string|max:255',
             'deskripsi' => 'sometimes|string',
-            'jenis_sampah_terkait' => 'sometimes|string',
+            'jenis_sampah_terkait' => 'nullable|string',
             'investasi_minimal' => 'sometimes|numeric|min:0',
             'investasi_maksimal' => 'sometimes|numeric|min:0|gte:investasi_minimal',
             'potensi_keuntungan' => 'sometimes|string',
             'gambar' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'sumber_informasi' => 'nullable|string|max:255',
             'status' => 'nullable|string|in:AKTIF,TIDAK_AKTIF',
+            'waste_types' => 'nullable|array',
+            'waste_types.*' => 'exists:waste_types,waste_id',
         ]);
 
-        $data = $request->except(['gambar', '_method']);
+        $data = $request->except(['gambar', '_method', 'waste_types']);
+        
+        DB::beginTransaction();
+        
+        try {
+            // Handle file upload
+            if ($request->hasFile('gambar')) {
+                // Delete old image if exists
+                if ($opportunity->gambar) {
+                    Storage::disk('public')->delete($opportunity->gambar);
+                }
+                
+                $file = $request->file('gambar');
+                $filename = 'opportunity_' . time() . '.' . $file->getClientOriginalExtension();
+                $path = $file->storeAs('opportunities', $filename, 'public');
+                $data['gambar'] = $path;
+            }
 
-        // Handle file upload
-        if ($request->hasFile('gambar')) {
-            // Delete old image if exists
-            if ($opportunity->gambar) {
-                Storage::delete('public/' . $opportunity->gambar);
+            $opportunity->update($data);
+            
+            // Sync waste types if provided
+            if ($request->has('waste_types') && is_array($request->waste_types)) {
+                $opportunity->wasteTypes()->sync($request->waste_types);
             }
             
-            $file = $request->file('gambar');
-            $filename = 'opportunity_' . time() . '.' . $file->getClientOriginalExtension();
-            $file->storeAs('public/opportunities', $filename);
-            $data['gambar'] = 'opportunities/' . $filename;
+            DB::commit();
+            
+            // Reload with waste types
+            $opportunity->load('wasteTypes');
+
+            return response()->json([
+                'message' => 'Peluang bisnis berhasil diperbarui',
+                'data' => new BusinessOpportunityResource($opportunity)
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'message' => 'Gagal memperbarui peluang bisnis',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $opportunity->update($data);
-
-        return response()->json([
-            'message' => 'Peluang bisnis berhasil diperbarui',
-            'opportunity' => new BusinessOpportunityResource($opportunity)
-        ]);
     }
 
     /**
@@ -201,7 +271,7 @@ class BusinessOpportunityController extends Controller
     public function destroy(Request $request, $id)
     {
         // Only admin should be able to delete business opportunities
-        if (!$request->user()->is_admin) {
+        if (!Auth::check() || !Auth::user()->isAdmin()) {
             return response()->json([
                 'message' => 'Anda tidak memiliki izin untuk menghapus peluang bisnis'
             ], 403);
@@ -216,8 +286,11 @@ class BusinessOpportunityController extends Controller
         } else {
             // Delete image if exists
             if ($opportunity->gambar) {
-                Storage::delete('public/' . $opportunity->gambar);
+                Storage::disk('public')->delete($opportunity->gambar);
             }
+            
+            // Delete related waste types
+            $opportunity->wasteTypes()->detach();
             
             $opportunity->delete();
             $message = 'Peluang bisnis berhasil dihapus';
@@ -236,7 +309,7 @@ class BusinessOpportunityController extends Controller
      */
     public function public(Request $request)
     {
-        $query = BusinessOpportunity::where('status', 'AKTIF');
+        $query = BusinessOpportunity::with('wasteTypes')->where('status', 'AKTIF');
         
         // Search
         if ($request->has('search')) {
@@ -248,7 +321,7 @@ class BusinessOpportunityController extends Controller
             });
         }
         
-        // Filter by investment range
+        // Filter: Investment range
         if ($request->has('min_investment')) {
             $query->where('investasi_minimal', '>=', $request->min_investment);
         }
@@ -257,7 +330,7 @@ class BusinessOpportunityController extends Controller
             $query->where('investasi_maksimal', '<=', $request->max_investment);
         }
         
-        // Filter by waste type
+        // Filter: Waste type
         if ($request->has('waste_type')) {
             $wasteType = $request->waste_type;
             $query->where(function($q) use ($wasteType) {
@@ -265,13 +338,29 @@ class BusinessOpportunityController extends Controller
                   ->orWhere('jenis_sampah_terkait', 'like', "%,{$wasteType},%")
                   ->orWhere('jenis_sampah_terkait', 'like', "{$wasteType},%")
                   ->orWhere('jenis_sampah_terkait', 'like', "%,{$wasteType}");
+            })
+            ->orWhereHas('wasteTypes', function($q) use ($wasteType) {
+                $q->where('waste_type', 'like', "%{$wasteType}%");
+            });
+        }
+        
+        // Filter: By specific waste type ID
+        if ($request->has('waste_id')) {
+            $query->whereHas('wasteTypes', function($q) use ($request) {
+                $q->where('waste_types.waste_id', $request->waste_id);
             });
         }
         
         // Sort
         $sortBy = $request->input('sort_by', 'tanggal_publikasi');
         $direction = $request->input('direction', 'desc');
-        $query->orderBy($sortBy, $direction);
+        $validSortFields = ['judul', 'tanggal_publikasi', 'investasi_minimal', 'investasi_maksimal'];
+        
+        if (in_array($sortBy, $validSortFields)) {
+            $query->orderBy($sortBy, $direction);
+        } else {
+            $query->orderBy('tanggal_publikasi', 'desc');
+        }
         
         // Pagination
         $perPage = $request->input('per_page', 15);
@@ -286,5 +375,37 @@ class BusinessOpportunityController extends Controller
                     'last_page' => $opportunities->lastPage(),
                 ],
             ]);
+    }
+    
+    /**
+     * Get all distinct waste types from business opportunities.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getWasteTypes()
+    {
+        $wasteTypes = WasteType::whereHas('businessOpportunities', function($q) {
+            $q->where('status', 'AKTIF');
+        })->get();
+        
+        return response()->json([
+            'waste_types' => $wasteTypes
+        ]);
+    }
+    
+    /**
+     * Get investment range (min and max) from business opportunities.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getInvestmentRange()
+    {
+        $minInvestment = BusinessOpportunity::where('status', 'AKTIF')->min('investasi_minimal');
+        $maxInvestment = BusinessOpportunity::where('status', 'AKTIF')->max('investasi_maksimal');
+        
+        return response()->json([
+            'min_investment' => $minInvestment ?? 0,
+            'max_investment' => $maxInvestment ?? 0
+        ]);
     }
 } 

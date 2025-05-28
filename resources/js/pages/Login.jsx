@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -23,20 +23,21 @@ import {
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 
-// Import hook useAuth dari hooks
-import { useAuth } from '../hooks/useAuth';
-
-// Import authService
-import authService from '../services/authService';
+// Import hook useAuth dari context
+import { useAuth } from '../contexts/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Ambil intended URL dari location.state jika ada
+  const fromLocation = location.state?.from || { pathname: '/home' };
   
   // Gunakan hook useAuth untuk mendapatkan state dan fungsi autentikasi
   const { isAuthenticated, login, error, clearError, isLoading } = useAuth();
 
   const handleBack = () => {
-    navigate(-1);
+    navigate('/'); // Kembali ke landing page
   };
   
   // State untuk form
@@ -53,9 +54,9 @@ const Login = () => {
   // Redirect jika sudah login
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/');
+      navigate(fromLocation.pathname || '/home', { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, fromLocation]);
 
   // Handle perubahan input
   const handleChange = (e) => {
@@ -107,11 +108,13 @@ const Login = () => {
     if (!validateForm()) return;
     
     try {
+      // Coba login dan kirim intended URL untuk diproses setelah login berhasil
       await login({ 
         email: formData.email, 
-        password: formData.password 
+        password: formData.password,
+        redirectTo: fromLocation.pathname
       });
-      // login function dalam AuthContext sudah menangani redirect ke halaman utama
+      // login function dalam AuthContext sudah menangani redirect
     } catch (err) {
       // Error akan ditangani oleh AuthContext
       console.error('Login error:', err);

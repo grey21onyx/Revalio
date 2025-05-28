@@ -10,9 +10,9 @@ const About = () => {
         <p className="text-xl text-gray-700 mb-6">
           Memberdayakan masyarakat untuk mengubah sampah menjadi sumber penghasilan melalui edukasi digital
         </p>
-        <div className="w-full h-64 bg-green-200 rounded-lg flex items-center justify-center">
+        {/* <div className="w-full h-64 bg-green-200 rounded-lg flex items-center justify-center">
           <span className="text-gray-500">Gambar Ilustrasi Tim Revalio</span>
-        </div>
+        </div> */}
       </div>
 
       {/* Our Mission */}
@@ -184,7 +184,7 @@ const About = () => {
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             <div className="h-48 bg-gray-200 flex items-center justify-center overflow-hidden">
               <img 
-                src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80" 
+                src="../assets/images/Diva.jpeg" 
                 alt="Diva Satria"
                 className="w-full h-full object-cover object-top"
               />
@@ -220,39 +220,6 @@ const About = () => {
         </div>
       </div>
 
-      {/* Technical Implementation */}
-      <div className="bg-white rounded-lg shadow-md p-8 mb-8">
-        <h2 className="text-3xl font-bold text-green-800 mb-6">Implementasi Teknis</h2>
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-xl font-semibold text-green-700 mb-2">Frontend</h3>
-            <ul className="list-disc pl-5 text-gray-700">
-              <li>Framework: React.js</li>
-              <li>UI Library: Material-UI</li>
-              <li>State Management: React Context API</li>
-              <li>Styling: Tailwind CSS</li>
-            </ul>
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold text-green-700 mb-2">Backend</h3>
-            <ul className="list-disc pl-5 text-gray-700">
-              <li>Framework: Laravel</li>
-              <li>Database: MySQL</li>
-              <li>Authentication: Laravel Sanctum</li>
-              <li>ORM: Eloquent</li>
-            </ul>
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold text-green-700 mb-2">Deployment</h3>
-            <ul className="list-disc pl-5 text-gray-700">
-              <li>Cloud Platform: AWS / Google Cloud</li>
-              <li>CI/CD: GitHub Actions</li>
-              <li>Monitoring: Sentry</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
       {/* Our Story */}
       <div className="bg-white rounded-lg shadow-md p-8 mb-8">
         <h2 className="text-3xl font-bold text-green-800 mb-6">Cerita Kami</h2>
@@ -282,29 +249,6 @@ const About = () => {
         </div>
       </div>
 
-      {/* Impact Statistics */}
-      <div className="bg-green-800 text-white rounded-lg p-8 mb-8">
-        <h2 className="text-3xl font-bold mb-6 text-center">Dampak yang Telah Kami Ciptakan</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-          <div className="p-4">
-            <div className="text-3xl font-bold mb-2">1,200+</div>
-            <div className="text-sm">Pengguna Terdaftar</div>
-          </div>
-          <div className="p-4">
-            <div className="text-3xl font-bold mb-2">5.8 Ton</div>
-            <div className="text-sm">Sampah Terkelola</div>
-          </div>
-          <div className="p-4">
-            <div className="text-3xl font-bold mb-2">Rp 28 Jt+</div>
-            <div className="text-sm">Nilai Ekonomis Dihasilkan</div>
-          </div>
-          <div className="p-4">
-            <div className="text-3xl font-bold mb-2">15+</div>
-            <div className="text-sm">Jenis Sampah Bernilai</div>
-          </div>
-        </div>
-      </div>
-
       {/* Partners and Support */}
       <div className="mb-12">
         <h2 className="text-3xl font-bold text-green-800 mb-6 text-center">Didukung Oleh</h2>
@@ -312,7 +256,7 @@ const About = () => {
           {/* Logo Politeknik Negeri Batam */}
           <div className="bg-white p-4 rounded-lg shadow-sm flex items-center justify-center h-44 w-68">
             <img 
-              src="https://learning-if.polibatam.ac.id/pluginfile.php/1/theme_moove/logo/1740387854/poltek.png" 
+              src="../assets/images/Poltek.png" 
               alt="Logo Politeknik Negeri Batam"
               className="h-full object-contain"
             />
@@ -321,8 +265,8 @@ const About = () => {
           {/* Logo Kementerian Lingkungan Hidup */}
           <div className="bg-white p-4 rounded-lg shadow-sm flex items-center justify-center h-44 w-68">
             <img 
-              src="https://learning-if.polibatam.ac.id/pluginfile.php/1/theme_moove/logo/1740387854/poltek.png" 
-              alt="Logo Kementerian Lingkungan Hidup"
+              src="../assets/images/Kemendikbutristek.png" 
+              alt="Logo Kementerian Pendidikan, Kebudayaan, Riset, dan Teknologi"
               className="h-full object-contain"
             />
           </div>
@@ -330,8 +274,8 @@ const About = () => {
           {/* Logo Bank Sampah Nasional */}
           <div className="bg-white p-4 rounded-lg shadow-sm flex items-center justify-center h-44 w-68">
             <img 
-              src="https://learning-if.polibatam.ac.id/pluginfile.php/1/theme_moove/logo/1740387854/poltek.png" 
-              alt="Logo Bank Sampah Nasional"
+              src="../assets/images/Logo-Olivia-X-2025.jpg" 
+              alt="Logo OLIVIA 2025"
               className="h-full object-contain"
             />
           </div>

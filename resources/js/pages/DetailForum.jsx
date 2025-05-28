@@ -24,6 +24,8 @@ import {
   Send as SendIcon
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
+import { useAuth } from '../hooks/useAuth';
 
 // Mock API calls - replace with real API integration
 const fetchThreadById = async (id) => {
@@ -129,6 +131,7 @@ const categoryNames = {
 const DetailForum = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [thread, setThread] = useState(null);
   const [loadingThread, setLoadingThread] = useState(true);
   const [comments, setComments] = useState([]);
@@ -159,13 +162,30 @@ const DetailForum = () => {
     loadComments();
   }, [id]);
 
+  // Cleanup Sweet Alert ketika komponen unmount
+  useEffect(() => {
+    return () => {
+      Swal.close();
+    };
+  }, []);
+
   const handleBack = () => {
     navigate(-1);
+  };
+
+  const handleLogin = () => {
+    navigate('/login');
   };
 
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
     if (!commentText.trim()) return;
+    
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    
     const posted = await postComment(id, commentText, replyingTo);
     setComments((prev) => [...prev, posted]);
     setCommentText('');
@@ -176,6 +196,16 @@ const DetailForum = () => {
   const handleReplySubmit = async (e, parentId) => {
     e.preventDefault();
     if (!replyText.trim()) return;
+    
+    if (!isAuthenticated) {
+      navigate('/login');
+      
+      // Reset form dan state
+      setReplyText('');
+      setReplyingTo(null);
+      return;
+    }
+    
     const posted = await postComment(id, replyText, parentId);
     setComments((prev) => [...prev, posted]);
     setReplyText('');
@@ -183,6 +213,12 @@ const DetailForum = () => {
   };
 
   const toggleLike = (commentId) => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    // Jika sudah login, lakukan toggle like
     setLikes((prev) => {
       const newLikes = { ...prev };
       if (newLikes[commentId]) {
@@ -340,7 +376,7 @@ const DetailForum = () => {
                     <ListItem
                       alignItems="flex-start"
                       sx={{
-                        p: 1,
+                        p: { xs: 1, sm: 2 },
                         mb: 1,
                         backgroundColor: '#fff',
                         borderRadius: 2,
@@ -348,43 +384,69 @@ const DetailForum = () => {
                         display: 'flex',
                         gap: 1,
                         alignItems: 'flex-start',
+                        width: '100%', // Memastikan tidak melebihi lebar parent
                       }}
                     >
-                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mr: 1 }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mr: 1, flexShrink: 0 }}>
                         <Avatar src={comment.user.avatar} alt={comment.user.name} />
                       </Box>
-                      <Box sx={{ flex: 1 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ flex: 1, minWidth: 0 }}> {/* minWidth: 0 penting untuk text overflow handling */}
+                        <Box sx={{ 
+                          display: 'flex', 
+                          flexDirection: { xs: 'column', sm: 'row' }, 
+                          alignItems: { xs: 'flex-start', sm: 'center' },
+                          gap: { xs: 0.5, sm: 1 }
+                        }}>
                           <Typography variant="subtitle2" fontWeight={600}>
                             {comment.user.name}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
+                          <Typography variant="caption" color="text.secondary">
                             {formatDateTime(comment.postedAt)}
                           </Typography>
                         </Box>
-                        <Typography variant="body2" color="text.primary" sx={{ whiteSpace: 'pre-line', mt: 0.5 }}>
+                        <Typography 
+                          variant="body2" 
+                          color="text.primary" 
+                          sx={{ 
+                            whiteSpace: 'pre-line', 
+                            mt: 0.5,
+                            wordBreak: 'break-word',
+                            overflowWrap: 'break-word'
+                          }}
+                        >
                           {comment.text}
                         </Typography>
                       </Box>
                     </ListItem>
-                    <Box sx={{ display: 'flex', alignItems: 'center', ml: 7, mb: 1 }}>
-                      <IconButton
-                        size="small"
-                        color={likes[comment.id] ? 'primary' : 'default'}
-                        onClick={() => toggleLike(comment.id)}
-                      >
-                        <ThumbUpIcon fontSize="small" />
-                      </IconButton>
-                      <Typography variant="body2" sx={{ mr: 2 }}>
-                        {comment.likes + (likes[comment.id] ? 1 : 0)}
-                      </Typography>
-                      <Button
-                        size="small"
-                        startIcon={<ReplyIcon />}
-                        onClick={() => setReplyingTo(comment.id === replyingTo ? null : comment.id)}
-                      >
-                        Balas
-                      </Button>
+                    <Box sx={{ 
+                      display: 'flex', 
+                      flexDirection: 'column',
+                      alignItems: 'flex-start', 
+                      ml: { xs: 2, sm: 5, md: 7 }, 
+                      mb: 1
+                    }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <IconButton
+                            size="small"
+                            color={likes[comment.id] ? 'primary' : 'default'}
+                            onClick={() => toggleLike(comment.id)}
+                          >
+                            <ThumbUpIcon fontSize="small" />
+                          </IconButton>
+                          <Typography variant="body2" sx={{ mr: 2 }}>
+                            {comment.likes + (likes[comment.id] ? 1 : 0)}
+                          </Typography>
+                        </Box>
+                        <Button
+                          size="small"
+                          startIcon={<ReplyIcon />}
+                          onClick={() => setReplyingTo(comment.id === replyingTo ? null : comment.id)}
+                        >
+                          Balas
+                        </Button>
+                      </Box>
+                      
                       {getReplies(comment.id).length > 0 && (
                         <Button
                           size="small"
@@ -394,14 +456,13 @@ const DetailForum = () => {
                               [comment.id]: !prev[comment.id],
                             }))
                           }
-                          sx={{ ml: 2 }}
                         >
                           {visibleReplies[comment.id] ? 'Sembunyikan balasan' : 'Lihat balasan'}
                         </Button>
                       )}
                     </Box>
                     {replyingTo === comment.id && (
-                      <Box sx={{ ml: 7, mb: 3 }}>
+                      <Box sx={{ ml: { xs: 2, sm: 5, md: 7 }, mb: 3, width: { xs: '90%', sm: '95%' } }}>
                         <form onSubmit={(e) => handleReplySubmit(e, comment.id)}>
                           <TextField
                             fullWidth
@@ -431,42 +492,121 @@ const DetailForum = () => {
                     )}
                     {visibleReplies[comment.id] &&
                       getReplies(comment.id).map((reply) => (
-                        <ListItem
-                          key={reply.id}
-                          alignItems="flex-start"
-                          sx={{
-                            p: 1,
-                            mb: 1,
-                            ml: 9,
-                            backgroundColor: '#f9f9f9',
-                            borderRadius: 2,
-                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                            maxWidth: 'calc(100% - 72px)', // prevent overflow, considering ml:9 (9*8px=72px)
-                            wordBreak: 'break-word',
-                            overflowWrap: 'break-word',
-                            boxSizing: 'border-box',
-                            display: 'flex',
-                            gap: 1,
-                            alignItems: 'flex-start',
-                          }}
-                        >
-                          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mr: 1 }}>
-                            <Avatar src={reply.user.avatar} alt={reply.user.name} />
-                          </Box>
-                          <Box sx={{ flex: 1 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <Typography variant="subtitle2" fontWeight={600}>
-                                {reply.user.name}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
-                                {formatDateTime(reply.postedAt)}
+                        <React.Fragment key={reply.id}>
+                          <ListItem
+                            alignItems="flex-start"
+                            sx={{
+                              p: 1,
+                              mb: 1,
+                              ml: { xs: 3, sm: 6, md: 9 }, // Responsive margin kiri
+                              backgroundColor: '#f9f9f9',
+                              borderRadius: 2,
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                              maxWidth: { xs: 'calc(100% - 24px)', sm: 'calc(100% - 48px)', md: 'calc(100% - 72px)' }, // Responsive max-width
+                              wordBreak: 'break-word',
+                              overflowWrap: 'break-word',
+                              boxSizing: 'border-box',
+                              display: 'flex',
+                              gap: 1,
+                              alignItems: 'flex-start',
+                              width: '100%', // Memastikan tidak melebihi lebar parent
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mr: 1 }}>
+                              <Avatar src={reply.user.avatar} alt={reply.user.name} />
+                            </Box>
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                              <Box sx={{ 
+                                display: 'flex', 
+                                flexDirection: { xs: 'column', sm: 'row' }, 
+                                alignItems: { xs: 'flex-start', sm: 'center' }, 
+                                gap: { xs: 0.5, sm: 1 }
+                              }}>
+                                <Typography variant="subtitle2" fontWeight={600}>
+                                  {reply.user.name}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {formatDateTime(reply.postedAt)}
+                                </Typography>
+                              </Box>
+                              <Typography 
+                                variant="body2" 
+                                color="text.primary" 
+                                sx={{ 
+                                  whiteSpace: 'pre-line', 
+                                  mt: 0.5, 
+                                  wordBreak: 'break-word',
+                                  overflowWrap: 'break-word'
+                                }}
+                              >
+                                {reply.text}
                               </Typography>
                             </Box>
-                            <Typography variant="body2" color="text.primary" sx={{ whiteSpace: 'pre-line', mt: 0.5 }}>
-                              {reply.text}
+                          </ListItem>
+                          
+                          <Box 
+                            sx={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              ml: { xs: 4.5, sm: 7.5, md: 11 }, 
+                              mb: 1,
+                              mt: 0.5,
+                              gap: 1 
+                            }}
+                          >
+                            <IconButton
+                              size="small"
+                              color={likes[reply.id] ? 'primary' : 'default'}
+                              onClick={() => toggleLike(reply.id)}
+                            >
+                              <ThumbUpIcon fontSize="small" />
+                            </IconButton>
+                            <Typography variant="body2" sx={{ mr: 1 }}>
+                              {reply.likes + (likes[reply.id] ? 1 : 0)}
                             </Typography>
+                            <Button
+                              size="small"
+                              startIcon={<ReplyIcon />}
+                              onClick={() => setReplyingTo(reply.id === replyingTo ? null : reply.id)}
+                            >
+                              Balas
+                            </Button>
                           </Box>
-                        </ListItem>
+
+                          {replyingTo === reply.id && (
+                            <Box sx={{ 
+                              ml: { xs: 4.5, sm: 7.5, md: 11 }, 
+                              mb: 3,
+                              width: { xs: '85%', sm: '90%' } 
+                            }}>
+                              <form onSubmit={(e) => handleReplySubmit(e, comment.id)}>
+                                <TextField
+                                  fullWidth
+                                  multiline
+                                  rows={2}
+                                  variant="outlined"
+                                  placeholder="Tulis balasan Anda di sini..."
+                                  value={replyText}
+                                  onChange={(e) => setReplyText(e.target.value)}
+                                  sx={{ mb: 1 }}
+                                />
+                                <Box sx={{ display: 'flex', gap: 1 }}>
+                                  <Button
+                                    type="submit"
+                                    variant="contained"
+                                    disabled={!replyText.trim()}
+                                    size="small"
+                                  >
+                                    Kirim
+                                  </Button>
+                                  <Button size="small" variant="outlined" onClick={() => setReplyingTo(null)}>
+                                    Batal
+                                  </Button>
+                                </Box>
+                              </form>
+                            </Box>
+                          )}
+                        </React.Fragment>
                       ))}
                   </Box>
                 ))}

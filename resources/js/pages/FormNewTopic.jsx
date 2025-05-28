@@ -25,42 +25,46 @@ const categories = [
 const FormNewTopic = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      Swal.fire({
-        title: 'Login Diperlukan',
-        text: 'Anda harus login terlebih dahulu untuk membuat topik baru.',
-        icon: 'warning',
-        confirmButtonText: 'Login Sekarang',
-      }).then((result) => {
-        if (result.isConfirmed) {
-          navigate('/login', { state: { from: '/forum/create' } });
-        } else {
-          navigate('/forum');
-        }
-      });
-    }
-  }, [isAuthenticated, navigate]);
-
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
   const [tags, setTags] = useState([]);
   const [content, setContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  // Hanya cleanup saat unmount
+  useEffect(() => {
+    return () => {
+      Swal.close();
+    };
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!isAuthenticated) {
       Swal.fire({
-        title: 'Login Diperlukan',
-        text: 'Anda harus login terlebih dahulu untuk membuat topik baru.',
-        icon: 'warning',
-        confirmButtonText: 'Login Sekarang',
+        title: '<span style="font-size: 24px; font-weight: 600;">Login Diperlukan</span>',
+        html: '<div style="font-size: 16px; margin-top: 10px;">Anda harus login terlebih dahulu untuk membuat topik baru di forum Revalio</div>',
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-sign-in-alt"></i> Login Sekarang',
+        cancelButtonText: '<i class="fas fa-arrow-left"></i> Kembali ke Forum',
+        reverseButtons: true,
+        allowOutsideClick: false,
+        customClass: {
+          popup: 'swal-wide',
+          title: 'swal-title',
+          confirmButton: 'swal-confirm-button',
+          cancelButton: 'swal-cancel-button'
+        },
+        buttonsStyling: true,
+        background: '#ffffff',
+        iconColor: '#4caf50',
+        confirmButtonColor: '#4caf50',
+        cancelButtonColor: '#1976d2',
       }).then((result) => {
         if (result.isConfirmed) {
-          navigate('/login', { state: { from: '/forum/create' } });
+          navigate('/login', { state: { from: '/forum/new-topic' } });
         } else {
           navigate('/forum');
         }
@@ -97,10 +101,6 @@ const FormNewTopic = () => {
       setSubmitting(false);
     }
   };
-
-  if (!isAuthenticated) {
-    return null;
-  }
 
   return (
     <Box sx={{ backgroundColor: '#f9f9f9', minHeight: '100vh', py: { xs: 4, sm: 6 } }}>

@@ -14,7 +14,6 @@ import {
 import ForumIcon from '@mui/icons-material/Forum';
 import SearchIcon from '@mui/icons-material/Search';
 import { Link, useNavigate } from 'react-router-dom';
-import Swal from 'sweetalert2';
 import { useAuth } from '../hooks/useAuth';
 
 const Forum = () => {
@@ -28,13 +27,6 @@ const Forum = () => {
   const [sortOption, setSortOption] = useState('latest'); // 'latest' or 'popular'
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredThreads, setFilteredThreads] = useState([]);
-
-  // Cleanup sweetalert on component unmount
-  useEffect(() => {
-    return () => {
-      Swal.close();
-    };
-  }, []);
 
   // Mock data fetching functions (replace with real API calls)
   useEffect(() => {
@@ -121,26 +113,7 @@ const Forum = () => {
   };
 
   const handleCreateThread = () => {
-    if (!isAuthenticated) {
-      Swal.fire({
-        title: 'Anda belum memiliki akun',
-        text: 'Silakan masuk atau daftar untuk membuat topik baru.',
-        icon: 'info',
-        showCancelButton: true,
-        confirmButtonText: 'Masuk',
-        cancelButtonText: 'Daftar',
-        reverseButtons: true,
-        allowOutsideClick: true,
-      }).then((result) => {
-        if (result.isConfirmed) {
-          navigate('/login');
-        } else if (result.dismiss === Swal.DismissReason.cancel) {
-          navigate('/register');
-        }
-      });
-    } else {
-      navigate('/forum/new-topic');
-    }
+    navigate('/forum/new-topic');
   };
 
   return (

@@ -105,7 +105,7 @@ class BusinessOpportunityController extends Controller
     public function store(Request $request)
     {
         // Only admin should be able to add business opportunities
-        if (!Auth::check() || !Auth::user()->isAdmin()) {
+        if (!Auth::check() || !Auth::user()->isadmin()) {
             return response()->json([
                 'message' => 'Anda tidak memiliki izin untuk menambahkan peluang bisnis'
             ], 403);
@@ -195,7 +195,7 @@ class BusinessOpportunityController extends Controller
     public function update(Request $request, $id)
     {
         // Only admin should be able to update business opportunities
-        if (!Auth::check() || !Auth::user()->isAdmin()) {
+        if (!Auth::check() || !Auth::user()->isadmin()) {
             return response()->json([
                 'message' => 'Anda tidak memiliki izin untuk memperbarui peluang bisnis'
             ], 403);
@@ -271,7 +271,7 @@ class BusinessOpportunityController extends Controller
     public function destroy(Request $request, $id)
     {
         // Only admin should be able to delete business opportunities
-        if (!Auth::check() || !Auth::user()->isAdmin()) {
+        if (!Auth::check() || !Auth::user()->isadmin()) {
             return response()->json([
                 'message' => 'Anda tidak memiliki izin untuk menghapus peluang bisnis'
             ], 403);

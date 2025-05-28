@@ -1149,27 +1149,27 @@ Route::prefix('v1')->group(function () {
         Route::put('forum-comments/{id}', [ForumController::class, 'updateComment']);
         Route::delete('forum-comments/{id}', [ForumController::class, 'destroyComment']);
         
-        // Admin routes
-        Route::middleware('role:ADMIN')->group(function () {
-            // Admin dashboard stats
-            Route::get('admin/stats', [AdminController::class, 'getStats']);
+        // admin routes
+        Route::middleware('role:admin')->group(function () {
+            // admin dashboard stats
+            Route::get('admin/stats', [adminController::class, 'getStats']);
             
             // Content management
-            Route::apiResource('admin/waste-categories', AdminWasteCategoryController::class);
-            Route::apiResource('admin/waste-types', AdminWasteTypeController::class);
-            Route::apiResource('admin/waste-values', AdminWasteValueController::class);
-            Route::apiResource('admin/tutorials', AdminTutorialController::class);
-            Route::apiResource('admin/articles', AdminArticleController::class);
-            Route::apiResource('admin/waste-buyers', AdminWasteBuyerController::class);
-            Route::apiResource('admin/business-opportunities', AdminBusinessOpportunityController::class);
+            Route::apiResource('admin/waste-categories', adminWasteCategoryController::class);
+            Route::apiResource('admin/waste-types', adminWasteTypeController::class);
+            Route::apiResource('admin/waste-values', adminWasteValueController::class);
+            Route::apiResource('admin/tutorials', adminTutorialController::class);
+            Route::apiResource('admin/articles', adminArticleController::class);
+            Route::apiResource('admin/waste-buyers', adminWasteBuyerController::class);
+            Route::apiResource('admin/business-opportunities', adminBusinessOpportunityController::class);
             
             // User management
-            Route::apiResource('admin/users', AdminUserController::class);
-            Route::put('admin/users/{id}/status', [AdminUserController::class, 'updateStatus']);
+            Route::apiResource('admin/users', adminUserController::class);
+            Route::put('admin/users/{id}/status', [adminUserController::class, 'updateStatus']);
             
             // Moderator tasks
-            Route::put('admin/forum-threads/{id}/status', [AdminForumController::class, 'updateThreadStatus']);
-            Route::put('admin/forum-comments/{id}/status', [AdminForumController::class, 'updateCommentStatus']);
+            Route::put('admin/forum-threads/{id}/status', [adminForumController::class, 'updateThreadStatus']);
+            Route::put('admin/forum-comments/{id}/status', [adminForumController::class, 'updateCommentStatus']);
         });
     });
 });

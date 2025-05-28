@@ -24,8 +24,8 @@ class AuthServiceProvider extends ServiceProvider
     {
         // Resolve any permission request through the user's permissions
         Gate::before(function (User $user, $ability) {
-            // Admin has all permissions
-            if ($user->isAdmin()) {
+            // admin has all permissions
+            if ($user->isadmin()) {
                 return true;
             }
             

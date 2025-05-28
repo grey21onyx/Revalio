@@ -77,7 +77,7 @@ class User extends Authenticatable
      * @var array
      */
     protected $attributes = [
-        'role' => 'USER',
+        'role' => 'user',
     ];
     
     /**
@@ -209,7 +209,7 @@ class User extends Authenticatable
      *
      * @return bool
      */
-    public function isAdmin(): bool
+    public function isadmin(): bool
     {
         return $this->hasRole('admin');
     }
@@ -271,7 +271,7 @@ class User extends Authenticatable
      * 
      * @return bool
      */
-    public function isAdminByRole(): bool
+    public function isadminByRole(): bool
     {
         return $this->role === 'admin';
     }

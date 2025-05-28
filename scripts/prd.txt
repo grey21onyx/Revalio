@@ -63,7 +63,7 @@ Revalio berfokus pada pemberdayaan masyarakat untuk mengelola sampah dengan lebi
 - Mengikuti tantangan dan kampanye pengelolaan sampah
 - Menerima notifikasi dan update informasi terbaru
 
-### 8. Administrasi Sistem
+### 8. administrasi Sistem
 - Mengelola konten edukasi
 - Moderasi komunitas
 - Analisis dan pelaporan aktivitas pengguna

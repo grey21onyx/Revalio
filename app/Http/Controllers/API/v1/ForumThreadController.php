@@ -157,7 +157,7 @@ class ForumThreadController extends Controller
         $thread = ForumThread::findOrFail($id);
         
         // Check if user is authorized to update this thread
-        if (Auth::id() !== $thread->user_id && !Auth::user()->isAdmin()) {
+        if (Auth::id() !== $thread->user_id && !Auth::user()->isadmin()) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
         
@@ -170,7 +170,7 @@ class ForumThreadController extends Controller
         
         $data = $request->only(['judul', 'konten', 'tags', 'status']);
         
-        if (isset($data['status']) && !Auth::user()->isAdmin()) {
+        if (isset($data['status']) && !Auth::user()->isadmin()) {
             unset($data['status']); // Only admins can change status
         }
         
@@ -198,7 +198,7 @@ class ForumThreadController extends Controller
         $thread = ForumThread::findOrFail($id);
         
         // Check if user is authorized to delete this thread
-        if (Auth::id() !== $thread->user_id && !Auth::user()->isAdmin()) {
+        if (Auth::id() !== $thread->user_id && !Auth::user()->isadmin()) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
         

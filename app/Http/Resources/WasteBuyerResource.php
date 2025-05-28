@@ -10,13 +10,27 @@ class WasteBuyerResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @return array<string, mixed>
+     * @param  \Illuminate\Http\Request  $request
+     * @return array
      */
-    public function toArray(Request $request): array
+    public function toArray($request)
     {
-        return [
-            'id' => $this->buyer_id,
-            'nama' => $this->nama,
+        $wasteTypeData = $this->whenLoaded('wasteTypes', function () {
+            return $this->wasteTypes->map(function ($wasteType) {
+                return [
+                    'waste_id' => $wasteType->waste_id,
+                    'nama_sampah' => $wasteType->wasteType->nama_sampah ?? null,
+                    'harga_beli' => $wasteType->harga_beli,
+                    'syarat_minimum' => $wasteType->syarat_minimum,
+                    'catatan' => $wasteType->catatan,
+                ];
+            });
+        }, []);
+        
+        $result = [
+            'buyer_id' => $this->pembeli_id,
+            'nama_pembeli' => $this->nama_pembeli,
+            'jenis_pembeli' => $this->jenis_pembeli,
             'alamat' => $this->alamat,
             'kota' => $this->kota,
             'provinsi' => $this->provinsi,
@@ -24,17 +38,31 @@ class WasteBuyerResource extends JsonResource
             'email' => $this->email,
             'website' => $this->website,
             'jam_operasional' => $this->jam_operasional,
-            'jenis_sampah_diterima' => $this->jenis_sampah_diterima,
-            'persyaratan_pembelian' => $this->persyaratan_pembelian,
-            'kisaran_harga' => $this->kisaran_harga,
-            'metode_pembayaran' => $this->metode_pembayaran,
-            'buyer_type_id' => $this->buyer_type_id,
-            'foto' => $this->foto ? url('storage/app/public/' . $this->foto) : null,
-            'rating' => $this->rating,
             'status' => $this->status,
-            'tipe_pembeli' => $this->whenLoaded('buyerType', function() {
-                return new WasteBuyerTypeResource($this->buyerType);
-            }),
+            'rating' => (float) $this->rating,
+            'jumlah_rating' => $this->jumlah_rating,
+            'foto' => $this->foto ? url('storage/' . $this->foto) : null,
+            'deskripsi' => $this->deskripsi,
         ];
+
+        // Tambahkan data GIS jika tersedia
+        if ($this->latitude && $this->longitude) {
+            $result['lokasi'] = [
+                'latitude' => (float) $this->latitude,
+                'longitude' => (float) $this->longitude,
+            ];
+        }
+
+        // Tambahkan jarak jika tersedia (hasil dari query getNearbyLocations)
+        if (isset($this->distance)) {
+            $result['jarak'] = round($this->distance, 2); // Dalam kilometer, dibulatkan 2 desimal
+        }
+
+        // Tambahkan data jenis sampah jika tersedia
+        if (count($wasteTypeData) > 0) {
+            $result['sampah_diterima'] = $wasteTypeData;
+        }
+
+        return $result;
     }
 } 

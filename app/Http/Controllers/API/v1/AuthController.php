@@ -53,7 +53,7 @@ class AuthController extends Controller
             'alamat' => $request->alamat,
             'tanggal_registrasi' => now(),
             'status_akun' => 'AKTIF',
-            'role' => 'USER',
+            'role' => 'user',
             'preferensi_sampah' => $request->preferensi_sampah,
         ]);
 
@@ -370,7 +370,7 @@ class AuthController extends Controller
                 'password' => Hash::make(str_random(24)),
                 'tanggal_registrasi' => now(),
                 'status_akun' => 'AKTIF',
-                'role' => 'USER',
+                'role' => 'user',
                 'foto_profil' => $socialUser->getAvatar(),
             ]);
 

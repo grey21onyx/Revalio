@@ -51,6 +51,7 @@
         "recharts": "^2.15.3",
         "scrolltrigger": "^1.0.1",
         "sweetalert2": "11.4.8",
-        "tailwindcss": "^4.1.6"
+        "tailwindcss": "^4.1.6",
+        "leaflet": "^1.9.4"
     }
 }

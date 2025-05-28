@@ -211,7 +211,7 @@ Proses bisnis dari aplikasi Revalio meliputi:
    - Pengguna berpartisipasi dalam tantangan atau kampanye pengelolaan sampah
    - Pengguna mendapatkan update informasi terbaru tentang inovasi pengelolaan sampah
 
-8. **Administrasi Sistem**
+8. **administrasi Sistem**
    - Manajemen konten edukasi
    - Moderasi komunitas
    - Analisis dan pelaporan aktivitas pengguna
@@ -242,7 +242,7 @@ Aplikasi Revalio akan digunakan oleh beberapa jenis pengguna, antara lain:
    - Mencari data dan informasi terkini tentang nilai ekonomis sampah
    - Ingin menggunakan platform sebagai alat bantu mengajar
 
-5. **Administrator Sistem**
+5. **administrator Sistem**
    - Mengelola konten edukasi
    - Memantau aktivitas pengguna
    - Mengelola data master dan referensi
@@ -342,7 +342,7 @@ Aplikasi Revalio memiliki kebutuhan fungsional sebagai berikut:
    - UC-29: Mengikuti tantangan dan kampanye pengelolaan sampah
    - UC-30: Menerima notifikasi dan update informasi terbaru
 
-8. **Administrasi Sistem**
+8. **administrasi Sistem**
    - UC-31: Mengelola konten edukasi
    - UC-32: Moderasi komunitas dan forum
    - UC-33: Menganalisis dan membuat laporan aktivitas pengguna
@@ -356,7 +356,7 @@ Aplikasi Revalio memiliki kebutuhan fungsional sebagai berikut:
 1. **Aktor**:
    - Pengguna (Masyarakat Umum)
    - Pelaku UMKM
-   - Administrator
+   - administrator
    - Komunitas Peduli Lingkungan
    - Pendidik/Peneliti
 
@@ -1200,7 +1200,7 @@ Matriks keterunutan menunjukkan hubungan antara kebutuhan fungsional, use case, 
 | F6 | Edukasi dampak lingkungan & peluang usaha | UC-23, UC-24, UC-25, UC-26 | articles, business_opportunities | Peluang Usaha |
 | F7 | Berpartisipasi dalam komunitas | UC-27, UC-28, UC-29 | forum_threads, forum_comments | Forum Diskusi |
 | F8 | Menerima notifikasi dan update | UC-30 | - | Notifikasi |
-| F9 | Administrasi sistem | UC-31, UC-32, UC-33, UC-34 | deleted_records | Admin Dashboard |
+| F9 | administrasi sistem | UC-31, UC-32, UC-33, UC-34 | deleted_records | admin Dashboard |
 
 ### Diagram Keterunutan
 

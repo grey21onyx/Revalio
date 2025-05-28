@@ -20,6 +20,7 @@ use App\Http\Controllers\API\v1\OpenAPIController;
 use App\Http\Controllers\API\v1\HomeController;
 use App\Http\Controllers\API\v1\MonetizationController;
 use App\Http\Controllers\API\v1\HealthController;
+use App\Http\Controllers\API\v1\GISController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -93,7 +94,7 @@ Route::prefix('v1')->group(function () {
         // Users
         Route::apiResource('users', UserController::class);
 
-        // Roles Management - Admin Only
+        // Roles Management - admin Only
         Route::middleware('role:admin')->group(function () {
             // Roles
             Route::apiResource('roles', RoleController::class);
@@ -178,5 +179,17 @@ Route::prefix('v1')->group(function () {
         Route::get('waste-tracking/{id}', [UserWasteTrackingController::class, 'show']);
         Route::put('waste-tracking/{id}', [UserWasteTrackingController::class, 'update']);
         Route::delete('waste-tracking/{id}', [UserWasteTrackingController::class, 'destroy']);
+    });
+});
+
+// GIS Routes untuk peta pengepul sampah
+Route::prefix('v1/gis')->group(function () {
+    Route::get('/locations', [GISController::class, 'getAllLocations']);
+    Route::get('/nearby', [GISController::class, 'getNearbyLocations']);
+    Route::get('/waste-types', [GISController::class, 'getWasteTypes']);
+    
+    // admin routes untuk update lokasi
+    Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+        Route::put('/location/{id}', [GISController::class, 'updateLocation']);
     });
 });

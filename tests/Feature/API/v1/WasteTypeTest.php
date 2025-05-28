@@ -81,7 +81,7 @@ class WasteTypeTest extends TestCase
     {
         // Create admin user
         $admin = User::factory()->create([
-            'role' => 'ADMIN',
+            'role' => 'admin',
         ]);
         
         // Authenticate as admin
@@ -128,7 +128,7 @@ class WasteTypeTest extends TestCase
     {
         // Create regular user
         $user = User::factory()->create([
-            'role' => 'USER',
+            'role' => 'user',
         ]);
         
         // Authenticate as regular user
@@ -166,7 +166,7 @@ class WasteTypeTest extends TestCase
         
         // Create admin user
         $admin = User::factory()->create([
-            'role' => 'ADMIN',
+            'role' => 'admin',
         ]);
         
         // Authenticate as admin
@@ -221,7 +221,7 @@ class WasteTypeTest extends TestCase
         
         // Create admin user
         $admin = User::factory()->create([
-            'role' => 'ADMIN',
+            'role' => 'admin',
         ]);
         
         // Authenticate as admin

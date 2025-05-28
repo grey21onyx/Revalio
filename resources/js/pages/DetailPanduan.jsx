@@ -57,7 +57,7 @@ const allTutorials = [
     rating: 4.5,
     rating_count: 24,
     kontributor: {
-      nama: 'Admin Revalio',
+      nama: 'admin Revalio',
       avatar: '/assets/images/avatars/admin.png'
     },
     konten: {
@@ -139,7 +139,7 @@ const allTutorials = [
     rating: 4.2,
     rating_count: 15,
     kontributor: {
-      nama: 'Admin Revalio',
+      nama: 'admin Revalio',
       avatar: '/assets/images/avatars/admin.png'
     },
     konten: {

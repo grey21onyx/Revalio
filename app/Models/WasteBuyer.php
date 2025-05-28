@@ -39,6 +39,27 @@ class WasteBuyer extends Model
         'email',
         'website',
         'jam_operasional',
+        'latitude',
+        'longitude',
+        'status',
+        'rating',
+        'jumlah_rating',
+        'kota',
+        'provinsi',
+        'foto',
+        'deskripsi',
+    ];
+
+    /**
+     * Kolom-kolom yang harus di-cast ke tipe tertentu.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'latitude' => 'decimal:8',
+        'longitude' => 'decimal:8',
+        'rating' => 'decimal:2',
+        'jumlah_rating' => 'integer',
     ];
     
     /**
@@ -46,7 +67,7 @@ class WasteBuyer extends Model
      *
      * @var array<string>
      */
-    protected $searchableFields = ['nama_pembeli', 'alamat', 'email', 'jenis_pembeli'];
+    protected $searchableFields = ['nama_pembeli', 'alamat', 'email', 'jenis_pembeli', 'kota', 'provinsi'];
     
     /**
      * Method tambahan untuk memfilter berdasarkan jenis pembeli
@@ -58,6 +79,31 @@ class WasteBuyer extends Model
     public function scopeOfType($query, $type)
     {
         return $query->where('jenis_pembeli', $type);
+    }
+    
+    /**
+     * Method tambahan untuk memfilter berdasarkan status aktif
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'AKTIF');
+    }
+
+    /**
+     * Method tambahan untuk memfilter berdasarkan jenis sampah
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param mixed $wasteId
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeAcceptsWaste($query, $wasteId)
+    {
+        return $query->whereHas('wasteTypes', function ($q) use ($wasteId) {
+            $q->where('waste_id', $wasteId);
+        });
     }
     
     /**

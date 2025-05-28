@@ -7,6 +7,8 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
 import axios from './config/axios';
+import 'leaflet/dist/leaflet.css'; // Import Leaflet CSS
+import '../css/gis.css'; // Import CSS untuk komponen GIS
 
 // Register GSAP plugins globally
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);

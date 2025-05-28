@@ -28,12 +28,12 @@ class ForumThreadTest extends TestCase
         
         // Create a regular user
         $this->user = User::factory()->create([
-            'role' => 'USER',
+            'role' => 'user',
         ]);
         
         // Create a moderator user
         $this->moderator = User::factory()->create([
-            'role' => 'MODERATOR',
+            'role' => 'moderator',
         ]);
     }
     

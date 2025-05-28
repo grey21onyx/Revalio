@@ -130,15 +130,15 @@ class ModelRelationshipTest extends TestCase
             'nama_lengkap' => 'Test User',
             'email' => 'test@example.com',
             'password' => bcrypt('password'),
-            'role' => 'ADMIN', // Ini seharusnya protected
+            'role' => 'admin', // Ini seharusnya protected
             'status_akun' => 'AKTIF'
         ];
         
         // Coba buat user dengan mass assignment
         $user = User::create($userData);
         
-        // Verifikasi bahwa role tidak berubah menjadi ADMIN (tetap default 'USER')
-        $this->assertEquals('USER', $user->role);
+        // Verifikasi bahwa role tidak berubah menjadi admin (tetap default 'user')
+        $this->assertEquals('user', $user->role);
     }
 
     /**

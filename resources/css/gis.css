@@ -1,0 +1,85 @@
+/* Styles for GIS/Map components */
+
+/* Map container */
+.map-container {
+  position: relative;
+  border-radius: 0.25rem;
+  overflow: hidden;
+}
+
+/* Map tools bar */
+.map-tools {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+/* Map legend */
+.map-legend {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background-color: white;
+  border-radius: 0.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.4);
+  margin-right: 0.5rem;
+}
+
+/* Location popup */
+.location-popup {
+  min-width: 200px;
+  max-width: 300px;
+}
+
+.location-popup h4 {
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.location-popup p {
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.location-waste-types ul {
+  margin-top: 0.25rem;
+  margin-bottom: 0;
+  padding-left: 1.25rem;
+}
+
+.location-waste-types li {
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+}
+
+/* Custom marker icon */
+.custom-div-icon {
+  border-radius: 50%;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .map-tools {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .map-tools button {
+    margin-bottom: 0.5rem;
+    width: 100%;
+  }
+} 

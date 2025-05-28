@@ -24,11 +24,11 @@ class UsersSeeder extends Seeder
         User::firstOrCreate(
             ['email' => 'admin@revalio.com'],
             [
-                'nama_lengkap' => 'Admin Revalio',
-                'role' => 'ADMIN',
+                'nama_lengkap' => 'admin Revalio',
+                'role' => 'admin',
                 'password' => Hash::make('password123'),
                 'no_telepon' => '08123456789',
-                'alamat' => 'Jalan Admin No. 1, Jakarta',
+                'alamat' => 'Jalan admin No. 1, Jakarta',
                 'foto_profil' => 'profiles/default.jpg',
                 'status_akun' => 'AKTIF',
                 'preferensi_sampah' => 'Plastik, Kertas, Logam',
@@ -43,7 +43,7 @@ class UsersSeeder extends Seeder
             ['email' => 'user@revalio.com'],
             [
                 'nama_lengkap' => 'Siti Pengguna',
-                'role' => 'USER',
+                'role' => 'user',
                 'password' => Hash::make('password123'),
                 'no_telepon' => '08345678901',
                 'alamat' => 'Jalan Pengguna No. 3, Surabaya',

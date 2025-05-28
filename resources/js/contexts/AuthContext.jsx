@@ -72,18 +72,20 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     try {
       console.log('Attempting login with credentials:', { ...credentials, password: '******' });
-      const response = await axios.post('/v1/login', credentials);
+      const response = await axios.post('/v1/auth/login', credentials);
       console.log('Login response:', response.data);
       
       // Ekstrak data dari response
-      const { token, user: userData, access_token } = response.data;
+      const responseData = response.data.data || {};
+      const { access_token, token, user: userData } = responseData;
       
-      // Gunakan token atau access_token tergantung API
-      const authToken = token || access_token;
-      const userInfo = userData || response.data.user || response.data;
+      // Gunakan token dari response.data.data
+      const authToken = access_token || token;
+      const userInfo = userData || responseData;
       
+      // Cek jika token ada
       if (!authToken) {
-        console.error('No token found in response');
+        console.error('No token found in response:', response.data);
         throw new Error('Token tidak ditemukan dalam respons');
       }
       
@@ -119,7 +121,7 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     try {
       console.log('Attempting registration with data:', { ...userData, password: '******' });
-      const response = await axios.post('/v1/register', userData);
+      const response = await axios.post('/v1/auth/register', userData);
       console.log('Registration response:', response.data);
       
       // Jika registrasi sekaligus login
@@ -158,7 +160,7 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log('Logging out...');
       // API call ke logout (opsional)
-      await axios.post('/v1/logout');
+      await axios.post('/v1/auth/logout');
     } catch (err) {
       console.error("Error saat logout:", err);
     } finally {

@@ -6,7 +6,7 @@ Berdasarkan analisis mendalam terhadap proyek Revalio dan penelitian tentang imp
 
 ### 🎯 **Kebutuhan Fungsional**
 
-#### **1. Fitur Admin (Penentuan Lokasi)**
+#### **1. Fitur admin (Penentuan Lokasi)**
 
 - Interface untuk admin login dan akses modul peta
 
@@ -132,7 +132,7 @@ return WasteCollector::where('status_aktif', true)
 
 }
 
-// POST /api/v1/admin/waste-collectors - Admin only
+// POST /api/v1/admin/waste-collectors - admin only
 
 public function store(Request $request)
 
@@ -176,7 +176,7 @@ Route::prefix('v1')->group(function () {
 
 Route::get('/waste-collectors', [WasteCollectorController::class, 'index']);
 
-// Admin routes
+// admin routes
 
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
 

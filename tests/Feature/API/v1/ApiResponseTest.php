@@ -24,7 +24,7 @@ class ApiResponseTest extends TestCase
         
         // Buat admin untuk test
         $this->admin = User::factory()->create([
-            'role' => 'ADMIN',
+            'role' => 'admin',
         ]);
         
         // Buat data untuk test
@@ -110,7 +110,7 @@ class ApiResponseTest extends TestCase
     {
         // Buat user reguler
         $user = User::factory()->create([
-            'role' => 'USER',
+            'role' => 'user',
         ]);
         
         Sanctum::actingAs($user, ['*']);

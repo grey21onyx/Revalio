@@ -21,6 +21,7 @@ import Profile from '../pages/profile';
 import About from '../pages/About'; // Tambahkan import untuk About
 import NotFound from '../pages/NotFound';
 import FormNewTopic from '../pages/FormNewTopic';
+import WasteBuyerMap from '../pages/WasteBuyerMap';
 
 // Layout
 import MainLayout from '../components/layout/MainLayout';
@@ -69,6 +70,9 @@ const AppRoutes = () => {
         
         {/* Tentang Kami */}
         <Route path="/tentang" element={<About />} />
+
+        {/* Route untuk peta lokasi pengepul sampah (publik dan admin) */}
+        <Route path="/peta-pengepul" element={<WasteBuyerMap />} />
       </Route>
       
       {/* 404 Not Found */}

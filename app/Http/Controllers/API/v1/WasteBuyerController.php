@@ -92,7 +92,7 @@ class WasteBuyerController extends Controller
     public function store(Request $request)
     {
         // Verify user is authenticated and has admin role
-        if (!Auth::check() || !Auth::user()->isAdmin()) {
+        if (!Auth::check() || !Auth::user()->isadmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
         
@@ -198,7 +198,7 @@ class WasteBuyerController extends Controller
     public function update(Request $request, $id)
     {
         // Verify user is authenticated and has admin role
-        if (!Auth::check() || !Auth::user()->isAdmin()) {
+        if (!Auth::check() || !Auth::user()->isadmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
         
@@ -281,7 +281,7 @@ class WasteBuyerController extends Controller
     public function destroy(Request $request, $id)
     {
         // Verify user is authenticated and has admin role
-        if (!Auth::check() || !Auth::user()->isAdmin()) {
+        if (!Auth::check() || !Auth::user()->isadmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
         

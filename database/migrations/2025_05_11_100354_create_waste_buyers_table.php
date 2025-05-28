@@ -20,6 +20,15 @@ return new class extends Migration
             $table->string('email', 100)->nullable();
             $table->string('website', 255)->nullable();
             $table->text('jam_operasional')->nullable();
+            $table->decimal('latitude', 10, 8)->nullable();
+            $table->decimal('longitude', 11, 8)->nullable();
+            $table->enum('status', ['AKTIF', 'TIDAK_AKTIF'])->default('AKTIF');
+            $table->decimal('rating', 3, 2)->default(0);
+            $table->integer('jumlah_rating')->default(0);
+            $table->string('kota', 100)->nullable();
+            $table->string('provinsi', 100)->nullable();
+            $table->string('foto')->nullable();
+            $table->text('deskripsi')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

@@ -67,8 +67,8 @@ class RolesAndPermissionsSeeder extends Seeder
         // Create roles
         $roles = [
             [
-                'nama' => 'Admin',
-                'deskripsi' => 'Administrator dengan semua hak akses',
+                'nama' => 'admin',
+                'deskripsi' => 'administrator dengan semua hak akses',
                 'permissions' => Permission::whereIn('nama', [
                     // User Management
                     'View Users', 'Create Users', 'Edit Users', 'Delete Users',
@@ -110,7 +110,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // Assign admin role to a user (optional)
         // Cek langsung dengan query untuk menghindari soft delete issue
-        $admin = Role::where('nama', 'Admin')->first();
+        $admin = Role::where('nama', 'admin')->first();
         $adminUser = DB::table('users')->where('email', 'admin@revalio.com')->first();
 
         if ($adminUser && $admin) {

@@ -21,7 +21,8 @@ import {
   MonetizationOn as MonetisasiIcon,
   Forum as ForumIcon,
   BusinessCenter as PeluangUsahaIcon,
-  Info as InfoIcon
+  Info as InfoIcon,
+  LocationOn as LocationIcon
 } from '@mui/icons-material';
 
 // Definisi menu
@@ -33,6 +34,7 @@ const menuItems = [
   { name: 'Tips Monetisasi', path: '/monetisasi', icon: <MonetisasiIcon /> },
   { name: 'Forum Diskusi', path: '/forum', icon: <ForumIcon /> },
   { name: 'Peluang Usaha', path: '/peluang-usaha', icon: <PeluangUsahaIcon /> },
+  { name: 'Peta Pengepul', path: '/peta-pengepul', icon: <LocationIcon /> },
 ];
 
 const drawerWidth = 240;

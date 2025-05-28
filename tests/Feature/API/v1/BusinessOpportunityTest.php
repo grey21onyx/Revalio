@@ -27,12 +27,12 @@ class BusinessOpportunityTest extends TestCase
         
         // Create admin user
         $this->admin = User::factory()->create([
-            'role' => 'ADMIN',
+            'role' => 'admin',
         ]);
         
         // Create regular user
         $this->user = User::factory()->create([
-            'role' => 'USER',
+            'role' => 'user',
         ]);
     }
     

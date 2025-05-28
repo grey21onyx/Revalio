@@ -200,7 +200,7 @@ class ForumCommentController extends Controller
             ->firstOrFail();
         
         // Check if user is authorized to update this comment
-        if (Auth::id() !== $comment->user_id && !Auth::user()->isAdmin()) {
+        if (Auth::id() !== $comment->user_id && !Auth::user()->isadmin()) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
         
@@ -212,7 +212,7 @@ class ForumCommentController extends Controller
         $data = $request->only(['konten']);
         
         // Only admins can change status
-        if ($request->has('status') && Auth::user()->isAdmin()) {
+        if ($request->has('status') && Auth::user()->isadmin()) {
             $data['status'] = $request->status;
         }
         
@@ -259,7 +259,7 @@ class ForumCommentController extends Controller
             ->firstOrFail();
         
         // Check if user is authorized to delete this comment
-        if (Auth::id() !== $comment->user_id && !Auth::user()->isAdmin()) {
+        if (Auth::id() !== $comment->user_id && !Auth::user()->isadmin()) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
         

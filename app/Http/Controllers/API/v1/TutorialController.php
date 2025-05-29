@@ -61,11 +61,11 @@ class TutorialController extends Controller
             $userId = Auth::id();
             if ($request->tried === 'true' || $request->tried === true) {
                 $query->whereHas('completedByUsers', function($q) use ($userId) {
-                    $q->where('user_id', $userId);
+                    $q->where('user_completed_tutorials.user_id', $userId);
                 });
             } else {
                 $query->whereDoesntHave('completedByUsers', function($q) use ($userId) {
-                    $q->where('user_id', $userId);
+                    $q->where('user_completed_tutorials.user_id', $userId);
                 });
             }
         }
@@ -83,8 +83,8 @@ class TutorialController extends Controller
         if (Auth::check()) {
             $userId = Auth::id();
             $tutorials->getCollection()->transform(function($tutorial) use ($userId) {
-                $tutorial->is_completed = $tutorial->completedByUsers()->where('user_id', $userId)->exists();
-                $tutorial->is_saved = $tutorial->savedByUsers()->where('user_id', $userId)->exists();
+                $tutorial->is_completed = $tutorial->completedByUsers()->where('user_completed_tutorials.user_id', $userId)->exists();
+                $tutorial->is_saved = $tutorial->savedByUsers()->where('user_saved_tutorials.user_id', $userId)->exists();
                 $tutorial->user_rating = $tutorial->ratings()->where('user_id', $userId)->value('rating');
                 return $tutorial;
             });
@@ -466,4 +466,4 @@ class TutorialController extends Controller
         
         return CommentResource::collection($comments);
     }
-} 
+}

@@ -392,128 +392,165 @@ const Home = () => {
   };
 
   useEffect(() => {
-    // Section reveal animations with scroll trigger
+    // Animasi untuk section-section dashboard
     const sections = [
-      statsRef, 
       wasteItemsRef, 
       tutorialsRef, 
       articlesRef, 
       communityRef, 
     ].filter(ref => ref.current); 
     
-    sections.forEach((sectionRef, index) => {
-      gsap.fromTo(
-        sectionRef.current,
-        { opacity: 0, y: 50 },
-        { 
-          opacity: 1, 
-          y: 0, 
-          duration: 0.8,
-          delay: 0.1 * index,
-          ease: "power2.out",
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: "top 85%", // Muncul sedikit lebih cepat
-            toggleActions: "play none none reverse"
-          }
+    try {
+      // Animasi section
+      sections.forEach((sectionRef, index) => {
+        if (sectionRef.current) {
+          gsap.fromTo(
+            sectionRef.current,
+            { opacity: 0, y: 50 },
+            { 
+              opacity: 1, 
+              y: 0, 
+              duration: 0.8,
+              delay: 0.1 * index,
+              ease: "power2.out",
+              scrollTrigger: {
+                trigger: sectionRef.current,
+                start: "top 85%",
+                toggleActions: "play none none reverse"
+              }
+            }
+          );
         }
-      );
-    });
-    
-    if (statsRef.current) {
-      const statCards = statsRef.current.querySelectorAll('.MuiCard-root');
-      gsap.fromTo(
-        statCards,
-        { opacity: 0, y: 30 },
-        { 
-          opacity: 1, 
-          y: 0, 
-          stagger: 0.15,
-          duration: 0.6,
-          ease: "power2.out",
-          delay: 0.4, // Delay setelah section utama muncul
-          scrollTrigger: {
-            trigger: statsRef.current,
-            start: "top 85%",
-          }
-        }
-      );
-    }
-        
-    const wasteCards = document.querySelectorAll('.waste-card');
-    wasteCards.forEach(card => {
-      card.addEventListener('mousemove', (e) => {
-        const rect = card.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
-        const rotateX = (y - centerY) / 20;
-        const rotateY = (centerX - x) / 20;
-        gsap.to(card, {
-          rotateX: rotateX,
-          rotateY: rotateY,
-          transformPerspective: 1000,
-          duration: 0.5,
-          ease: "power1.out"
-        });
       });
       
-      card.addEventListener('mouseleave', () => {
-        gsap.to(card, {
-          rotateX: 0,
-          rotateY: 0,
-          duration: 0.5,
-          ease: "elastic.out(1, 0.5)"
-        });
-      });
-    });
-    
-    const mm = gsap.matchMedia();
-    mm.add("(max-width: 768px)", () => {
-      if (tutorialsRef.current) {
-        const tutorialCardsContainer = tutorialsRef.current.querySelector('.MuiGrid-container');
-        if (tutorialCardsContainer) {
-          gsap.set(tutorialsRef.current, { overflowX: 'auto', overflowY: 'hidden' });
-          gsap.set(tutorialCardsContainer, { display: 'flex', flexWrap: 'nowrap', gap: '16px', paddingBottom: '16px' });
-          
-          const tutorialItems = tutorialCardsContainer.querySelectorAll('.MuiGrid-item');
-          tutorialItems.forEach((item) => {
-            gsap.to(item, {
-              scale: 1.02,
-              duration: 0.3,
+      // Animasi stat cards
+      if (statsRef.current) {
+        const statCards = statsRef.current.querySelectorAll('.MuiCard-root');
+        if (statCards && statCards.length > 0) {
+          gsap.fromTo(
+            Array.from(statCards),
+            { opacity: 0, y: 30 },
+            { 
+              opacity: 1, 
+              y: 0, 
+              stagger: 0.15,
+              duration: 0.6,
+              ease: "power2.out",
+              delay: 0.4,
               scrollTrigger: {
-                trigger: item,
-                start: "left center",
-                end: "right center",
-                containerAnimation: gsap.to(tutorialsRef.current, { // Pastikan ini benar
+                trigger: statsRef.current,
+                start: "top 85%",
+              }
+            }
+          );
+        }
+      }
+      
+      // Animasi waste cards
+      const wasteCards = document.querySelectorAll('.waste-card');
+      if (wasteCards && wasteCards.length > 0) {
+        Array.from(wasteCards).forEach(card => {
+          if (!card) return;
+          
+          card.addEventListener('mousemove', (e) => {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            const rotateX = (y - centerY) / 20;
+            const rotateY = (centerX - x) / 20;
+            gsap.to(card, {
+              rotateX: rotateX,
+              rotateY: rotateY,
+              transformPerspective: 1000,
+              duration: 0.5,
+              ease: "power1.out"
+            });
+          });
+          
+          card.addEventListener('mouseleave', () => {
+            gsap.to(card, {
+              rotateX: 0,
+              rotateY: 0,
+              duration: 0.5,
+              ease: "elastic.out(1, 0.5)"
+            });
+          });
+        });
+      }
+      
+      // Media query animations
+      const mm = gsap.matchMedia();
+      mm.add("(max-width: 768px)", () => {
+        try {
+          if (tutorialsRef.current) {
+            const tutorialCardsContainer = tutorialsRef.current.querySelector('.MuiGrid-container');
+            if (tutorialCardsContainer) {
+              gsap.set(tutorialsRef.current, { overflowX: 'auto', overflowY: 'hidden' });
+              gsap.set(tutorialCardsContainer, { display: 'flex', flexWrap: 'nowrap', gap: '16px', paddingBottom: '16px' });
+              
+              const tutorialItems = Array.from(tutorialCardsContainer.querySelectorAll('.MuiGrid-item') || []);
+              
+              if (tutorialItems.length > 0) {
+                const containerAnim = gsap.to(tutorialsRef.current, {
+                  x: 0, // Nilai dummy untuk trigger
                   scrollTrigger: {
-                    trigger: tutorialsRef.current, // Trigger untuk container scroll
+                    trigger: tutorialsRef.current,
                     start: "top 80%",
                     end: "bottom 20%",
                     scrub: true
                   }
-                }),
-                scrub: true
+                });
+                
+                tutorialItems.forEach((item) => {
+                  if (item) {
+                    gsap.to(item, {
+                      scale: 1.02,
+                      duration: 0.3,
+                      scrollTrigger: {
+                        trigger: item,
+                        start: "left center",
+                        end: "right center",
+                        containerAnimation: containerAnim,
+                        scrub: true
+                      }
+                    });
+                  }
+                });
               }
-            });
-          });
+            }
+          }
+        } catch (error) {
+          console.error('Error in GSAP tutorial animations:', error);
         }
-      }
-      return () => { /* cleanup */ };
-    });
-    
-    // Fetch data
-    fetchUserStats(); // Panggil data user dulu
-    fetchWasteItems();
-    fetchTutorials();
-    fetchArticles();
-    fetchCommunityThreads();
-    
-    return () => {
-      ScrollTrigger.getAll().forEach(st => st.kill());
-      mm.revert();
-    };
+        return () => { /* cleanup */ };
+      });
+      
+      // Fetch data
+      fetchUserStats();
+      fetchWasteItems();
+      fetchTutorials();
+      fetchArticles();
+      fetchCommunityThreads();
+      
+      // Return cleanup function
+      return () => {
+        ScrollTrigger.getAll().forEach(st => st.kill());
+        mm.revert();
+      };
+    } catch (error) {
+      console.error('Error in GSAP animations:', error);
+      
+      // Masih fetch data jika animasi error
+      fetchUserStats();
+      fetchWasteItems();
+      fetchTutorials();
+      fetchArticles();
+      fetchCommunityThreads();
+      
+      return () => {};
+    }
   }, []);
 
 

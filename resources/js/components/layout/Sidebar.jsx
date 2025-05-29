@@ -139,6 +139,21 @@ const Sidebar = ({ open, onClose }) => {
           onClose={onClose}
           ModalProps={{
             keepMounted: true, // Better open performance on mobile
+            disableScrollLock: false,
+            disablePortal: false,
+            disableEnforceFocus: false,
+            disableAutoFocus: false,
+            disableRestoreFocus: false,
+            hideBackdrop: false
+          }}
+          slotProps={{
+            backdrop: {
+              inert: !open ? "true" : undefined
+            },
+            paper: {
+              inert: !open ? "true" : undefined,
+              tabIndex: "-1"
+            }
           }}
           sx={{
             display: { xs: 'block', md: 'none' },
@@ -156,6 +171,12 @@ const Sidebar = ({ open, onClose }) => {
         <Drawer
           variant="persistent"
           open={open}
+          slotProps={{
+            paper: {
+              inert: !open ? "true" : undefined,
+              tabIndex: "-1"
+            }
+          }}
           sx={{
             display: { xs: 'none', md: 'block' },
             '& .MuiDrawer-paper': { 

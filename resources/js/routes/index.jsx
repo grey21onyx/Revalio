@@ -45,16 +45,16 @@ const AppRoutes = () => {
       
       {/* Auth Routes - untuk user yang BELUM login */}
       <Route element={<PublicRoute />}>
-      <Route element={<AuthLayout />}>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route element={<AuthLayout />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
         </Route>
       </Route>
 
       {/* Main App Routes - untuk user yang SUDAH login */}
       <Route element={<ProtectedRoute />}>
-      <Route element={<MainLayout />}>
+        <Route element={<MainLayout />}>
           {/* Dashboard/Home */}
           <Route path="/home" element={<Home />} />
           
@@ -75,9 +75,8 @@ const AppRoutes = () => {
           
           {/* Forum */}
           <Route path="/forum" element={<Forum />} />
-          <Route path="/detail-forum/:id" element={<DetailForum />} />
-          <Route path="/forum/:id" element={<ThreadDetail />} />
           <Route path="/forum/new-topic" element={<FormNewTopic />} />
+          <Route path="/detail-forum/:id" element={<DetailForum />} />
           
           {/* Peluang Usaha */}
           <Route path="/peluang-usaha" element={<PeluangUsaha />} />
@@ -85,36 +84,9 @@ const AppRoutes = () => {
           
           {/* Profile */}
           <Route path="/profile" element={<Profile />} />
-        
-        {/* Katalog Sampah */}
-        <Route path="/katalog" element={<Katalog />} />
-        <Route path="/katalog/detail-sampah/:id" element={<DetailSampah />} />
-        
-        {/* Panduan Daur Ulang */}
-        <Route path="/daur-ulang" element={<DaurUlang />} />
-        <Route path="/daur-ulang/:id" element={<DetailPanduan />} />
-        
-        {/* Tracking */}
-        <Route path="/tracking" element={<Tracking />} />
-        
-        {/* Monetisasi */}
-        <Route path="/monetisasi" element={<Monetisasi />} />
-        
-        {/* Forum */}
-        <Route path="/forum" element={<Forum />} />
-        <Route path="/detail-forum/:id" element={<DetailForum />} />
-        <Route path="/forum/:id" element={<ThreadDetail />} />
-        <Route path="/forum/new-topic" element={<FormNewTopic />} />
-        
-        {/* Peluang Usaha */}
-        <Route path="/peluang-usaha" element={<PeluangUsaha />} />
-        <Route path="/peluang-usaha/:id" element={<DetailPeluangUsaha />} />
-        
-        {/* Profile */}
-        <Route path="/profile" element={<Profile />} />
 
-        {/* Route untuk peta lokasi pengepul sampah (publik dan admin) */}
-        <Route path="/peta-pengepul" element={<WasteBuyerMap />} />
+          {/* Route untuk peta lokasi pengepul sampah (publik dan admin) */}
+          <Route path="/peta-pengepul" element={<WasteBuyerMap />} />
         </Route>
       </Route>
       

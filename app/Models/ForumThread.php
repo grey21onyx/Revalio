@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Traits\CommonScopes;
 use App\Traits\RecyclableTrait;
+use App\Traits\Likeable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ForumThread extends Model
 {
-    use HasFactory, CommonScopes, RecyclableTrait;
+    use HasFactory, CommonScopes, RecyclableTrait, Likeable;
     
     /**
      * Nama tabel yang terkait dengan model.

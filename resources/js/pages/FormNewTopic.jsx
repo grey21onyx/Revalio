@@ -10,6 +10,7 @@ import {
   Stack,
   Chip,
   Autocomplete,
+  CircularProgress,
 } from '@mui/material';
 import ForumIcon from '@mui/icons-material/Forum';
 import { useNavigate } from 'react-router-dom';
@@ -17,6 +18,7 @@ import Swal from 'sweetalert2';
 import { useAuth } from '../hooks/useAuth';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import api from '../services/api';
 
 const categories = [
   { id: 'general', name: 'Umum' },
@@ -46,7 +48,7 @@ const formats = [
 
 const FormNewTopic = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
   const [tags, setTags] = useState([]);
@@ -63,7 +65,10 @@ const FormNewTopic = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!isAuthenticated) {
+    // Periksa autentikasi lebih lengkap
+    const token = localStorage.getItem('userToken');
+    
+    if (!isAuthenticated || !token) {
       Swal.fire({
         title: '<span style="font-size: 24px; font-weight: 600;">Login Diperlukan</span>',
         html: '<div style="font-size: 16px; margin-top: 10px;">Anda harus login terlebih dahulu untuk membuat topik baru di forum Revalio</div>',
@@ -109,16 +114,90 @@ const FormNewTopic = () => {
 
     setSubmitting(true);
 
-    // TODO: Replace with actual API call to create thread
     try {
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      Swal.fire('Sukses', 'Topik baru berhasil dibuat.', 'success').then(() => {
-        navigate('/forum');
+      // Format tags menjadi string untuk API
+      const tagsString = tags.join(',');
+      
+      // Debug informasi user dan token
+      console.log('User authenticated:', isAuthenticated);
+      console.log('User info:', user);
+      console.log('Token exists:', !!token);
+      console.log('Token being used:', token ? token.substring(0, 10) + '...' : 'none');
+      
+      // Panggil API untuk membuat thread baru
+      console.log('Sending request to create forum thread with data:', {
+        judul: title,
+        konten: content.substring(0, 50) + '...',
+        tags: tagsString
       });
+      
+      const response = await api.post(
+        '/forum-threads', 
+        {
+          judul: title,
+          konten: content,
+          tags: tagsString
+        }
+      );
+      
+      console.log('Forum thread created successfully:', response.data);
+      
+      // Simpan ID thread yang baru dibuat
+      const newThreadId = response.data.thread?.id || response.data.id;
+      console.log('New thread ID:', newThreadId);
+
+      if (!newThreadId) {
+        console.error('Missing thread ID in response:', response.data);
+        Swal.fire('Peringatan', 'Thread berhasil dibuat tetapi ID tidak ditemukan. Anda akan diarahkan kembali ke forum.', 'warning')
+          .then(() => {
+            navigate('/forum');
+          });
+        return;
+      }
+
+      // Sukses dengan ID thread yang valid
+      Swal.fire({
+        title: 'Sukses!',
+        text: 'Topik baru berhasil dibuat.',
+        icon: 'success',
+        confirmButtonText: 'Lihat Topik'
+      }).then(() => {
+        // Navigasi ke detail thread yang baru dibuat
+        console.log('Navigating to detail forum with ID:', newThreadId);
+        navigate(`/detail-forum/${newThreadId}`);
+      });
+      
     } catch (error) {
-      Swal.fire('Error', 'Gagal membuat topik baru. Silakan coba lagi.', 'error');
+      console.error('Error creating new topic:', error);
+      
+      // Log detail error lebih lengkap untuk debugging
+      if (error.response) {
+        console.error('Error response:', error.response.status, error.response.data);
+        console.error('Request headers:', error.config.headers);
+      }
+      
+      let errorMessage = 'Gagal membuat topik baru. Silakan coba lagi.';
+      if (error.response && error.response.data && error.response.data.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      // Jika error 401, mungkin token tidak valid lagi atau sudah expired
+      if (error.response && error.response.status === 401) {
+        // Hapus token yang mungkin sudah tidak valid
+        localStorage.removeItem('userToken');
+        
+        Swal.fire({
+          icon: 'error',
+          title: 'Sesi Login Berakhir',
+          text: 'Silakan login kembali untuk melanjutkan.',
+          confirmButtonText: 'Login',
+          showCancelButton: false
+        }).then(() => {
+          navigate('/login', { state: { from: '/forum/new-topic' } });
+        });
+      } else {
+        Swal.fire('Error', errorMessage, 'error');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -247,7 +326,12 @@ const FormNewTopic = () => {
                 disabled={submitting}
                 sx={{ borderRadius: '8px' }}
               >
-                {submitting ? 'Menyimpan...' : 'Buat Topik'}
+                {submitting ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <CircularProgress size={24} color="inherit" sx={{ mr: 1 }} />
+                    Menyimpan...
+                  </Box>
+                ) : 'Buat Topik'}
               </Button>
             </Stack>
           </form>

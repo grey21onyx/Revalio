@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class ForumThreadController extends Controller
 {
@@ -61,10 +62,9 @@ class ForumThreadController extends Controller
         // Attach additional information for authenticated users
         if (Auth::check()) {
             $userId = Auth::id();
-            $threads->getCollection()->transform(function($thread) use ($userId) {
+            foreach ($threads->items() as $thread) {
                 $thread->is_liked = $thread->likes()->where('user_id', $userId)->exists();
-                return $thread;
-            });
+            }
         }
         
         return ForumThreadResource::collection($threads)
@@ -125,13 +125,34 @@ class ForumThreadController extends Controller
     {
         $thread = ForumThread::with(['user'])->findOrFail($id);
         
-        // Increment view count
-        $thread->increment('view_count');
+        try {
+            // Increment view count langsung di tabel forum_threads
+            DB::table('forum_threads')
+                ->where('thread_id', $id)
+                ->increment('view_count');
+        } catch (\Exception $e) {
+            // Log error tapi jangan kembali response error
+            Log::error("Error incrementing view count: " . $e->getMessage());
+            // Coba cara alternatif untuk increment view_count
+            try {
+                // Update langsung menggunakan model
+                $thread->view_count = ($thread->view_count ?? 0) + 1;
+                $thread->save();
+            } catch (\Exception $e2) {
+                Log::error("Alternative view count increment also failed: " . $e2->getMessage());
+                // Lanjutkan meskipun gagal incrementing view count
+            }
+        }
         
         // Add is_liked property for authenticated users
         if (Auth::check()) {
             $userId = Auth::id();
-            $thread->is_liked = $thread->likes()->where('user_id', $userId)->exists();
+            try {
+                $thread->is_liked = $thread->likes()->where('user_id', $userId)->exists();
+            } catch (\Exception $e) {
+                Log::error("Error checking likes: " . $e->getMessage());
+                $thread->is_liked = false;
+            }
         } else {
             $thread->is_liked = false;
         }
@@ -157,7 +178,7 @@ class ForumThreadController extends Controller
         $thread = ForumThread::findOrFail($id);
         
         // Check if user is authorized to update this thread
-        if (Auth::id() !== $thread->user_id && !Auth::user()->isadmin()) {
+        if (Auth::id() !== $thread->user_id && Auth::user()->role !== 'admin') {
             return response()->json(['message' => 'Forbidden'], 403);
         }
         
@@ -170,8 +191,9 @@ class ForumThreadController extends Controller
         
         $data = $request->only(['judul', 'konten', 'tags', 'status']);
         
-        if (isset($data['status']) && !Auth::user()->isadmin()) {
-            unset($data['status']); // Only admins can change status
+        // Only admins can change status
+        if (isset($data['status']) && Auth::user()->role !== 'admin') {
+            unset($data['status']);
         }
         
         $thread->update($data);
@@ -198,7 +220,7 @@ class ForumThreadController extends Controller
         $thread = ForumThread::findOrFail($id);
         
         // Check if user is authorized to delete this thread
-        if (Auth::id() !== $thread->user_id && !Auth::user()->isadmin()) {
+        if (Auth::id() !== $thread->user_id && Auth::user()->role !== 'admin') {
             return response()->json(['message' => 'Forbidden'], 403);
         }
         
@@ -226,23 +248,32 @@ class ForumThreadController extends Controller
         $user = Auth::user();
         $thread = ForumThread::findOrFail($id);
         
-        if ($thread->isLikedBy($user)) {
-            $thread->unlike($user);
-            $message = 'Like berhasil dihapus';
-            $isLiked = false;
-        } else {
-            $thread->like($user);
-            $message = 'Thread berhasil disukai';
-            $isLiked = true;
+        try {
+            if ($thread->isLikedBy($user)) {
+                $thread->unlike($user);
+                $message = 'Like berhasil dihapus';
+                $isLiked = false;
+            } else {
+                $thread->like($user);
+                $message = 'Thread berhasil disukai';
+                $isLiked = true;
+            }
+            
+            // Get updated like count
+            $thread->loadCount('likes');
+            $likesCount = $thread->likes_count ?? 0;
+        } catch (\Exception $e) {
+            Log::error("Error toggling like: " . $e->getMessage());
+            return response()->json([
+                'message' => 'Terjadi kesalahan saat memproses like',
+                'error' => $e->getMessage()
+            ], 500);
         }
-        
-        // Get updated like count
-        $thread->loadCount('likes');
         
         return response()->json([
             'message' => $message,
             'is_liked' => $isLiked,
-            'likes_count' => $thread->likes_count
+            'likes_count' => $likesCount
         ]);
     }
 

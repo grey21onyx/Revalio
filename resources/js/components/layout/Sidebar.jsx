@@ -146,7 +146,7 @@ const Sidebar = ({ open, onClose }) => {
             disableRestoreFocus: false,
             hideBackdrop: false
           }}
-          slotProps={{
+          componentsprops={{
             backdrop: {
               inert: !open ? "true" : undefined
             },
@@ -171,7 +171,7 @@ const Sidebar = ({ open, onClose }) => {
         <Drawer
           variant="persistent"
           open={open}
-          slotProps={{
+          componentsprops={{
             paper: {
               inert: !open ? "true" : undefined,
               tabIndex: "-1"

@@ -31,8 +31,8 @@ class WasteTypeDetailResource extends JsonResource
                 ];
             }),
             
-            'nilai_terkini' => $this->whenLoaded('values', function() {
-                $latestValue = $this->values->sortByDesc('tanggal_update')->first();
+            'nilai_terkini' => $this->whenLoaded('wasteValues', function() {
+                $latestValue = $this->wasteValues->sortByDesc('tanggal_update')->first();
                 if ($latestValue) {
                     return [
                         'id' => $latestValue->nilai_id,
@@ -43,11 +43,22 @@ class WasteTypeDetailResource extends JsonResource
                         'sumber_data' => $latestValue->sumber_data,
                     ];
                 }
-                return null;
+                // Return nilai default jika tidak ada data
+                return [
+                    'id' => null,
+                    'min' => 0,
+                    'max' => 0,
+                    'satuan' => 'kg',
+                    'tanggal_update' => now()->format('Y-m-d'),
+                    'sumber_data' => null,
+                ];
             }),
             
-            'nilai_history' => $this->whenLoaded('values', function() {
-                return $this->values->map(function($value) {
+            'nilai_history' => $this->whenLoaded('wasteValues', function() {
+                if ($this->wasteValues->isEmpty()) {
+                    return [];
+                }
+                return $this->wasteValues->map(function($value) {
                     return [
                         'id' => $value->nilai_id,
                         'min' => (float) $value->harga_minimum,

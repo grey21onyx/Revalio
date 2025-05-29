@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Box, 
@@ -17,85 +16,76 @@ import {
   Pagination,
   Chip,
   Fade,
-  Skeleton
+  Skeleton,
+  Alert
 } from '@mui/material';
 import { BusinessCenter as PeluangUsahaIcon } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 import { gsap } from 'gsap';
-
-// Mock data for categories and business opportunities
-const categories = [
-  'Kerajinan',
-  'Jasa Pengolahan',
-  'Kompos',
-  'Energi Terbarukan',
-  'Lainnya'
-];
+import BusinessOpportunityService from '../services/businessOpportunityService';
 
 // Default fallback image path
 const defaultImage = '/assets/images/tutorials/green.png';
-
-const mockBusinessOpportunities = [
-  {
-    id: 1,
-    title: 'Kerajinan Tangan dari Sampah Plastik',
-    description: 'Membuat berbagai kerajinan tangan bernilai dari sampah plastik yang didaur ulang.',
-    category: 'Kerajinan',
-    investment: 10000000,
-    potentialIncome: 'Rp 15.000.000 - Rp 25.000.000 per bulan',
-    media: defaultImage,
-  },
-  {
-    id: 2,
-    title: 'Pengolahan Kompos Organik',
-    description: 'Usaha pengolahan sampah organik menjadi kompos berkualitas tinggi.',
-    category: 'Kompos',
-    investment: 5000000,
-    potentialIncome: 'Rp 8.000.000 - Rp 12.000.000 per bulan',
-    media: defaultImage,
-  },
-  {
-    id: 3,
-    title: 'Jasa Pengumpulan Sampah Terjadwal',
-    description: 'Layanan pengumpulan sampah terjadwal untuk lingkungan perumahan dan bisnis.',
-    category: 'Jasa Pengolahan',
-    investment: 15000000,
-    potentialIncome: 'Rp 20.000.000 - Rp 30.000.000 per bulan',
-    media: defaultImage,
-  },
-  {
-    id: 4,
-    title: 'Produksi Energi Biogas dari Sampah Organik',
-    description: 'Menghasilkan energi biogas dari limbah organik untuk kebutuhan rumah tangga dan industri kecil.',
-    category: 'Energi Terbarukan',
-    investment: 25000000,
-    potentialIncome: 'Rp 30.000.000 - Rp 50.000.000 per bulan',
-    media: defaultImage,
-  },
-  {
-    id: 5,
-    title: 'Pengolahan Sampah Elektronik',
-    description: 'Mendaur ulang sampah elektronik menjadi bahan baku baru yang bernilai.',
-    category: 'Lainnya',
-    investment: 20000000,
-    potentialIncome: 'Rp 25.000.000 - Rp 40.000.000 per bulan',
-    media: defaultImage,
-  },
-];
 
 const PeluangUsaha = () => {
   const theme = useTheme();
   const navigate = useNavigate();
 
-  // State for filters
+  // State for data and UI states
+  const [opportunities, setOpportunities] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [investmentRange, setInvestmentRange] = useState([0, 30000000]);
-  const [filteredOpportunities, setFilteredOpportunities] = useState(mockBusinessOpportunities);
+  const [maxInvestment, setMaxInvestment] = useState(30000000);
+  const [filteredOpportunities, setFilteredOpportunities] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const itemsPerPage = 4;
   const cardsRef = useRef([]);
+
+  // Fetch business opportunities data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const response = await BusinessOpportunityService.getPublicBusinessOpportunities();
+        
+        if (response && response.data) {
+          // Transform API data to match component's expected format
+          const transformedData = response.data.map(item => ({
+            id: item.id,
+            title: item.judul,
+            description: item.deskripsi,
+            category: item.jenis_sampah_terkait,
+            investment: item.investasi_minimal,
+            potentialIncome: item.potensi_keuntungan,
+            media: item.gambar_url || defaultImage,
+          }));
+          
+          setOpportunities(transformedData);
+          
+          // Extract unique categories
+          const uniqueCategories = [...new Set(transformedData.map(item => item.category))].filter(Boolean);
+          setCategories(uniqueCategories);
+          
+          // Find max investment value for slider
+          const maxValue = Math.max(...transformedData.map(item => item.investment), 30000000);
+          setMaxInvestment(maxValue);
+          setInvestmentRange([0, maxValue]);
+        }
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching business opportunities:", err);
+        setError("Gagal mengambil data peluang usaha. Silakan coba lagi nanti.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, []);
 
   // Handle filter changes
   const handleCategoryChange = (event) => {
@@ -108,9 +98,14 @@ const PeluangUsaha = () => {
     setPage(1);
   };
 
+  // Function to navigate to detail page
+  const handleCardClick = (id) => {
+    navigate(`/peluang-usaha/${id}`);
+  };
+
   // Filter data based on filters
   useEffect(() => {
-    let filtered = mockBusinessOpportunities;
+    let filtered = opportunities;
 
     if (selectedCategory) {
       filtered = filtered.filter(item => item.category === selectedCategory);
@@ -121,7 +116,7 @@ const PeluangUsaha = () => {
     );
 
     setFilteredOpportunities(filtered);
-  }, [selectedCategory, investmentRange]);
+  }, [selectedCategory, investmentRange, opportunities]);
 
   // Pagination
   const pageCount = Math.ceil(filteredOpportunities.length / itemsPerPage);
@@ -139,14 +134,9 @@ const PeluangUsaha = () => {
     return 'Rp ' + value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   };
 
-  // Navigate to detail page
-  const handleCardClick = (id) => {
-    navigate(`/peluang-usaha/${id}`);
-  };
-
   // Animate cards on mount and update
   useEffect(() => {
-    if (!loading) {
+    if (!loading && cardsRef.current.length > 0) {
       cardsRef.current.forEach((card, index) => {
         if (card) {
           gsap.fromTo(
@@ -158,14 +148,6 @@ const PeluangUsaha = () => {
       });
     }
   }, [loading, paginatedOpportunities]);
-
-  // Simulate loading delay
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
 
   return (
       <Box sx={{ backgroundColor: '#f9f9f9', py: { xs: 3, md: 5 } }}>
@@ -211,6 +193,13 @@ const PeluangUsaha = () => {
           </Box>
         </Container>
 
+      {/* Display error if exists */}
+      {error && (
+        <Container maxWidth="lg" sx={{ mb: 4 }}>
+          <Alert severity="error">{error}</Alert>
+        </Container>
+      )}
+
       {/* Filters */}
       <Container maxWidth="lg" sx={{ mb: 4 }}>
         <Grid container spacing={3} alignItems="center">
@@ -240,13 +229,13 @@ const PeluangUsaha = () => {
               onChange={handleInvestmentChange}
               valueLabelDisplay="auto"
               min={0}
-              max={30000000}
+              max={maxInvestment}
               step={1000000}
               marks={[
                 { value: 0, label: '0' },
-                { value: 10000000, label: '10jt' },
-                { value: 20000000, label: '20jt' },
-                { value: 30000000, label: '30jt' },
+                { value: Math.round(maxInvestment / 3), label: formatCurrency(Math.round(maxInvestment / 3)).substring(0, 7) },
+                { value: Math.round(maxInvestment * 2/3), label: formatCurrency(Math.round(maxInvestment * 2/3)).substring(0, 7) },
+                { value: maxInvestment, label: formatCurrency(maxInvestment).substring(0, 7) },
               ]}
             />
           </Grid>
@@ -258,7 +247,7 @@ const PeluangUsaha = () => {
               fullWidth
               onClick={() => {
                 setSelectedCategory('');
-                setInvestmentRange([0, 30000000]);
+                setInvestmentRange([0, maxInvestment]);
                 setPage(1);
               }}
             >
@@ -293,10 +282,10 @@ const PeluangUsaha = () => {
                     sx={{ 
                       height: '100%', 
                       display: 'flex', 
-                      flexDirection: 'column', 
-                      cursor: 'pointer', 
+                      flexDirection: 'column',
                       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                       backgroundColor: 'background.paper',
+                      cursor: 'pointer',
                       '&:hover': {
                         backgroundColor: 'rgba(0,0,0,0.04)'
                       }

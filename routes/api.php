@@ -48,7 +48,10 @@ Route::prefix('v1')->group(function () {
     Route::get('/public/articles', [ArticleController::class, 'public']);
     Route::get('/public/forum-threads', [ForumThreadController::class, 'public']);
     Route::get('/public/forum-threads/popular', [ForumThreadController::class, 'popular']);
+    Route::get('/public/forum-threads/{id}', [ForumThreadController::class, 'show']);
+    Route::get('/public/forum-threads/{threadId}/comments', [ForumCommentController::class, 'index']);
     Route::get('/public/business-opportunities', [BusinessOpportunityController::class, 'public']);
+    Route::get('/public/business-opportunities/{id}', [BusinessOpportunityController::class, 'publicShow']);
     Route::get('/public/waste-buyers', [WasteBuyerController::class, 'public']);
     Route::get('/public/waste-buyer-types', [WasteBuyerTypeController::class, 'public']);
     Route::get('/public/business-opportunities/waste-types', [BusinessOpportunityController::class, 'getWasteTypes']);
@@ -139,6 +142,8 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('articles', ArticleController::class);
         
         // Forum Threads
+        Route::get('/forum-threads/my-threads', [ForumThreadController::class, 'myThreads']);
+        Route::get('/forum-threads/my-comments', [ForumThreadController::class, 'myComments']);
         Route::apiResource('forum-threads', ForumThreadController::class);
         Route::post('/forum-threads/{id}/like', [ForumThreadController::class, 'toggleLike']);
         

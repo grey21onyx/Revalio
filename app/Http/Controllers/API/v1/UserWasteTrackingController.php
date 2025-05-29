@@ -101,7 +101,7 @@ class UserWasteTrackingController extends Controller
         
         // Hitung nilai estimasi
         $wasteType = WasteType::find($request->waste_id);
-        $wasteValue = $wasteType->values()->latest('tanggal_update')->first();
+        $wasteValue = $wasteType->wasteValues()->latest('tanggal_update')->first();
         
         if ($wasteValue) {
             $avgPrice = ($wasteValue->harga_minimum + $wasteValue->harga_maksimum) / 2;
@@ -179,7 +179,7 @@ class UserWasteTrackingController extends Controller
             $jumlah = $request->jumlah ?? $tracking->jumlah;
             
             $wasteType = WasteType::find($wasteId);
-            $wasteValue = $wasteType->values()->latest('tanggal_update')->first();
+            $wasteValue = $wasteType->wasteValues()->latest('tanggal_update')->first();
             
             if ($wasteValue) {
                 $avgPrice = ($wasteValue->harga_minimum + $wasteValue->harga_maksimum) / 2;

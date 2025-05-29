@@ -28,66 +28,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { useAuth } from '../hooks/useAuth';
 import Swal from 'sweetalert2';
+import BusinessOpportunityService from '../services/businessOpportunityService';
 
 const defaultImage = '/assets/images/tutorials/green.png';
-
-const mockBusinessOpportunities = [
-  {
-    id: 1,
-    title: 'Kerajinan Tangan dari Sampah Plastik',
-    description: 'Membuat berbagai kerajinan tangan bernilai dari sampah plastik yang didaur ulang.',
-    category: 'Kerajinan',
-    investment: 10000000,
-    potentialIncome: 'Rp 15.000.000 - Rp 25.000.000 per bulan',
-    challenges: 'Mendapatkan bahan baku plastik yang konsisten dan berkualitas, serta pemasaran produk yang efektif.',
-    implementationSuggestions: 'Mulailah dengan skala kecil dan fokus pada produk unik. Gunakan media sosial untuk promosi dan bangun jaringan dengan komunitas daur ulang.',
-    media: defaultImage,
-  },
-  {
-    id: 2,
-    title: 'Pengolahan Kompos Organik',
-    description: 'Usaha pengolahan sampah organik menjadi kompos berkualitas tinggi.',
-    category: 'Kompos',
-    investment: 5000000,
-    potentialIncome: 'Rp 8.000.000 - Rp 12.000.000 per bulan',
-    challenges: 'Pengelolaan limbah organik yang tepat dan menjaga kualitas kompos agar sesuai standar pasar.',
-    implementationSuggestions: 'Pelajari teknik pengomposan yang efisien dan jalin kerjasama dengan petani atau toko tanaman sebagai pasar.',
-    media: defaultImage,
-  },
-  {
-    id: 3,
-    title: 'Jasa Pengumpulan Sampah Terjadwal',
-    description: 'Layanan pengumpulan sampah terjadwal untuk lingkungan perumahan dan bisnis.',
-    category: 'Jasa Pengolahan',
-    investment: 15000000,
-    potentialIncome: 'Rp 20.000.000 - Rp 30.000.000 per bulan',
-    challenges: 'Mengatur jadwal pengumpulan yang efisien dan membangun kepercayaan pelanggan.',
-    implementationSuggestions: 'Gunakan aplikasi atau sistem manajemen untuk jadwal dan komunikasi pelanggan. Fokus pada pelayanan yang ramah dan tepat waktu.',
-    media: defaultImage,
-  },
-  {
-    id: 4,
-    title: 'Produksi Energi Biogas dari Sampah Organik',
-    description: 'Menghasilkan energi biogas dari limbah organik untuk kebutuhan rumah tangga dan industri kecil.',
-    category: 'Energi Terbarukan',
-    investment: 25000000,
-    potentialIncome: 'Rp 30.000.000 - Rp 50.000.000 per bulan',
-    challenges: 'Investasi awal yang cukup besar dan pemeliharaan alat biogas yang tepat.',
-    implementationSuggestions: 'Pelajari teknologi biogas dan cari mitra teknis. Edukasi masyarakat tentang manfaat energi terbarukan.',
-    media: defaultImage,
-  },
-  {
-    id: 5,
-    title: 'Pengolahan Sampah Elektronik',
-    description: 'Mendaur ulang sampah elektronik menjadi bahan baku baru yang bernilai.',
-    category: 'Lainnya',
-    investment: 20000000,
-    potentialIncome: 'Rp 25.000.000 - Rp 40.000.000 per bulan',
-    challenges: 'Pengelolaan limbah berbahaya dan perizinan usaha.',
-    implementationSuggestions: 'Pastikan mematuhi regulasi lingkungan dan gunakan teknologi pengolahan yang aman.',
-    media: defaultImage,
-  },
-];
 
 const DetailPeluangUsaha = () => {
   const theme = useTheme();
@@ -108,9 +51,47 @@ const DetailPeluangUsaha = () => {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    const foundOpportunity = mockBusinessOpportunities.find(item => item.id === parseInt(id));
-    if (foundOpportunity) {
-      setOpportunity(foundOpportunity);
+    const fetchOpportunityDetails = async () => {
+      setLoading(true);
+      try {
+        const response = await BusinessOpportunityService.getBusinessOpportunityById(id);
+        if (response && response.data) {
+          const opportunityData = {
+            id: response.data.id,
+            title: response.data.judul,
+            description: response.data.deskripsi,
+            category: response.data.jenis_sampah_terkait || 'Lainnya',
+            investment: response.data.investasi_minimal,
+            maxInvestment: response.data.investasi_maksimal,
+            potentialIncome: response.data.potensi_keuntungan,
+            challenges: response.data.challenges || 'Informasi tantangan tidak tersedia.',
+            implementationSuggestions: response.data.implementation_suggestions || 'Informasi saran implementasi tidak tersedia.',
+            media: response.data.gambar_url || defaultImage,
+          };
+          setOpportunity(opportunityData);
+          
+          if (response.data.is_bookmarked !== undefined) {
+            setIsBookmarked(response.data.is_bookmarked);
+          }
+          if (response.data.is_completed !== undefined) {
+            setIsCompleted(response.data.is_completed);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching business opportunity:', error);
+        Swal.fire({
+          title: 'Error',
+          text: 'Gagal memuat data peluang usaha. Silakan coba lagi nanti.',
+          icon: 'error',
+        });
+        navigate('/peluang-usaha', { replace: true });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchOpportunityDetails();
     } else {
       navigate('/peluang-usaha', { replace: true });
     }
@@ -132,7 +113,7 @@ const DetailPeluangUsaha = () => {
     navigate(-1);
   };
 
-  const handleBookmarkToggle = () => {
+  const handleBookmarkToggle = async () => {
     if (!isAuthenticated) {
       Swal.fire({
         title: 'Login Diperlukan',
@@ -149,10 +130,29 @@ const DetailPeluangUsaha = () => {
       return;
     }
     
-    setIsBookmarked(!isBookmarked);
+    try {
+      const response = await BusinessOpportunityService.toggleBookmark(id);
+      if (response && response.status === 'success') {
+        setIsBookmarked(!isBookmarked);
+        Swal.fire({
+          title: !isBookmarked ? 'Berhasil Disimpan' : 'Berhasil Dihapus',
+          text: !isBookmarked ? 'Peluang usaha telah ditambahkan ke daftar tersimpan.' : 'Peluang usaha telah dihapus dari daftar tersimpan.',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+      Swal.fire({
+        title: 'Error',
+        text: 'Gagal menyimpan peluang usaha. Silakan coba lagi nanti.',
+        icon: 'error',
+      });
+    }
   };
 
-  const handleCompleteToggle = () => {
+  const handleCompleteToggle = async () => {
     if (!isAuthenticated) {
       Swal.fire({
         title: 'Login Diperlukan',
@@ -169,14 +169,42 @@ const DetailPeluangUsaha = () => {
       return;
     }
     
-    setIsCompleted(!isCompleted);
+    try {
+      const response = await BusinessOpportunityService.toggleCompleted(id);
+      if (response && response.status === 'success') {
+        setIsCompleted(!isCompleted);
+        Swal.fire({
+          title: !isCompleted ? 'Berhasil Ditandai' : 'Tanda Dihapus',
+          text: !isCompleted ? 'Peluang usaha telah ditandai sebagai sudah dicoba.' : 'Tanda "sudah dicoba" telah dihapus.',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }
+    } catch (error) {
+      console.error('Error toggling completed status:', error);
+      Swal.fire({
+        title: 'Error',
+        text: 'Gagal menandai peluang usaha. Silakan coba lagi nanti.',
+        icon: 'error',
+      });
+    }
   };
 
   const handleShare = () => {
-    alert(`Bagikan peluang usaha: ${opportunity?.title}`);
+    if (navigator.share) {
+      navigator.share({
+        title: opportunity?.title,
+        text: opportunity?.description,
+        url: window.location.href
+      })
+      .catch((error) => console.log('Error sharing:', error));
+    } else {
+      alert(`Bagikan peluang usaha: ${opportunity?.title}`);
+    }
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     if (!isAuthenticated) {
       Swal.fire({
         title: 'Login Diperlukan',
@@ -193,7 +221,35 @@ const DetailPeluangUsaha = () => {
       return;
     }
     
-    alert(`Unduh PDF peluang usaha: ${opportunity?.title}`);
+    try {
+      const response = await BusinessOpportunityService.downloadPDF(id);
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `peluang-usaha-${id}.pdf`); 
+      document.body.appendChild(link);
+      link.click();
+      
+      window.URL.revokeObjectURL(url);
+      link.remove();
+      
+      Swal.fire({
+        title: 'Berhasil',
+        text: 'PDF peluang usaha telah diunduh.',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
+      });
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      Swal.fire({
+        title: 'Error',
+        text: 'Gagal mengunduh PDF. Silakan coba lagi nanti.',
+        icon: 'error',
+      });
+    }
   };
 
   const handleImageClick = () => {
@@ -214,6 +270,36 @@ const DetailPeluangUsaha = () => {
             </Grid>
           ))}
         </Grid>
+      </Container>
+    );
+  }
+
+  if (!opportunity) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Button 
+          startIcon={<ArrowBack />}
+          onClick={handleBack}
+          sx={{ mb: 3 }}
+        >
+          Kembali
+        </Button>
+        <Box sx={{ textAlign: 'center', py: 8 }}>
+          <Typography variant="h5" color="text.secondary" gutterBottom>
+            Peluang usaha tidak ditemukan
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Data yang Anda cari tidak tersedia atau telah dihapus.
+          </Typography>
+          <Button 
+            variant="contained" 
+            color="primary" 
+            sx={{ mt: 3 }}
+            onClick={() => navigate('/peluang-usaha')}
+          >
+            Lihat Semua Peluang Usaha
+          </Button>
+        </Box>
       </Container>
     );
   }
@@ -380,7 +466,7 @@ const DetailPeluangUsaha = () => {
           >
             <Box
               component="img"
-              src={opportunity.imageUrl}
+              src={opportunity.media || defaultImage}
               alt={opportunity.title}
               sx={{
                 maxWidth: '90%',

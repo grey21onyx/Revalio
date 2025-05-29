@@ -266,7 +266,6 @@ const LandingPage = () => {
   const heroButtonsRef = useRef(null);
   const aboutSectionRef = useRef(null);
   const faqSectionRef = useRef(null);
-  const testimonialSectionRef = useRef(null);
   const howItWorksSectionRef = useRef(null);
 
   const handleScrollToSection = (elementRef) => {
@@ -294,7 +293,6 @@ const LandingPage = () => {
     { label: 'Tentang', action: () => handleScrollToSection(aboutSectionRef) },
     { label: 'Cara Kerja', action: () => handleScrollToSection(howItWorksSectionRef) },
     { label: 'Dampak', action: () => handleScrollToSection(impactSectionRef) },
-    { label: 'Testimoni', action: () => handleScrollToSection(testimonialSectionRef) },
     { label: 'FAQ', action: () => handleScrollToSection(faqSectionRef) },
   ];
 

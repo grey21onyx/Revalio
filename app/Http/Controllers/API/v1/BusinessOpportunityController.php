@@ -408,4 +408,21 @@ class BusinessOpportunityController extends Controller
             'max_investment' => $maxInvestment ?? 0
         ]);
     }
+
+    /**
+     * Display the specified resource for public access.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function publicShow($id)
+    {
+        $opportunity = BusinessOpportunity::with('wasteTypes')
+            ->where('status', 'AKTIF')
+            ->findOrFail($id);
+
+        return response()->json([
+            'data' => new BusinessOpportunityResource($opportunity)
+        ]);
+    }
 } 

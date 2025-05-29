@@ -30,6 +30,16 @@ import FormNewTopic from '../pages/FormNewTopic';
 import WasteBuyerMap from '../pages/WasteBuyerMap';
 import LandingPage from '../pages/LandingPage';
 
+// New landing pages
+import EdukasiSampah from '../pages/EdukasiSampah';
+import TentangKami from '../pages/TentangKami';
+
+// Kategori Sampah pages
+import SampahOrganik from '../pages/EdukasiSampahKategori/SampahOrganik';
+import SampahPlastik from '../pages/EdukasiSampahKategori/SampahPlastik';
+import SampahKertas from '../pages/EdukasiSampahKategori/SampahKertas';
+import SampahLogam from '../pages/EdukasiSampahKategori/SampahLogam';
+
 // Layout
 import MainLayout from '../components/layout/MainLayout';
 import AuthLayout from '../components/layout/AuthLayout';
@@ -40,8 +50,16 @@ const AppRoutes = () => {
       {/* Root Route - Conditional rendering berdasarkan auth state */}
       <Route path="/" element={<RootRoute />} />
       
-      {/* Tentang Kami (Public) */}
-      <Route path="/tentang" element={<About />} />
+      {/* Landing Pages (Public) */}
+      <Route path="/landing" element={<LandingPage />} />
+      <Route path="/edukasi" element={<EdukasiSampah />} />
+      <Route path="/tentang" element={<TentangKami />} />
+      
+      {/* Kategori Sampah Routes */}
+      <Route path="/edukasi/kategori/sampah-organik" element={<SampahOrganik />} />
+      <Route path="/edukasi/kategori/sampah-plastik" element={<SampahPlastik />} />
+      <Route path="/edukasi/kategori/sampah-kertas" element={<SampahKertas />} />
+      <Route path="/edukasi/kategori/sampah-logam" element={<SampahLogam />} />
       
       {/* Auth Routes - untuk user yang BELUM login */}
       <Route element={<PublicRoute />}>

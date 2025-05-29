@@ -15,11 +15,33 @@ import ForumIcon from '@mui/icons-material/Forum';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { useAuth } from '../hooks/useAuth';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 const categories = [
   { id: 'general', name: 'Umum' },
   { id: 'tips', name: 'Tips & Trik' },
   { id: 'recycling', name: 'Daur Ulang' },
+];
+
+// Konfigurasi toolbar untuk Quill
+const modules = {
+  toolbar: [
+    [{ 'header': [1, 2, 3, false] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{'list': 'ordered'}, {'list': 'bullet'}],
+    ['link', 'blockquote'],
+    [{ 'color': [] }, { 'background': [] }],
+    ['clean']
+  ],
+};
+
+const formats = [
+  'header',
+  'bold', 'italic', 'underline', 'strike',
+  'list', 'bullet',
+  'link', 'blockquote',
+  'color', 'background'
 ];
 
 const FormNewTopic = () => {
@@ -178,19 +200,38 @@ const FormNewTopic = () => {
               )}
             />
 
-            <TextField
-              label="Isi Topik"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              fullWidth
-              required
-              margin="normal"
-              multiline
-              rows={6}
-              disabled={submitting}
-            />
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 2, mb: 1 }}>
+              Isi Topik *
+            </Typography>
+            <Box sx={{ 
+              mb: 2,
+              '& .quill': {
+                borderRadius: '4px',
+              },
+              '& .ql-container': {
+                borderBottomLeftRadius: '4px',
+                borderBottomRightRadius: '4px',
+                minHeight: '200px'
+              },
+              '& .ql-toolbar': {
+                borderTopLeftRadius: '4px',
+                borderTopRightRadius: '4px',
+                background: '#f9f9f9'
+              }
+            }}>
+              <ReactQuill 
+                theme="snow" 
+                value={content} 
+                onChange={setContent}
+                modules={modules}
+                formats={formats}
+                placeholder="Tulis isi topik di sini..."
+                readOnly={submitting}
+                style={{ height: '300px', marginBottom: '50px' }}
+              />
+            </Box>
 
-            <Stack direction="row" spacing={2} justifyContent="flex-end" mt={3}>
+            <Stack direction="row" spacing={2} justifyContent="flex-end" mt={8}>
               <Button
                 variant="outlined"
                 onClick={() => navigate('/forum')}

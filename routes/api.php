@@ -51,6 +51,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/public/forum-threads/{id}', [ForumThreadController::class, 'show']);
     Route::get('/public/forum-threads/{threadId}/comments', [ForumCommentController::class, 'index']);
     Route::get('/public/business-opportunities', [BusinessOpportunityController::class, 'public']);
+    Route::get('/public/business-opportunities/{id}', [BusinessOpportunityController::class, 'publicShow']);
     Route::get('/public/waste-buyers', [WasteBuyerController::class, 'public']);
     Route::get('/public/waste-buyer-types', [WasteBuyerTypeController::class, 'public']);
     Route::get('/public/business-opportunities/waste-types', [BusinessOpportunityController::class, 'getWasteTypes']);

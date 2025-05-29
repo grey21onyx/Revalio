@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -18,47 +18,31 @@ import {
   VisibilityOff as VisibilityOffIcon,
   Google as GoogleIcon
 } from '@mui/icons-material';
-
-// Import komponen yang sudah dibuat
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
-
-// Import hook useAuth dari context
 import { useAuth } from '../contexts/AuthContext';
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.min.css';
 
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  
-  // Ambil intended URL dari location.state jika ada
   const fromLocation = location.state?.from || { pathname: '/home' };
-  
-  // Gunakan hook useAuth untuk mendapatkan state dan fungsi autentikasi
-  const { isAuthenticated, login, error, clearError, isLoading } = useAuth();
+  const { login, error, clearError, isLoading } = useAuth();
 
-  const handleBack = () => {
-    navigate('/'); // Kembali ke landing page
-  };
-  
-  // State untuk form
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     rememberMe: false
   });
   
-  // State untuk error dan UI
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
 
-  // Redirect jika sudah login
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate(fromLocation.pathname || '/home', { replace: true });
-    }
-  }, [isAuthenticated, navigate, fromLocation]);
+  const handleBack = () => {
+    navigate('/');
+  };
 
-  // Handle perubahan input
   const handleChange = (e) => {
     const { name, value, checked } = e.target;
     setFormData({
@@ -66,7 +50,6 @@ const Login = () => {
       [name]: name === 'rememberMe' ? checked : value
     });
     
-    // Reset error untuk field ini jika ada
     if (errors[name]) {
       setErrors({
         ...errors,
@@ -74,24 +57,20 @@ const Login = () => {
       });
     }
     
-    // Reset general error
     if (error) {
       clearError();
     }
   };
 
-  // Validasi form
   const validateForm = () => {
     const newErrors = {};
     
-    // Validasi email
     if (!formData.email) {
       newErrors.email = 'Email tidak boleh kosong';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Format email tidak valid';
     }
     
-    // Validasi password
     if (!formData.password) {
       newErrors.password = 'Password tidak boleh kosong';
     } 
@@ -100,24 +79,37 @@ const Login = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle submit form
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validasi form
     if (!validateForm()) return;
     
     try {
-      // Coba login dan kirim intended URL untuk diproses setelah login berhasil
+      // Call login and wait for it to complete
       await login({ 
         email: formData.email, 
-        password: formData.password,
-        redirectTo: fromLocation.pathname
+        password: formData.password
       });
-      // login function dalam AuthContext sudah menangani redirect
+      
+      // Show success alert
+      await Swal.fire({
+        icon: 'success',
+        title: 'Login Berhasil',
+        text: '',
+        showConfirmButton: false,
+        timer: 1500
+      });
+      
+      // Manual redirect after alert
+      navigate(fromLocation.pathname || '/home');
+      
     } catch (err) {
-      // Error akan ditangani oleh AuthContext
       console.error('Login error:', err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Login Gagal',
+        text: error || 'Terjadi kesalahan saat login'
+      });
     }
   };
 

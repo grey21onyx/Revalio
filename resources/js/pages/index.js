@@ -4,6 +4,7 @@ export { default as DetailSampah } from './DetailSampah';
 export { default as Tracking } from './Tracking';
 export { default as DaurUlang } from './DaurUlang';
 export { default as DetailPanduan } from './DetailPanduan';
+export { default as TambahPanduan } from './TambahPanduan';
 export { default as Forum } from './Forum';
 export { default as DetailForum } from './DetailForum';
 export { default as PeluangUsaha } from './PeluangUsaha';

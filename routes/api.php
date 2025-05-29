@@ -131,6 +131,7 @@ Route::prefix('v1')->group(function () {
         
         // Tutorials
         Route::get('tutorials', [TutorialController::class, 'index']);
+        Route::post('tutorials', [TutorialController::class, 'store']);
         Route::get('tutorials/{id}', [TutorialController::class, 'show']);
         Route::get('tutorials/{id}/comments', [TutorialController::class, 'getComments']);
         

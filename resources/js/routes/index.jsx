@@ -12,6 +12,7 @@ import Katalog from '../pages/Katalog';
 import DetailSampah from '../pages/DetailSampah';
 import DaurUlang from '../pages/DaurUlang';
 import DetailPanduan from '../pages/DetailPanduan';
+import TambahPanduan from '../pages/TambahPanduan';
 import Tracking from '../pages/Tracking';
 import Monetisasi from '../pages/Monetisasi';
 import Forum from '../pages/Forum';
@@ -63,6 +64,7 @@ const AppRoutes = () => {
           
           {/* Panduan Daur Ulang */}
           <Route path="/daur-ulang" element={<DaurUlang />} />
+          <Route path="/daur-ulang/baru" element={<TambahPanduan />} />
           <Route path="/daur-ulang/:id" element={<DetailPanduan />} />
           
           {/* Tracking */}

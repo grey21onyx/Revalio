@@ -40,6 +40,7 @@ class ForumThread extends Model
         'tanggal_posting',
         'status',
         'tags',
+        'view_count',
     ];
     
     /**
@@ -50,6 +51,12 @@ class ForumThread extends Model
     protected $casts = [
         'tanggal_posting' => 'datetime',
     ];
+    
+    /**
+     * Konstanta untuk nilai status.
+     */
+    const STATUS_AKTIF = 'AKTIF';
+    const STATUS_NONAKTIF = 'NONAKTIF';
     
     /**
      * Menentukan bahwa model hanya menggunakan timestamp updated_at.
@@ -92,7 +99,7 @@ class ForumThread extends Model
      */
     public function scopeAktif($query)
     {
-        return $query->where('status', 'AKTIF');
+        return $query->where('status', self::STATUS_AKTIF);
     }
     
     /**

@@ -68,6 +68,34 @@ const formatDateTime = (isoString) => {
   }
 };
 
+// Helper function untuk mendapatkan nama display dari user
+const getUserDisplayName = (user) => {
+  if (!user) return 'Pengguna';
+  
+  // Coba ambil nama dari semua kemungkinan field
+  return user.nama || user.nama_lengkap || user.name || 'Pengguna';
+};
+
+// Helper function untuk mendapatkan avatar URL
+const getUserAvatarUrl = (user) => {
+  if (!user) return '';
+  
+  let avatarUrl = user.foto_profil || user.avatar || '';
+  
+  // If the URL is already absolute, return it as is
+  if (avatarUrl.startsWith('http') || avatarUrl.startsWith('https')) {
+    return avatarUrl;
+  }
+  
+  // If it's a relative path, check if it includes storage/app/public
+  // but only attach domain if the path is non-empty
+  if (avatarUrl && !avatarUrl.startsWith('/')) {
+    avatarUrl = `/${avatarUrl}`; // Ensure it starts with a slash
+  }
+  
+  return avatarUrl;
+};
+
 const categoryNames = {
   '': 'Semua Kategori',
   'general': 'Umum',
@@ -102,114 +130,140 @@ const DetailForum = () => {
     try {
       setLoadingComments(true);
       console.log('Loading comments for thread ID:', id);
+      console.log('Current user data:', user ? `ID: ${user.id || user.user_id}, Name: ${user.name || user.nama}` : 'Not logged in');
       
-      // Coba mendapatkan komentar dari API
-      const response = await api.get(`/forum-threads/${id}/comments`);
-      console.log('API response for comments:', response.data);
-      
-      // Validasi format respons
-      if (!response.data || !response.data.data) {
-        console.error('Invalid response format:', response.data);
-        setComments([]);
-        setLoadingComments(false);
-        return;
-      }
-      
-      // Ambil data komentar dari respons API
-      const commentData = response.data.data;
-      console.log('Raw comment data:', commentData);
-      
-      // Proses ke format yang dibutuhkan frontend
-      const allComments = [];
-      
-      // Proses komentar utama dan balasannya
-      commentData.forEach(comment => {
-        try {
-          // Validasi struktur data komentar untuk mencegah error
-          const isValidComment = comment && 
-                                comment.komentar_id && 
-                                comment.user_id;
-          
-          if (!isValidComment) {
-            console.warn('Skipping invalid comment data:', comment);
-            return; // Skip komentar yang tidak valid
+      try {
+        // Coba mendapatkan komentar dari API
+        const response = await api.get(`/forum-threads/${id}/comments`);
+        console.log('API response for comments:', response.data);
+        
+        // Debug data to see user fields
+        if (response.data && response.data.data && response.data.data.length > 0) {
+          const firstComment = response.data.data[0];
+          console.log('First comment user data example:', firstComment.user);
+          if (firstComment.replies && firstComment.replies.length > 0) {
+            console.log('First reply user data example:', firstComment.replies[0].user);
           }
+        }
+        
+        // Validasi format respons
+        if (!response.data || !response.data.data) {
+          console.error('Invalid response format:', response.data);
+          throw new Error('Invalid response format for comments');
+        }
+        
+        // Ambil data komentar dari respons API
+        const commentData = response.data.data;
+        console.log('Raw comment data:', commentData);
+        
+        // Proses ke format yang dibutuhkan frontend
+        const allComments = [];
+        
+        // Extract current user ID for ownership comparison
+        const currentUserId = user ? (user.id || user.user_id) : null;
+        console.log('Current user ID for comparison:', currentUserId);
+        
+        // Proses komentar utama dan balasannya
+        commentData.forEach(comment => {
+          try {
+            // Validasi struktur data komentar untuk mencegah error
+            const isValidComment = comment && 
+                              comment.komentar_id && 
+                              comment.user_id;
+            
+            if (!isValidComment) {
+              console.warn('Skipping invalid comment data:', comment);
+              return; // Skip komentar yang tidak valid
+            }
 
-          // Format komentar utama
-          const mainComment = {
-            id: comment.komentar_id,
-            user: {
-              name: comment.user ? (comment.user.nama || comment.user.name || 'Pengguna') : 'Pengguna',
-              avatar: comment.user?.foto_profil || comment.user?.avatar || ''
-            },
-            postedAt: comment.tanggal_komentar,
-            text: comment.konten,
-            parentId: null,
-            likes: comment.likes_count || 0,
-            isOwnComment: comment.user && user ? (
-              comment.user.id === user.id || 
-              comment.user.user_id === user.user_id
-            ) : false,
-            isEdited: comment.updated_at && comment.updated_at !== comment.tanggal_komentar
-          };
-          
-          // Tambahkan komentar utama ke daftar
-          allComments.push(mainComment);
-          console.log('Added valid comment:', mainComment.id, mainComment.text.substring(0, 30));
-          
-          // Proses balasan jika ada
-          if (comment.replies && Array.isArray(comment.replies) && comment.replies.length > 0) {
-            comment.replies.forEach(reply => {
-              try {
-                // Validasi data balasan
-                const isValidReply = reply && 
+            // Extract comment user ID for comparison
+            const commentUserId = comment.user ? (comment.user.id || comment.user.user_id || comment.user_id) : comment.user_id;
+            
+            // Determine ownership by direct comparison of IDs
+            const isOwned = Boolean(currentUserId && commentUserId && 
+                          (String(currentUserId) === String(commentUserId)));
+            
+            console.log(`Comment ID: ${comment.komentar_id}, Comment User ID: ${commentUserId}, Current User ID: ${currentUserId}, Is Owned: ${isOwned}`);
+
+            // Format komentar utama
+            const mainComment = {
+              id: comment.komentar_id,
+              user: {
+                id: commentUserId,
+                name: getUserDisplayName(comment.user),
+                avatar: getUserAvatarUrl(comment.user)
+              },
+              postedAt: comment.tanggal_komentar,
+              text: comment.konten,
+              parentId: null,
+              likes: comment.likes_count || 0,
+              isOwnComment: isOwned,
+              isEdited: comment.updated_at && comment.updated_at !== comment.tanggal_komentar
+            };
+            
+            // Tambahkan komentar utama ke daftar
+            allComments.push(mainComment);
+            console.log('Added valid comment:', mainComment.id, mainComment.text.substring(0, 30), `isOwnComment: ${mainComment.isOwnComment}`);
+            
+            // Proses balasan jika ada
+            if (comment.replies && Array.isArray(comment.replies) && comment.replies.length > 0) {
+              comment.replies.forEach(reply => {
+                try {
+                  // Validasi data balasan
+                  const isValidReply = reply && 
                                     reply.komentar_id &&
                                     reply.user_id;
-                
-                if (!isValidReply) {
-                  console.warn('Skipping invalid reply data:', reply);
-                  return; // Skip balasan yang tidak valid
+                  
+                  if (!isValidReply) {
+                    console.warn('Skipping invalid reply data:', reply);
+                    return; // Skip balasan yang tidak valid
+                  }
+
+                  // Extract reply user ID for comparison
+                  const replyUserId = reply.user ? (reply.user.id || reply.user.user_id || reply.user_id) : reply.user_id;
+                  
+                  // Determine reply ownership by direct comparison of IDs
+                  const isReplyOwned = Boolean(currentUserId && replyUserId && 
+                                    (String(currentUserId) === String(replyUserId)));
+                  
+                  console.log(`Reply ID: ${reply.komentar_id}, Reply User ID: ${replyUserId}, Current User ID: ${currentUserId}, Is Owned: ${isReplyOwned}`);
+                  
+                  const replyComment = {
+                    id: reply.komentar_id,
+                    user: {
+                      id: replyUserId,
+                      name: getUserDisplayName(reply.user),
+                      avatar: getUserAvatarUrl(reply.user)
+                    },
+                    postedAt: reply.tanggal_komentar,
+                    text: reply.konten,
+                    parentId: comment.komentar_id,
+                    likes: reply.likes_count || 0,
+                    isOwnComment: isReplyOwned,
+                    isEdited: reply.updated_at && reply.updated_at !== reply.tanggal_komentar
+                  };
+                  
+                  // Tambahkan balasan ke daftar
+                  allComments.push(replyComment);
+                  console.log('Added valid reply:', replyComment.id, replyComment.text.substring(0, 30), `isOwnComment: ${replyComment.isOwnComment}`);
+                } catch (replyError) {
+                  console.error('Error processing reply:', replyError, reply);
                 }
-                
-                const replyComment = {
-                  id: reply.komentar_id,
-                  user: {
-                    name: reply.user ? (reply.user.nama || reply.user.name || 'Pengguna') : 'Pengguna',
-                    avatar: reply.user?.foto_profil || reply.user?.avatar || ''
-                  },
-                  postedAt: reply.tanggal_komentar,
-                  text: reply.konten,
-                  parentId: comment.komentar_id,
-                  likes: reply.likes_count || 0,
-                  isOwnComment: reply.user && user ? (
-                    reply.user.id === user.id || 
-                    reply.user.user_id === user.user_id
-                  ) : false,
-                  isEdited: reply.updated_at && reply.updated_at !== reply.tanggal_komentar
-                };
-                
-                // Tambahkan balasan ke daftar
-                allComments.push(replyComment);
-                console.log('Added valid reply:', replyComment.id, replyComment.text.substring(0, 30));
-              } catch (replyError) {
-                console.error('Error processing reply:', replyError, reply);
-              }
-            });
+              });
+            }
+          } catch (commentError) {
+            console.error('Error processing comment:', commentError, comment);
           }
-        } catch (commentError) {
-          console.error('Error processing comment:', commentError, comment);
-        }
-      });
-      
-      console.log('Processed comments for UI:', allComments);
-      setComments(allComments);
-    } catch (error) {
-      console.error('Error loading comments:', error);
-      console.error('Error details:', error.response?.status, error.response?.data);
-      
-      // Fallback ke API publik jika terjadi error autentikasi
-      if (error.response && error.response.status === 401) {
-        try {
+        });
+        
+        console.log('Processed comments for UI:', allComments);
+        setComments(allComments);
+      } catch (error) {
+        console.error('Error loading comments:', error);
+        console.error('Error details:', error.response?.status, error.response?.data);
+        
+        // Fallback ke API publik jika terjadi error autentikasi
+        if (error.response && error.response.status === 401) {
           console.log('Attempting to load public comments');
           const publicResponse = await api.get(`/public/forum-threads/${id}/comments`);
           
@@ -219,13 +273,11 @@ const DetailForum = () => {
             setComments(publicComments);
             return;
           }
-        } catch (fallbackError) {
-          console.error('Public API fallback failed:', fallbackError);
         }
+        
+        // Default ke array kosong jika semua upaya gagal
+        setComments([]);
       }
-      
-      // Default ke array kosong jika semua upaya gagal
-      setComments([]);
     } finally {
       setLoadingComments(false);
     }
@@ -253,34 +305,33 @@ const DetailForum = () => {
         setLoadingThread(true);
         console.log('Fetching forum thread details for ID:', id);
         
-        // Coba mendapatkan thread dari API utama dulu
-        const response = await api.get(`/forum-threads/${id}`);
-        console.log('Forum thread detail response:', response.data);
-        
-        // Defensive check untuk memastikan data yang diharapkan ada
-        if (!response.data || !response.data.thread) {
-          console.error('Thread data missing or in unexpected format:', response.data);
+        try {
+          // Coba mendapatkan thread dari API utama dulu
+          const response = await api.get(`/forum-threads/${id}`);
+          console.log('Forum thread detail response:', response.data);
+          
+          // Defensive check untuk memastikan data yang diharapkan ada
+          if (!response.data || !response.data.thread) {
+            console.error('Thread data missing or in unexpected format:', response.data);
+            throw new Error('Invalid response format');
+          }
+          
+          const threadData = response.data.thread;
+          processThreadData(threadData);
+        } catch (error) {
+          console.error('Error loading thread:', error);
+          console.error('Error details:', error.response?.status, error.response?.data);
           
           // Coba API public sebagai fallback
-          try {
-            console.log('Trying public API as fallback');
-            const publicResponse = await api.get(`/public/forum-threads/${id}`);
-            if (publicResponse.data && publicResponse.data.thread) {
-              processThreadData(publicResponse.data.thread);
-              return;
-            } else {
-              throw new Error('Invalid format from public API');
-            }
-          } catch (publicError) {
-            console.error('Public API also failed:', publicError);
-            Swal.fire('Error', 'Format data thread tidak valid', 'error');
-            setThread(null);
+          console.log('Trying public API as fallback');
+          const publicResponse = await api.get(`/public/forum-threads/${id}`);
+          if (publicResponse.data && publicResponse.data.thread) {
+            processThreadData(publicResponse.data.thread);
             return;
+          } else {
+            throw new Error('Invalid format from public API');
           }
         }
-        
-        const threadData = response.data.thread;
-        processThreadData(threadData);
       } catch (error) {
         console.error('Error loading thread:', error);
         console.error('Error details:', error.response?.status, error.response?.data);
@@ -353,9 +404,9 @@ const DetailForum = () => {
       setThread({
         id: threadData.id || id,
         title: threadData.judul || 'Tanpa Judul',
-        author: threadData.user ? (threadData.user.nama || threadData.user.name || 'Pengguna') : 'Pengguna',
-        authorId: threadData.user ? threadData.user.id : null,
-        authorAvatar: threadData.user ? (threadData.user.foto_profil || threadData.user.avatar) : null,
+        author: getUserDisplayName(threadData.user),
+        authorId: threadData.user ? threadData.user.id || threadData.user.user_id : null,
+        authorAvatar: getUserAvatarUrl(threadData.user),
         authorRole: threadData.user ? threadData.user.role : null,
         authorJoinDate: threadData.user ? (threadData.user.tanggal_registrasi || threadData.user.created_at) : null,
         replies: threadData.comments_count || 0,
@@ -367,8 +418,8 @@ const DetailForum = () => {
       });
       
       console.log('Processed thread state:', {
-        author: threadData.user ? (threadData.user.nama || threadData.user.name || 'Pengguna') : 'Pengguna',
-        authorAvatar: threadData.user ? (threadData.user.foto_profil || threadData.user.avatar) : null,
+        author: getUserDisplayName(threadData.user),
+        authorAvatar: getUserAvatarUrl(threadData.user),
         authorRole: threadData.user ? threadData.user.role : null
       });
     };
@@ -379,32 +430,60 @@ const DetailForum = () => {
       
       const processedComments = [];
       
+      // Extract current user ID for ownership comparison
+      const currentUserId = user ? (user.id || user.user_id) : null;
+      console.log('Current user ID for public comments comparison:', currentUserId);
+      
       commentsData.forEach(comment => {
+        // Extract comment user ID for comparison
+        const commentUserId = comment.user ? (comment.user.id || comment.user.user_id || comment.user_id) : comment.user_id;
+        
+        // Determine ownership by direct comparison of IDs
+        const isOwned = Boolean(currentUserId && commentUserId && 
+                      (String(currentUserId) === String(commentUserId)));
+                      
+        console.log(`Public comment ID: ${comment.id || comment.komentar_id}, User ID: ${commentUserId}, Current User ID: ${currentUserId}, Is Owned: ${isOwned}`);
+        
         processedComments.push({
           id: comment.id || comment.komentar_id,
           user: {
-            name: comment.user ? (comment.user.nama || comment.user.name || 'Pengguna') : 'Pengguna',
-            avatar: comment.user?.foto_profil || comment.user?.avatar || ''
+            id: commentUserId,
+            name: getUserDisplayName(comment.user),
+            avatar: getUserAvatarUrl(comment.user)
           },
           postedAt: comment.tanggal_komentar,
           text: comment.konten,
           parentId: comment.parent_komentar_id,
-          likes: comment.likes_count || 0
+          likes: comment.likes_count || 0,
+          isOwnComment: isOwned,
+          isEdited: comment.updated_at && comment.updated_at !== comment.tanggal_komentar
         });
         
         // Proses balasan jika ada dalam format API publik
         if (comment.replies && Array.isArray(comment.replies)) {
           comment.replies.forEach(reply => {
+            // Extract reply user ID for comparison
+            const replyUserId = reply.user ? (reply.user.id || reply.user.user_id || reply.user_id) : reply.user_id;
+            
+            // Determine reply ownership by direct comparison of IDs
+            const isReplyOwned = Boolean(currentUserId && replyUserId && 
+                              (String(currentUserId) === String(replyUserId)));
+                              
+            console.log(`Public reply ID: ${reply.id || reply.komentar_id}, User ID: ${replyUserId}, Current User ID: ${currentUserId}, Is Owned: ${isReplyOwned}`);
+            
             processedComments.push({
               id: reply.id || reply.komentar_id,
               user: {
-                name: reply.user ? (reply.user.nama || reply.user.name || 'Pengguna') : 'Pengguna',
-                avatar: reply.user?.foto_profil || reply.user?.avatar || ''
+                id: replyUserId,
+                name: getUserDisplayName(reply.user),
+                avatar: getUserAvatarUrl(reply.user)
               },
               postedAt: reply.tanggal_komentar,
               text: reply.konten,
               parentId: comment.id || comment.komentar_id,
-              likes: reply.likes_count || 0
+              likes: reply.likes_count || 0,
+              isOwnComment: isReplyOwned,
+              isEdited: reply.updated_at && reply.updated_at !== reply.tanggal_komentar
             });
           });
         }
@@ -528,6 +607,13 @@ const DetailForum = () => {
       // ini untuk memastikan komentar yang baru ditambahkan benar-benar tersimpan dan dapat ditampilkan
       await loadComments();
       
+      // Update thread replies count
+      if (thread) {
+        setThread(prevThread => ({
+          ...prevThread,
+          replies: (prevThread.replies || 0) + 1
+        }));
+      }
     } catch (error) {
       console.error('Error posting comment:', error);
       console.error('Error response status:', error.response?.status);
@@ -624,6 +710,14 @@ const DetailForum = () => {
       // Selalu muat ulang komentar setelah menambah balasan
       await loadComments();
       
+      // Update thread replies count
+      if (thread) {
+        setThread(prevThread => ({
+          ...prevThread,
+          replies: (prevThread.replies || 0) + 1
+        }));
+      }
+      
       // Pastikan balasan yang baru ditambahkan terlihat
       setVisibleReplies((prev) => ({
         ...prev,
@@ -700,10 +794,25 @@ const DetailForum = () => {
       return;
     }
 
+    // Find the comment to check ownership
+    const commentToDelete = comments.find(c => c.id === commentId);
+    if (!commentToDelete) {
+      console.error('Comment not found:', commentId);
+      Swal.fire('Error', 'Komentar tidak ditemukan', 'error');
+      return;
+    }
+    
+    // Verify ownership - extra safety check
+    if (!commentToDelete.isOwnComment) {
+      console.error('Cannot delete comment - not the owner:', commentId);
+      Swal.fire('Error', 'Anda hanya dapat menghapus komentar milik Anda sendiri', 'error');
+      return;
+    }
+
     // Confirm deletion
     const result = await Swal.fire({
       title: 'Hapus Komentar',
-      text: 'Apakah Anda yakin ingin menghapus komentar ini?',
+      text: 'Apakah Anda yakin ingin menghapus komentar ini? Tindakan ini tidak dapat dibatalkan.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#d33',
@@ -730,13 +839,41 @@ const DetailForum = () => {
           return;
         }
         
-        // Lakukan API call untuk menghapus komentar
+        // Hitung jumlah item yang akan dihapus (komentar + balasannya)
+        const isParentComment = !commentToDelete.parentId;
+        let totalToDelete = 1; // Komentar itu sendiri
+        
+        // Jika komentar utama, tambahkan jumlah balasan yang akan dihapus
+        if (isParentComment) {
+          const replies = comments.filter(c => c.parentId === commentId);
+          totalToDelete += replies.length;
+        }
+        
+        // Tampilkan loading state
+        Swal.fire({
+          title: 'Menghapus Komentar',
+          text: 'Mohon tunggu...',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+        
+        // Lakukan API call untuk menghapus komentar dengan timeout yang lebih panjang
         const response = await api.delete(`/forum-threads/${id}/comments/${commentId}`);
         console.log('Respon penghapusan komentar:', response.data);
         
         // Daripada memanipulasi state, lebih baik memuat ulang semua komentar
         // untuk memastikan konsistensi data
         await loadComments();
+        
+        // Update thread replies count
+        if (thread) {
+          setThread(prevThread => ({
+            ...prevThread,
+            replies: Math.max(0, (prevThread.replies || 0) - totalToDelete)
+          }));
+        }
         
         Swal.fire(
           'Terhapus!',
@@ -753,12 +890,20 @@ const DetailForum = () => {
           console.error('Error data:', error.response.data);
           
           if (error.response.status === 403) {
-            errorMessage = 'Anda tidak memiliki izin untuk menghapus komentar ini.';
+            errorMessage = 'Anda tidak dapat menghapus komentar milik pengguna lain.';
           } else if (error.response.status === 404) {
             errorMessage = 'Komentar tidak ditemukan. Mungkin sudah dihapus sebelumnya.';
           } else if (error.response.status === 500) {
             errorMessage = 'Terjadi kesalahan pada server. Silakan coba lagi nanti.';
+          } else if (error.response.status === 408 || error.code === 'ECONNABORTED') {
+            errorMessage = 'Waktu permintaan habis. Server mungkin sedang sibuk, silakan coba lagi.';
+          } else if (error.response.status === 0) {
+            errorMessage = 'Gangguan koneksi. Pastikan internet Anda aktif dan coba lagi.';
           }
+        } else if (error.code === 'ECONNABORTED') {
+          errorMessage = 'Waktu permintaan habis. Server mungkin sedang sibuk, silakan coba lagi.';
+        } else if (error.message && error.message.includes('Network Error')) {
+          errorMessage = 'Gangguan koneksi. Pastikan internet Anda aktif dan coba lagi.';
         }
         
         Swal.fire(
@@ -766,6 +911,14 @@ const DetailForum = () => {
           errorMessage,
           'error'
         );
+        
+        // Muat ulang komentar untuk jaga-jaga jika server berhasil menghapus
+        // tapi respons tidak dapat diterima klien
+        try {
+          await loadComments();
+        } catch (refreshError) {
+          console.error('Error refreshing comments after failed delete:', refreshError);
+        }
       }
     }
   };
@@ -790,6 +943,19 @@ const DetailForum = () => {
   const hasMoreComments = sortedRootComments.length > visibleCommentsCount;
 
   const getReplies = (commentId) => comments.filter((c) => c.parentId === commentId);
+  
+  // Calculate total comments (root comments + replies)
+  const totalComments = comments.length;
+
+  // Update thread replies count when comments change
+  useEffect(() => {
+    if (thread && totalComments !== thread.replies) {
+      setThread(prevThread => ({
+        ...prevThread,
+        replies: totalComments
+      }));
+    }
+  }, [totalComments]);
 
   // Fungsi untuk memulai balasan dengan menyimpan username
   const handleStartReply = (commentId, username) => {
@@ -806,12 +972,46 @@ const DetailForum = () => {
       return;
     }
     
+    // Find the comment to check ownership
+    const commentToEdit = comments.find(c => c.id === commentId);
+    if (!commentToEdit) {
+      console.error('Comment not found:', commentId);
+      Swal.fire('Error', 'Komentar tidak ditemukan', 'error');
+      return;
+    }
+    
+    // Verify ownership - extra safety check
+    if (!commentToEdit.isOwnComment) {
+      console.error('Cannot edit comment - not the owner:', commentId);
+      Swal.fire('Error', 'Anda hanya dapat mengedit komentar milik Anda sendiri', 'error');
+      return;
+    }
+    
     setEditingCommentId(commentId);
     setEditText(commentText);
   };
   
   const handleSaveEdit = async (commentId) => {
     if (!editText.trim()) return;
+    
+    // Find the comment to check ownership
+    const commentToSave = comments.find(c => c.id === commentId);
+    if (!commentToSave) {
+      console.error('Comment not found:', commentId);
+      Swal.fire('Error', 'Komentar tidak ditemukan', 'error');
+      setEditingCommentId(null);
+      setEditText('');
+      return;
+    }
+    
+    // Verify ownership - extra safety check
+    if (!commentToSave.isOwnComment) {
+      console.error('Cannot save edit - not the owner:', commentId);
+      Swal.fire('Error', 'Anda hanya dapat mengedit komentar milik Anda sendiri', 'error');
+      setEditingCommentId(null);
+      setEditText('');
+      return;
+    }
     
     try {
       await api.put(
@@ -1023,7 +1223,7 @@ const DetailForum = () => {
                 </Box>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 2 }}>
                   <Typography variant="body2" color="text.secondary" sx={{ mr: 2, display: 'flex', alignItems: 'center' }}>
-                    <ForumIcon fontSize="small" sx={{ mr: 0.5 }} /> {thread.replies} balasan
+                    <ForumIcon fontSize="small" sx={{ mr: 0.5 }} /> {thread.replies} komentar
                   </Typography>
 
                   <Typography variant="body2" color="text.secondary" sx={{ mr: 2, display: 'flex', alignItems: 'center' }}>

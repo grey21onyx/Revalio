@@ -54,6 +54,7 @@ const FormNewTopic = () => {
   const [tags, setTags] = useState([]);
   const [content, setContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [tagInput, setTagInput] = useState('');
 
   // Hanya cleanup saat unmount
   useEffect(() => {
@@ -61,6 +62,55 @@ const FormNewTopic = () => {
       Swal.close();
     };
   }, []);
+
+  // Function to handle adding a new tag
+  const addTag = (value) => {
+    value = value.trim();
+    if (!value) return;
+    
+    // Convert to lowercase for consistency
+    value = value.toLowerCase();
+    
+    // Don't add duplicate tags (case-insensitive)
+    if (tags.some(tag => tag.toLowerCase() === value)) return;
+    
+    // Add the tag to the list
+    setTags([...tags, value]);
+    
+    // Clear input
+    setTagInput('');
+  };
+
+  // Handle tag input keydown events
+  const handleTagInputKeyDown = (e) => {
+    // If space or comma key is pressed, add current input as tag
+    if ((e.key === ' ' || e.key === ',') && tagInput.trim()) {
+      e.preventDefault(); // Prevent adding a space or comma
+      addTag(tagInput);
+    }
+  };
+  
+  // Handle tag input change
+  const handleTagInputChange = (e, value) => {
+    // Handle pasting text that contains commas
+    if (value.includes(',')) {
+      const parts = value.split(',');
+      // Add completed parts as tags
+      for (let i = 0; i < parts.length - 1; i++) {
+        const part = parts[i].trim();
+        if (part) addTag(part);
+      }
+      // Set the last part as current input
+      setTagInput(parts[parts.length - 1]);
+    } else {
+      setTagInput(value);
+    }
+  };
+
+  // Handle tag deletion or changes from Autocomplete
+  const handleTagsChange = (event, newTags) => {
+    setTags(newTags);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -112,11 +162,28 @@ const FormNewTopic = () => {
       return;
     }
 
+    // Add any pending tag input before submitting
+    let finalTags = [...tags];
+    if (tagInput.trim()) {
+      const cleanTag = tagInput.trim().toLowerCase();
+      if (cleanTag && !finalTags.some(tag => tag.toLowerCase() === cleanTag)) {
+        finalTags.push(cleanTag);
+      }
+      setTagInput('');
+    }
+
+    // Remove any duplicates and empty tags for extra safety
+    finalTags = finalTags
+      .map(tag => tag.trim().toLowerCase())
+      .filter((tag, index, self) => 
+        tag && self.indexOf(tag) === index
+      );
+
     setSubmitting(true);
 
     try {
       // Format tags menjadi string untuk API
-      const tagsString = tags.join(',');
+      const tagsString = finalTags.join(',');
       
       // Debug informasi user dan token
       console.log('User authenticated:', isAuthenticated);
@@ -256,7 +323,15 @@ const FormNewTopic = () => {
               freeSolo
               options={[]}
               value={tags}
-              onChange={(event, newValue) => setTags(newValue)}
+              inputValue={tagInput}
+              onChange={handleTagsChange}
+              onInputChange={handleTagInputChange}
+              onKeyDown={handleTagInputKeyDown}
+              onBlur={() => {
+                if (tagInput.trim()) {
+                  addTag(tagInput);
+                }
+              }}
               renderTags={(value, getTagProps) =>
                 value.map((option, index) => (
                   <Chip
@@ -271,10 +346,11 @@ const FormNewTopic = () => {
               renderInput={(params) => (
                 <TextField
                   {...params}
-                  label="Tags (pisahkan dengan koma)"
-                  placeholder="Tambahkan tag"
+                  label="Tags"
+                  placeholder="Ketik dan tekan spasi untuk menambah tag"
                   margin="normal"
                   disabled={submitting}
+                  helperText="Tag akan otomatis ditambahkan saat menekan spasi atau koma"
                 />
               )}
             />

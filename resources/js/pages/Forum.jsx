@@ -11,10 +11,16 @@ import {
   Chip, 
   Stack,
   CircularProgress,
-  Avatar
+  Avatar,
+  IconButton,
+  Divider,
+  Pagination
 } from '@mui/material';
 import ForumIcon from '@mui/icons-material/Forum';
 import SearchIcon from '@mui/icons-material/Search';
+import DeleteIcon from '@mui/icons-material/Delete';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import SortIcon from '@mui/icons-material/Sort';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import api from '../services/api';
@@ -64,9 +70,9 @@ class ErrorBoundary extends React.Component {
 
 const Forum = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
-  // State for forum threads, categories, filters, and search
+  // State for all tabs
   const [threads, setThreads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -76,10 +82,31 @@ const Forum = () => {
     { id: 'tips', name: 'Tips & Trik' },
     { id: 'recycling', name: 'Daur Ulang' },
   ]);
+  
+  // State untuk tab "Semua Diskusi"
   const [selectedCategory, setSelectedCategory] = useState('');
   const [sortOption, setSortOption] = useState('latest'); // 'latest' or 'popular'
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredThreads, setFilteredThreads] = useState([]);
+  const [allThreadsPage, setAllThreadsPage] = useState(1);
+  const ITEMS_PER_PAGE = 5;
+  
+  // State untuk tab "Diskusi Saya"
+  const [myThreads, setMyThreads] = useState([]);
+  const [myThreadsCategory, setMyThreadsCategory] = useState('');
+  const [myThreadsSortOption, setMyThreadsSortOption] = useState('latest');
+  const [filteredMyThreads, setFilteredMyThreads] = useState([]);
+  const [myThreadsPage, setMyThreadsPage] = useState(1);
+  
+  // State untuk tab "Komentar Saya"
+  const [myComments, setMyComments] = useState([]);
+  const [myCommentsCategory, setMyCommentsCategory] = useState('');
+  const [myCommentsSortOption, setMyCommentsSortOption] = useState('latest');
+  const [filteredMyComments, setFilteredMyComments] = useState([]);
+  const [myCommentsPage, setMyCommentsPage] = useState(1);
+  
+  const [activeTab, setActiveTab] = useState('all'); // 'all', 'myThreads', 'myComments'
+  const [loadingMyData, setLoadingMyData] = useState(false);
 
   // Fetch threads from API
   useEffect(() => {
@@ -114,8 +141,8 @@ const Forum = () => {
         
         // Format data dari API ke format yang digunakan di frontend
         const formattedThreads = response.data.data.map(thread => {
-          // Log setiap thread untuk debugging
-          console.log('Processing thread:', thread.id, thread.judul, 'User:', thread.user);
+          // Log detail komentar untuk debugging
+          console.log(`Thread ${thread.id}: ${thread.judul} - Comments count:`, thread.comments_count);
           
           return {
             id: thread.id,
@@ -129,7 +156,7 @@ const Forum = () => {
           };
         });
         
-        console.log('Formatted threads:', formattedThreads);
+        console.log('Formatted threads with comment counts:', formattedThreads.map(t => ({ id: t.id, title: t.title, replies: t.replies })));
         setThreads(formattedThreads);
         setFilteredThreads(formattedThreads);
       } catch (err) {
@@ -169,16 +196,270 @@ const Forum = () => {
     }
   };
 
+  // Pagination handlers
+  const handleAllThreadsPageChange = (event, value) => {
+    setAllThreadsPage(value);
+  };
+
+  const handleMyThreadsPageChange = (event, value) => {
+    setMyThreadsPage(value);
+  };
+
+  const handleMyCommentsPageChange = (event, value) => {
+    setMyCommentsPage(value);
+  };
+
+  // Handle category change untuk setiap tab
   const handleCategoryChange = (e) => {
     setSelectedCategory(e.target.value);
+    setAllThreadsPage(1); // Reset pagination when filter changes
   };
 
+  const handleMyThreadsCategoryChange = (e) => {
+    setMyThreadsCategory(e.target.value);
+    filterMyThreads(myThreads, e.target.value, myThreadsSortOption);
+    setMyThreadsPage(1); // Reset pagination when filter changes
+  };
+
+  const handleMyCommentsCategoryChange = (e) => {
+    setMyCommentsCategory(e.target.value);
+    filterMyComments(myComments, e.target.value, myCommentsSortOption);
+    setMyCommentsPage(1); // Reset pagination when filter changes
+  };
+
+  // Handle sort option change untuk setiap tab
   const handleSortChange = (e) => {
     setSortOption(e.target.value);
+    setAllThreadsPage(1); // Reset pagination when filter changes
   };
 
+  const handleMyThreadsSortChange = (e) => {
+    const newSortOption = e.target.value;
+    setMyThreadsSortOption(newSortOption);
+    filterMyThreads(myThreads, myThreadsCategory, newSortOption);
+    setMyThreadsPage(1); // Reset pagination when filter changes
+  };
+
+  const handleMyCommentsSortChange = (e) => {
+    const newSortOption = e.target.value;
+    setMyCommentsSortOption(newSortOption);
+    filterMyComments(myComments, myCommentsCategory, newSortOption);
+    setMyCommentsPage(1); // Reset pagination when filter changes
+  };
+
+  // Handle search change
   const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);
+    setAllThreadsPage(1); // Reset pagination when filter changes
+  };
+
+  // Function untuk filter diskusi saya
+  const filterMyThreads = (threads, category, sortOpt) => {
+    let filtered = [...threads];
+    
+    // Apply category filter
+    if (category) {
+      filtered = filtered.filter(thread => {
+        const threadCategory = getCategoryFromTags(thread.tags);
+        return threadCategory === category;
+      });
+    }
+    
+    // Apply sorting
+    if (sortOpt === 'latest') {
+      filtered.sort((a, b) => new Date(b.lastPost) - new Date(a.lastPost));
+    } else if (sortOpt === 'popular') {
+      filtered.sort((a, b) => b.replies - a.replies);
+    }
+    
+    setFilteredMyThreads(filtered);
+    setMyThreadsPage(1); // Reset to first page when filter changes
+  };
+
+  // Function untuk filter komentar saya
+  const filterMyComments = (comments, category, sortOpt) => {
+    let filtered = [...comments];
+    
+    // Apply category filter
+    if (category) {
+      filtered = filtered.filter(comment => {
+        return comment.category === category;
+      });
+    }
+    
+    // Apply sorting
+    if (sortOpt === 'latest') {
+      filtered.sort((a, b) => new Date(b.postedAt) - new Date(a.postedAt));
+    } else if (sortOpt === 'popular') {
+      // Sort berdasarkan length komentar sebagai proxy untuk popularitas
+      filtered.sort((a, b) => b.text.length - a.text.length);
+    }
+    
+    setFilteredMyComments(filtered);
+    setMyCommentsPage(1); // Reset to first page when filter changes
+  };
+
+  // Calculate paginated items
+  const getPaginatedThreads = (threads, page) => {
+    const startIndex = (page - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return threads.slice(startIndex, endIndex);
+  };
+
+  // Calculate total pages
+  const getTotalPages = (itemsCount) => {
+    return Math.ceil(itemsCount / ITEMS_PER_PAGE);
+  };
+
+  // Handle tab change
+  const handleTabChange = (tabValue) => {
+    // Jika tab yang sama diklik lagi, refresh data
+    const isTabChange = activeTab !== tabValue;
+    setActiveTab(tabValue);
+    
+    if (isAuthenticated) {
+      // Always refresh the data when switching tabs or clicking the same tab again
+      if (tabValue === 'myThreads') {
+        fetchMyThreads();
+        setMyThreadsPage(1); // Reset to first page when changing tabs
+      } else if (tabValue === 'myComments') {
+        fetchMyComments();
+        setMyCommentsPage(1); // Reset to first page when changing tabs
+      }
+    }
+    
+    // For "All Discussions" tab, trigger data refresh
+    if (tabValue === 'all') {
+      // Reset pagination
+      setAllThreadsPage(1);
+      
+      // Reset search and filter params when coming from other tabs
+      if (isTabChange) {
+        setSelectedCategory('');
+        setSortOption('latest');
+        setSearchQuery('');
+      } else {
+        // Jika tab yang sama diklik lagi, trigger refresh dengan parameter yang sama
+        const endpoint = sortOption === 'popular' 
+          ? '/public/forum-threads/popular'
+          : '/public/forum-threads';
+        
+        setLoading(true);
+        
+        // Panggil API dengan parameter yang ada
+        let params = {};
+        if (searchQuery) {
+          params.search = searchQuery;
+        }
+        if (selectedCategory) {
+          params.tags = selectedCategory;
+        }
+        
+        api.get(endpoint, { params })
+          .then(response => {
+            if (response.data && Array.isArray(response.data.data)) {
+              const formattedThreads = response.data.data.map(thread => ({
+                id: thread.id,
+                title: thread.judul || 'Tanpa Judul',
+                author: thread.user ? (thread.user.nama || thread.user.name || 'Pengguna') : 'Pengguna',
+                replies: thread.comments_count || 0,
+                lastPost: thread.tanggal_posting || new Date().toISOString(),
+                category: getCategoryFromTags(thread.tags),
+                tags: thread.tags ? thread.tags.split(',').filter(tag => tag.trim()) : [],
+                avatar: thread.user ? thread.user.foto_profil || thread.user.avatar : null,
+              }));
+              setThreads(formattedThreads);
+              setFilteredThreads(formattedThreads);
+            }
+          })
+          .catch(err => {
+            console.error('Error refreshing threads:', err);
+            setError('Gagal memuat ulang data forum');
+          })
+          .finally(() => {
+            setLoading(false);
+          });
+      }
+    }
+  };
+  
+  // Fetch threads created by the authenticated user
+  const fetchMyThreads = async () => {
+    if (!isAuthenticated || !user) return;
+    
+    try {
+      setLoadingMyData(true);
+      const response = await api.get('/forum-threads/my-threads');
+      
+      if (response.data && Array.isArray(response.data.data)) {
+        const formattedThreads = response.data.data.map(thread => ({
+          id: thread.id,
+          title: thread.judul || 'Tanpa Judul',
+          author: thread.user ? (thread.user.nama || thread.user.nama_lengkap || thread.user.name || 'Pengguna') : 'Pengguna',
+          replies: thread.comments_count || 0,
+          lastPost: thread.tanggal_posting || new Date().toISOString(),
+          category: getCategoryFromTags(thread.tags),
+          tags: thread.tags ? thread.tags.split(',').filter(tag => tag.trim()) : [],
+          avatar: thread.user ? thread.user.foto_profil || thread.user.avatar : null,
+        }));
+        
+        setMyThreads(formattedThreads);
+        // Apply current filter ke data baru
+        filterMyThreads(formattedThreads, myThreadsCategory, myThreadsSortOption);
+      } else {
+        // Set empty array if no data
+        setMyThreads([]);
+        setFilteredMyThreads([]);
+      }
+    } catch (error) {
+      console.error('Error fetching my threads:', error);
+      Swal.fire('Error', 'Gagal mengambil data diskusi Anda', 'error');
+      // Set empty arrays on error
+      setMyThreads([]);
+      setFilteredMyThreads([]);
+    } finally {
+      setLoadingMyData(false);
+    }
+  };
+  
+  // Fetch comments posted by the authenticated user
+  const fetchMyComments = async () => {
+    if (!isAuthenticated || !user) return;
+    
+    try {
+      setLoadingMyData(true);
+      const response = await api.get('/forum-threads/my-comments');
+      
+      if (response.data && Array.isArray(response.data.data)) {
+        const formattedComments = response.data.data.map(comment => ({
+          id: comment.komentar_id,
+          threadId: comment.thread_id,
+          threadTitle: comment.thread ? comment.thread.judul : 'Tidak diketahui',
+          text: comment.konten,
+          postedAt: comment.tanggal_komentar,
+          parentCommentId: comment.parent_komentar_id,
+          tags: comment.thread && comment.thread.tags ? 
+                comment.thread.tags.split(',').filter(tag => tag.trim()) : [],
+          category: comment.thread ? getCategoryFromTags(comment.thread.tags) : 'Umum',
+        }));
+        
+        setMyComments(formattedComments);
+        // Apply current filter ke data baru
+        filterMyComments(formattedComments, myCommentsCategory, myCommentsSortOption);
+      } else {
+        // Set empty array if no data
+        setMyComments([]);
+        setFilteredMyComments([]);
+      }
+    } catch (error) {
+      console.error('Error fetching my comments:', error);
+      Swal.fire('Error', 'Gagal mengambil data komentar Anda', 'error');
+      // Set empty arrays on error
+      setMyComments([]);
+      setFilteredMyComments([]);
+    } finally {
+      setLoadingMyData(false);
+    }
   };
 
   const handleCreateThread = () => {
@@ -206,6 +487,93 @@ const Forum = () => {
     } catch (error) {
       console.error('Navigation error:', error);
       Swal.fire('Error', 'Gagal membuka detail thread', 'error');
+    }
+  };
+
+  // Handle thread deletion
+  const handleDeleteThread = async (e, threadId) => {
+    e.stopPropagation(); // Prevent navigating to the thread when clicking delete button
+    
+    // Confirm deletion with user
+    const result = await Swal.fire({
+      title: 'Hapus Diskusi',
+      text: 'Apakah Anda yakin ingin menghapus diskusi ini? Tindakan ini tidak dapat dibatalkan.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Ya, Hapus',
+      cancelButtonText: 'Batal'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        // Tampilkan loading state
+        Swal.fire({
+          title: 'Menghapus Diskusi',
+          text: 'Mohon tunggu...',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+        
+        setLoadingMyData(true);
+        console.log(`Menghapus thread dengan ID: ${threadId}`);
+        
+        // Call API to delete the thread
+        const response = await api.delete(`/forum-threads/${threadId}`);
+        console.log('API response:', response.data);
+        
+        // Remove thread from both state arrays
+        const updatedThreads = myThreads.filter(thread => thread.id !== threadId);
+        setMyThreads(updatedThreads);
+        setFilteredMyThreads(filteredMyThreads.filter(thread => thread.id !== threadId));
+        
+        // Force refresh data to ensure consistency
+        fetchMyThreads();
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Terhapus!',
+          text: 'Diskusi berhasil dihapus.',
+          timer: 2000,
+          showConfirmButton: false
+        });
+      } catch (error) {
+        console.error('Error deleting thread:', error);
+        
+        let errorMessage = 'Gagal menghapus diskusi. Silakan coba lagi nanti.';
+        let errorDetails = '';
+        
+        if (error.response) {
+          console.error('API response error:', error.response.status, error.response.data);
+          
+          if (error.response.status === 403) {
+            errorMessage = 'Anda tidak memiliki izin untuk menghapus diskusi ini.';
+          } else if (error.response.status === 404) {
+            errorMessage = 'Diskusi tidak ditemukan atau sudah dihapus sebelumnya.';
+          } else if (error.response.status === 500) {
+            errorMessage = 'Terjadi kesalahan pada server saat menghapus diskusi.';
+            if (error.response.data && error.response.data.error) {
+              errorDetails = `Detail error: ${error.response.data.error}`;
+            }
+          }
+        }
+        
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: errorMessage,
+          footer: errorDetails,
+          confirmButtonText: 'Tutup'
+        });
+        
+        // Refresh data untuk memastikan tampilan UI konsisten
+        await fetchMyThreads();
+      } finally {
+        setLoadingMyData(false);
+      }
     }
   };
 
@@ -252,119 +620,582 @@ const Forum = () => {
               Temukan dan diskusikan berbagai topik terkait pengelolaan sampah dan daur ulang.
             </Typography>
           </Box>
-
-          {/* Filter and Search Panel */}
-          <Paper sx={{ p: 3, mb: 4, display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-            <TextField
-              select
-              label="Kategori"
-              value={selectedCategory}
-              onChange={handleCategoryChange}
-              sx={{ minWidth: 180 }}
-              size="small"
+          
+          {/* Sub-menu tabs */}
+          <Box sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}>
+            <Stack 
+              direction="row" 
+              spacing={{ xs: 1, sm: 2 }}
+              sx={{ overflowX: 'auto', pb: 1 }}
             >
-              {categories.map(cat => (
-                <MenuItem key={cat.id} value={cat.id}>
-                  {cat.name}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <TextField
-              select
-              label="Urutkan"
-              value={sortOption}
-              onChange={handleSortChange}
-              sx={{ minWidth: 140 }}
-              size="small"
-            >
-              <MenuItem value="latest">Terbaru</MenuItem>
-              <MenuItem value="popular">Terpopuler</MenuItem>
-            </TextField>
-
-            <TextField
-              label="Cari topik..."
-              value={searchQuery}
-              onChange={handleSearchChange}
-              size="small"
-              sx={{ flexGrow: 1, minWidth: 200 }}
-              InputProps={{
-                startAdornment: <SearchIcon sx={{ mr: 1, color: 'action.active' }} />
-              }}
-            />
-
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleCreateThread}
-              sx={{ whiteSpace: 'nowrap' }}
-            >
-              Buat Topik Baru
-            </Button>
-          </Paper>
-
-          {/* Threads List */}
-          {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-              <CircularProgress />
-            </Box>
-          ) : error ? (
-            <Box sx={{ textAlign: 'center', py: 8 }}>
-              <Typography color="error">{error}</Typography>
               <Button 
-                variant="outlined" 
-                sx={{ mt: 2 }}
-                onClick={() => window.location.reload()}
+                variant={activeTab === 'all' ? "contained" : "text"}
+                onClick={() => handleTabChange('all')}
+                sx={{ 
+                  px: 3,
+                  py: 1,
+                  borderRadius: 2,
+                  fontWeight: activeTab === 'all' ? 700 : 500,
+                  color: activeTab === 'all' ? 'white' : 'text.primary',
+                  backgroundColor: activeTab === 'all' ? 'primary.main' : 'transparent',
+                  '&:hover': {
+                    backgroundColor: activeTab === 'all' ? 'primary.dark' : 'action.hover',
+                  }
+                }}
               >
-                Coba Lagi
+                Semua Diskusi
               </Button>
-            </Box>
-          ) : filteredThreads.length === 0 ? (
-            <Typography variant="body1" color="text.secondary" align="center" sx={{ mt: 6 }}>
-              Tidak ada topik yang ditemukan.
-            </Typography>
-          ) : (
-            <Grid container spacing={3}>
-              {filteredThreads.map(thread => (
-                <Grid item xs={12} key={thread.id}>
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: 3,
-                      cursor: 'pointer',
-                      borderRadius: '12px',
-                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                      '&:hover': { 
-                        backgroundColor: 'grey.100',
-                        transform: 'translateY(-6px)',
-                        boxShadow: '0 8px 16px rgba(0,0,0,0.08)'
-                      },
-                      border: '1px solid',
-                      borderColor: 'grey.200',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+              
+              {isAuthenticated && (
+                <>
+                  <Button 
+                    variant={activeTab === 'myThreads' ? "contained" : "text"}
+                    onClick={() => handleTabChange('myThreads')}
+                    sx={{ 
+                      px: 3,
+                      py: 1,
+                      borderRadius: 2,
+                      fontWeight: activeTab === 'myThreads' ? 700 : 500,
+                      color: activeTab === 'myThreads' ? 'white' : 'text.primary',
+                      backgroundColor: activeTab === 'myThreads' ? 'primary.main' : 'transparent',
+                      '&:hover': {
+                        backgroundColor: activeTab === 'myThreads' ? 'primary.dark' : 'action.hover',
+                      }
                     }}
-                    onClick={() => handleThreadClick(thread.id)}
                   >
-                    <Typography variant="h6" color="primary" gutterBottom>
-                      {thread.title}
-                    </Typography>
-                    <Stack direction="row" spacing={2} flexWrap="wrap" sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>
-                      <Typography>Oleh: {thread.author || 'Pengguna'}</Typography>
-                      <Typography>{thread.replies} balasan</Typography>
-                      <Typography>Terakhir: {formatDateTime(thread.lastPost)}</Typography>
-                      <Typography sx={{ textTransform: 'capitalize' }}>Kategori: {thread.category}</Typography>
-                    </Stack>
-                    {thread.tags && thread.tags.length > 0 && (
-                      <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap' }}>
-                        {thread.tags.map((tag, idx) => (
-                          <Chip key={idx} label={`#${tag}`} size="small" color="primary" sx={{ borderRadius: '8px' }} />
-                        ))}
-                      </Stack>
-                    )}
-                  </Paper>
-                </Grid>
-              ))}
-            </Grid>
+                    Diskusi Saya
+                  </Button>
+                  
+                  <Button 
+                    variant={activeTab === 'myComments' ? "contained" : "text"}
+                    onClick={() => handleTabChange('myComments')}
+                    sx={{ 
+                      px: 3,
+                      py: 1,
+                      borderRadius: 2,
+                      fontWeight: activeTab === 'myComments' ? 700 : 500,
+                      color: activeTab === 'myComments' ? 'white' : 'text.primary',
+                      backgroundColor: activeTab === 'myComments' ? 'primary.main' : 'transparent',
+                      '&:hover': {
+                        backgroundColor: activeTab === 'myComments' ? 'primary.dark' : 'action.hover',
+                      }
+                    }}
+                  >
+                    Komentar Saya
+                  </Button>
+                </>
+              )}
+            </Stack>
+          </Box>
+
+          {/* Filter and Search Panel - Only show on "all" tab */}
+          {activeTab === 'all' && (
+            <Paper sx={{ p: 3, mb: 4, display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+              <TextField
+                select
+                label="Kategori"
+                value={selectedCategory}
+                onChange={handleCategoryChange}
+                sx={{ minWidth: 180 }}
+                size="small"
+              >
+                {categories.map(cat => (
+                  <MenuItem key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+
+              <TextField
+                select
+                label="Urutkan"
+                value={sortOption}
+                onChange={handleSortChange}
+                sx={{ minWidth: 140 }}
+                size="small"
+              >
+                <MenuItem value="latest">Terbaru</MenuItem>
+                <MenuItem value="popular">Terpopuler</MenuItem>
+              </TextField>
+
+              <TextField
+                label="Cari topik..."
+                value={searchQuery}
+                onChange={handleSearchChange}
+                size="small"
+                sx={{ flexGrow: 1, minWidth: 200 }}
+                InputProps={{
+                  startAdornment: <SearchIcon sx={{ mr: 1, color: 'action.active' }} />
+                }}
+              />
+
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleCreateThread}
+                sx={{ whiteSpace: 'nowrap' }}
+              >
+                Buat Topik Baru
+              </Button>
+            </Paper>
+          )}
+          
+          {/* Filter Panel untuk My Threads Tab */}
+          {activeTab === 'myThreads' && isAuthenticated && (
+            <Paper sx={{ p: 3, mb: 4 }}>
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', gap: 2 }}>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+                  <TextField
+                    select
+                    label="Kategori"
+                    value={myThreadsCategory}
+                    onChange={handleMyThreadsCategoryChange}
+                    sx={{ minWidth: 180 }}
+                    size="small"
+                    InputProps={{
+                      startAdornment: <FilterListIcon fontSize="small" sx={{ mr: 1, color: 'action.active' }} />
+                    }}
+                  >
+                    {[
+                      { id: '', name: 'Semua Kategori' },
+                      { id: 'Umum', name: 'Umum' },
+                      { id: 'Tips & Trik', name: 'Tips & Trik' },
+                      { id: 'Daur Ulang', name: 'Daur Ulang' }
+                    ].map(cat => (
+                      <MenuItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+
+                  <TextField
+                    select
+                    label="Urutkan"
+                    value={myThreadsSortOption}
+                    onChange={handleMyThreadsSortChange}
+                    sx={{ minWidth: 140 }}
+                    size="small"
+                    InputProps={{
+                      startAdornment: <SortIcon fontSize="small" sx={{ mr: 1, color: 'action.active' }} />
+                    }}
+                  >
+                    <MenuItem value="latest">Terbaru</MenuItem>
+                    <MenuItem value="popular">Terpopuler</MenuItem>
+                  </TextField>
+                </Box>
+
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleCreateThread}
+                  sx={{ whiteSpace: 'nowrap', alignSelf: { xs: 'stretch', sm: 'auto' } }}
+                >
+                  Buat Topik Baru
+                </Button>
+              </Box>
+            </Paper>
+          )}
+          
+          {/* Filter Panel untuk My Comments Tab */}
+          {activeTab === 'myComments' && isAuthenticated && (
+            <Paper sx={{ p: 3, mb: 4 }}>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                  <TextField
+                    select
+                    label="Kategori Thread"
+                    value={myCommentsCategory}
+                    onChange={handleMyCommentsCategoryChange}
+                    sx={{ minWidth: 180 }}
+                    size="small"
+                    InputProps={{
+                      startAdornment: <FilterListIcon fontSize="small" sx={{ mr: 1, color: 'action.active' }} />
+                    }}
+                  >
+                    {[
+                      { id: '', name: 'Semua Kategori' },
+                      { id: 'Umum', name: 'Umum' },
+                      { id: 'Tips & Trik', name: 'Tips & Trik' },
+                      { id: 'Daur Ulang', name: 'Daur Ulang' }
+                    ].map(cat => (
+                      <MenuItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+
+                  <TextField
+                    select
+                    label="Urutkan"
+                    value={myCommentsSortOption}
+                    onChange={handleMyCommentsSortChange}
+                    sx={{ minWidth: 140 }}
+                    size="small"
+                    InputProps={{
+                      startAdornment: <SortIcon fontSize="small" sx={{ mr: 1, color: 'action.active' }} />
+                    }}
+                  >
+                    <MenuItem value="latest">Terbaru</MenuItem>
+                    <MenuItem value="popular">Panjang Komentar</MenuItem>
+                  </TextField>
+                </Box>
+                
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => handleTabChange('all')}
+                >
+                  Jelajahi Diskusi
+                </Button>
+              </Box>
+            </Paper>
+          )}
+
+          {/* Threads List - All Discussions Tab */}
+          {activeTab === 'all' && (
+            <>
+              {loading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+                  <CircularProgress />
+                </Box>
+              ) : error ? (
+                <Box sx={{ textAlign: 'center', py: 8 }}>
+                  <Typography color="error">{error}</Typography>
+                  <Button 
+                    variant="outlined" 
+                    sx={{ mt: 2 }}
+                    onClick={() => window.location.reload()}
+                  >
+                    Coba Lagi
+                  </Button>
+                </Box>
+              ) : filteredThreads.length === 0 ? (
+                <Typography variant="body1" color="text.secondary" align="center" sx={{ mt: 6 }}>
+                  Tidak ada topik yang ditemukan.
+                </Typography>
+              ) : (
+                <>
+                  <Grid container spacing={3}>
+                    {getPaginatedThreads(filteredThreads, allThreadsPage).map(thread => (
+                      <Grid item xs={12} key={thread.id}>
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 3,
+                            cursor: 'pointer',
+                            borderRadius: '12px',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            '&:hover': { 
+                              backgroundColor: 'grey.100',
+                              transform: 'translateY(-6px)',
+                              boxShadow: '0 8px 16px rgba(0,0,0,0.08)'
+                            },
+                            border: '1px solid',
+                            borderColor: 'grey.200',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+                          }}
+                          onClick={() => handleThreadClick(thread.id)}
+                        >
+                          <Typography variant="h6" color="primary" gutterBottom>
+                            {thread.title}
+                          </Typography>
+                          <Stack direction="row" spacing={2} flexWrap="wrap" sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>
+                            <Typography>Oleh: {thread.author || 'Pengguna'}</Typography>
+                            <Typography>{thread.replies} komentar</Typography>
+                            <Typography>Terakhir: {formatDateTime(thread.lastPost)}</Typography>
+                            <Typography sx={{ textTransform: 'capitalize' }}>Kategori: {thread.category}</Typography>
+                          </Stack>
+                          {thread.tags && thread.tags.length > 0 && (
+                            <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap' }}>
+                              {thread.tags.map((tag, idx) => (
+                                <Chip key={idx} label={`#${tag}`} size="small" color="primary" sx={{ borderRadius: '8px' }} />
+                              ))}
+                            </Stack>
+                          )}
+                        </Paper>
+                      </Grid>
+                    ))}
+                  </Grid>
+                  
+                  {/* Pagination for All Threads */}
+                  {getTotalPages(filteredThreads.length) > 1 && (
+                    <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+                      <Pagination 
+                        count={getTotalPages(filteredThreads.length)} 
+                        page={allThreadsPage}
+                        onChange={handleAllThreadsPageChange}
+                        color="primary"
+                        showFirstButton
+                        showLastButton
+                      />
+                    </Box>
+                  )}
+                </>
+              )}
+            </>
+          )}
+          
+          {/* My Threads Tab */}
+          {activeTab === 'myThreads' && (
+            <>
+              {!isAuthenticated ? (
+                <Box sx={{ textAlign: 'center', py: 6 }}>
+                  <Typography variant="h6" gutterBottom>Login Diperlukan</Typography>
+                  <Typography variant="body1" sx={{ mb: 3 }}>
+                    Silakan login untuk melihat diskusi yang Anda buat.
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    onClick={() => navigate('/login')}
+                  >
+                    Login
+                  </Button>
+                </Box>
+              ) : loadingMyData ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+                  <CircularProgress />
+                </Box>
+              ) : filteredMyThreads.length === 0 ? (
+                <Paper sx={{ p: 4, textAlign: 'center' }}>
+                  {myThreads.length === 0 ? (
+                    <>
+                      <Typography variant="h6" gutterBottom>Belum Ada Diskusi</Typography>
+                      <Typography variant="body1" sx={{ mb: 3 }}>
+                        Anda belum membuat diskusi apa pun di forum ini.
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        onClick={handleCreateThread}
+                      >
+                        Buat Diskusi Baru
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Typography variant="h6" gutterBottom>Tidak Ada Hasil</Typography>
+                      <Typography variant="body1" sx={{ mb: 3 }}>
+                        Tidak ada diskusi yang sesuai dengan filter yang Anda pilih.
+                      </Typography>
+                      <Button
+                        variant="outlined"
+                        onClick={() => {
+                          setMyThreadsCategory('');
+                          setMyThreadsSortOption('latest');
+                          filterMyThreads(myThreads, '', 'latest');
+                        }}
+                      >
+                        Reset Filter
+                      </Button>
+                    </>
+                  )}
+                </Paper>
+              ) : (
+                <>
+                  <Grid container spacing={3}>
+                    {getPaginatedThreads(filteredMyThreads, myThreadsPage).map(thread => (
+                      <Grid item xs={12} key={thread.id}>
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 3,
+                            cursor: 'pointer',
+                            borderRadius: '12px',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            '&:hover': { 
+                              backgroundColor: 'grey.100',
+                              transform: 'translateY(-6px)',
+                              boxShadow: '0 8px 16px rgba(0,0,0,0.08)'
+                            },
+                            border: '1px solid',
+                            borderColor: 'grey.200',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                            position: 'relative' // Add position relative for absolute positioning of delete button
+                          }}
+                          onClick={() => handleThreadClick(thread.id)}
+                        >
+                          {/* Delete button */}
+                          <IconButton 
+                            aria-label="delete" 
+                            color="error"
+                            onClick={(e) => handleDeleteThread(e, thread.id)}
+                            sx={{
+                              position: 'absolute',
+                              top: 8,
+                              right: 8,
+                              zIndex: 2
+                            }}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+
+                          <Typography variant="h6" color="primary" gutterBottom>
+                            {thread.title}
+                          </Typography>
+                          <Stack direction="row" spacing={2} flexWrap="wrap" sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>
+                            <Typography>{thread.replies} komentar</Typography>
+                            <Typography>Terakhir: {formatDateTime(thread.lastPost)}</Typography>
+                            <Typography sx={{ textTransform: 'capitalize' }}>Kategori: {thread.category}</Typography>
+                          </Stack>
+                          {thread.tags && thread.tags.length > 0 && (
+                            <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap' }}>
+                              {thread.tags.map((tag, idx) => (
+                                <Chip key={idx} label={`#${tag}`} size="small" color="primary" sx={{ borderRadius: '8px' }} />
+                              ))}
+                            </Stack>
+                          )}
+                        </Paper>
+                      </Grid>
+                    ))}
+                  </Grid>
+                  
+                  {/* Pagination for My Threads */}
+                  {getTotalPages(filteredMyThreads.length) > 1 && (
+                    <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+                      <Pagination 
+                        count={getTotalPages(filteredMyThreads.length)} 
+                        page={myThreadsPage}
+                        onChange={handleMyThreadsPageChange}
+                        color="primary"
+                        showFirstButton
+                        showLastButton
+                      />
+                    </Box>
+                  )}
+                </>
+              )}
+            </>
+          )}
+          
+          {/* My Comments Tab */}
+          {activeTab === 'myComments' && (
+            <>
+              {!isAuthenticated ? (
+                <Box sx={{ textAlign: 'center', py: 6 }}>
+                  <Typography variant="h6" gutterBottom>Login Diperlukan</Typography>
+                  <Typography variant="body1" sx={{ mb: 3 }}>
+                    Silakan login untuk melihat komentar yang Anda buat.
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    onClick={() => navigate('/login')}
+                  >
+                    Login
+                  </Button>
+                </Box>
+              ) : loadingMyData ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+                  <CircularProgress />
+                </Box>
+              ) : filteredMyComments.length === 0 ? (
+                <Paper sx={{ p: 4, textAlign: 'center' }}>
+                  {myComments.length === 0 ? (
+                    <>
+                      <Typography variant="h6" gutterBottom>Belum Ada Komentar</Typography>
+                      <Typography variant="body1" sx={{ mb: 3 }}>
+                        Anda belum mengirim komentar apa pun di forum ini.
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        onClick={() => handleTabChange('all')}
+                      >
+                        Jelajahi Diskusi
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Typography variant="h6" gutterBottom>Tidak Ada Hasil</Typography>
+                      <Typography variant="body1" sx={{ mb: 3 }}>
+                        Tidak ada komentar yang sesuai dengan filter yang Anda pilih.
+                      </Typography>
+                      <Button
+                        variant="outlined"
+                        onClick={() => {
+                          setMyCommentsCategory('');
+                          setMyCommentsSortOption('latest');
+                          filterMyComments(myComments, '', 'latest');
+                        }}
+                      >
+                        Reset Filter
+                      </Button>
+                    </>
+                  )}
+                </Paper>
+              ) : (
+                <>
+                  <Grid container spacing={3}>
+                    {getPaginatedThreads(filteredMyComments, myCommentsPage).map(comment => (
+                      <Grid item xs={12} key={comment.id}>
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 3,
+                            cursor: 'pointer',
+                            borderRadius: '12px',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            '&:hover': { 
+                              backgroundColor: 'grey.100',
+                              transform: 'translateY(-6px)',
+                              boxShadow: '0 8px 16px rgba(0,0,0,0.08)'
+                            },
+                            border: '1px solid',
+                            borderColor: 'grey.200',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+                          }}
+                          onClick={() => handleThreadClick(comment.threadId)}
+                        >
+                          <Typography variant="subtitle1" color="primary" gutterBottom>
+                            Re: {comment.threadTitle}
+                          </Typography>
+                          <Typography 
+                            variant="body1" 
+                            sx={{ 
+                              mb: 2,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              display: '-webkit-box',
+                              WebkitLineClamp: 3,
+                              WebkitBoxOrient: 'vertical',
+                            }}
+                          >
+                            {comment.text}
+                          </Typography>
+                          <Stack direction="row" spacing={2} flexWrap="wrap" sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>
+                            <Typography>Diposting: {formatDateTime(comment.postedAt)}</Typography>
+                            <Typography sx={{ textTransform: 'capitalize' }}>Kategori: {comment.category}</Typography>
+                            {comment.parentCommentId && (
+                              <Typography>
+                                <em>(Balasan komentar)</em>
+                              </Typography>
+                            )}
+                          </Stack>
+                          {comment.tags && comment.tags.length > 0 && (
+                            <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap' }}>
+                              {comment.tags.map((tag, idx) => (
+                                <Chip key={idx} label={`#${tag}`} size="small" color="primary" sx={{ borderRadius: '8px' }} />
+                              ))}
+                            </Stack>
+                          )}
+                        </Paper>
+                      </Grid>
+                    ))}
+                  </Grid>
+                  
+                  {/* Pagination for My Comments */}
+                  {getTotalPages(filteredMyComments.length) > 1 && (
+                    <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+                      <Pagination 
+                        count={getTotalPages(filteredMyComments.length)} 
+                        page={myCommentsPage}
+                        onChange={handleMyCommentsPageChange}
+                        color="primary"
+                        showFirstButton
+                        showLastButton
+                      />
+                    </Box>
+                  )}
+                </>
+              )}
+            </>
           )}
         </ErrorBoundary>
       </Container>

@@ -315,22 +315,19 @@ class ForumCommentController extends Controller
             ->where('komentar_id', $id)
             ->firstOrFail();
         
-        // Check if user is authorized to update this comment
-        if (Auth::id() !== $comment->user_id && Auth::user()->role !== 'admin') {
-            return response()->json(['message' => 'Forbidden'], 403);
+        // Check if user is authorized to update this comment - ONLY the comment owner
+        if (Auth::id() !== $comment->user_id) {
+            return response()->json([
+                'message' => 'Forbidden', 
+                'error' => 'Anda hanya dapat mengedit komentar milik Anda sendiri'
+            ], 403);
         }
         
         $request->validate([
             'konten' => 'required|string|max:5000',
-            'status' => 'sometimes|string|in:AKTIF,TIDAK_AKTIF',
         ]);
         
         $data = $request->only(['konten']);
-        
-        // Only admins can change status
-        if ($request->has('status') && Auth::user()->role === 'admin') {
-            $data['status'] = $request->status;
-        }
         
         // Update comment
         $comment->update($data);
@@ -395,38 +392,79 @@ class ForumCommentController extends Controller
                 ], 404);
             }
             
-            // Check if user is authorized to delete this comment
-            if (Auth::id() !== $comment->user_id && Auth::user()->role !== 'admin') {
+            // Check if user is authorized to delete this comment - ONLY the comment owner
+            if (Auth::id() !== $comment->user_id) {
                 return response()->json([
                     'message' => 'Forbidden',
-                    'error' => 'Anda tidak memiliki izin untuk menghapus komentar ini'
+                    'error' => 'Anda hanya dapat menghapus komentar milik Anda sendiri'
                 ], 403);
             }
             
-            // If this is a parent comment, update status for all replies too
+            // Optimize the deletion process
             DB::beginTransaction();
             try {
-                // Set comment status to TIDAK_AKTIF instead of hard delete
-                $comment->update(['status' => 'TIDAK_AKTIF']);
-                
-                // Update all replies if this is a parent comment
-                if (!$comment->parent_komentar_id) {
-                    ForumComment::where('parent_komentar_id', $comment->komentar_id)
-                        ->update(['status' => 'TIDAK_AKTIF']);
+                // Use a more optimized approach
+                // First delete likes - this is often the bottleneck
+                if (method_exists($comment, 'likes')) {
+                    DB::table('likes')
+                        ->where('likeable_id', $comment->komentar_id)
+                        ->where('likeable_type', get_class($comment))
+                        ->delete();
                 }
+                
+                // If this is a parent comment that has replies from other users,
+                // just change the status to "DIHAPUS" instead of hard delete
+                if (!$comment->parent_komentar_id) {
+                    $hasOtherUserReplies = ForumComment::where('parent_komentar_id', $comment->komentar_id)
+                        ->where('user_id', '!=', Auth::id())
+                        ->exists();
+                    
+                    if ($hasOtherUserReplies) {
+                        // Set content to indicate it was deleted
+                        $comment->konten = '[Komentar ini telah dihapus]';
+                        $comment->status = 'DIHAPUS';
+                        $comment->save();
+                        
+                        DB::commit();
+                        return response()->json([
+                            'message' => 'Komentar berhasil dihapus',
+                            'comment_id' => $id,
+                            'status' => 'soft_delete'
+                        ]);
+                    }
+                }
+                
+                // For parent comments with no replies or only own replies, and for replies,
+                // perform a regular delete
+                
+                // Delete all own replies if this is a parent comment
+                if (!$comment->parent_komentar_id) {
+                    $ownReplies = ForumComment::where('parent_komentar_id', $comment->komentar_id)
+                        ->where('user_id', Auth::id())
+                        ->get();
+                    
+                    foreach ($ownReplies as $reply) {
+                        $reply->delete();
+                    }
+                }
+                
+                // Finally delete the comment
+                $comment->delete();
                 
                 DB::commit();
                 
                 return response()->json([
                     'message' => 'Komentar berhasil dihapus',
-                    'comment_id' => $id
+                    'comment_id' => $id,
+                    'status' => 'hard_delete'
                 ]);
             } catch (\Exception $e) {
                 DB::rollBack();
                 Log::error('Error saat menghapus komentar', [
                     'thread_id' => $threadId,
                     'komentar_id' => $id,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
                 ]);
                 
                 return response()->json([
@@ -438,7 +476,8 @@ class ForumCommentController extends Controller
             Log::error('Error menghapus komentar', [
                 'error' => $e->getMessage(),
                 'thread_id' => $threadId,
-                'comment_id' => $id
+                'comment_id' => $id,
+                'trace' => $e->getTraceAsString()
             ]);
             
             return response()->json([

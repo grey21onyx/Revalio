@@ -7,7 +7,8 @@ const api = axios.create({
   headers: {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
-  }
+  },
+  timeout: 30000, // Add 30 second timeout
 });
 
 // Tambahkan interceptor untuk request
@@ -60,6 +61,34 @@ api.interceptors.response.use(
     
     // Log error untuk debugging
     console.log('API Error:', error.response?.status, originalRequest.url);
+    
+    // Handle timeout errors
+    if (error.code === 'ECONNABORTED') {
+      console.error('Request timeout:', originalRequest.url);
+      return Promise.reject({
+        ...error,
+        response: {
+          status: 408,
+          data: {
+            message: 'Request timeout. Server took too long to respond.'
+          }
+        }
+      });
+    }
+    
+    // Handle network errors
+    if (!error.response) {
+      console.error('Network error:', error.message);
+      return Promise.reject({
+        ...error,
+        response: {
+          status: 0,
+          data: {
+            message: 'Network error. Please check your connection.'
+          }
+        }
+      });
+    }
     
     // Error 500 dengan pesan "column not found" - kemungkinan masalah view_count atau tabel yang tidak ada
     if (error.response && 

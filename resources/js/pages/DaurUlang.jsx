@@ -253,15 +253,21 @@ const TutorialCard = ({ tutorial, index, onClick }) => {
 const DaurUlang = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const { auth } = useAuth();
-  
+  const { user } = useAuth();
+
+  // Debug log for roles
+  console.log('User roles:', user?.roles);
+
+  // Helper function to check admin roles case-insensitively and safely
+  const isAdmin = (user?.role === 'admin') || (Array.isArray(user?.roles) && user.roles.some(role => role.slug && role.slug.toLowerCase() === 'admin'));
+
   // State for filters
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState('all');
   const [selectedTime, setSelectedTime] = useState('all');
   const [showUntriedOnly, setShowUntriedOnly] = useState(false);
-  
+
   // State for data
   const [tutorials, setTutorials] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -272,7 +278,7 @@ const DaurUlang = () => {
     total: 0,
     last_page: 1
   });
-  
+
   // Snackbar state
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -285,7 +291,7 @@ const DaurUlang = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const params = {
         page,
         per_page: pagination.per_page,
@@ -298,17 +304,17 @@ const DaurUlang = () => {
            999) : undefined,
         tried: showUntriedOnly ? 'false' : undefined
       };
-      
+
       // Remove undefined params
       Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
-      
+
       const response = await axios.get('/api/v1/tutorials', {
         params,
         headers: {
-          Authorization: `Bearer ${auth?.accessToken}`
+          Authorization: `Bearer ${localStorage.getItem('userToken')}`
         }
       });
-      
+
       setTutorials(response.data.data);
       setPagination({
         current_page: response.data.current_page,
@@ -341,47 +347,47 @@ const DaurUlang = () => {
     const timer = setTimeout(() => {
       fetchTutorials(1); // Reset to first page when filters change
     }, 500);
-    
+
     return () => clearTimeout(timer);
-  }, [searchQuery, selectedType, selectedDifficulty, selectedTime, showUntriedOnly, auth?.accessToken]);
+  }, [searchQuery, selectedType, selectedDifficulty, selectedTime, showUntriedOnly, localStorage.getItem('userToken')]);
 
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
   };
-  
+
   const handleClearSearch = () => {
     setSearchQuery('');
   };
-  
+
   const handleTypeChange = (event) => {
     setSelectedType(event.target.value);
   };
-  
+
   const handleDifficultyChange = (event) => {
     setSelectedDifficulty(event.target.value);
   };
-  
+
   const handleTimeChange = (event) => {
     setSelectedTime(event.target.value);
   };
-  
+
   const handleTriedFilterChange = (event) => {
     setShowUntriedOnly(event.target.checked);
   };
-  
+
   const handlePageChange = (event, value) => {
     fetchTutorials(value);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-  
+
   const handleTutorialClick = (tutorial) => {
     navigate(`/daur-ulang/${tutorial.tutorial_id}`);
   };
-  
+
   const handleCreateNew = () => {
     navigate('/daur-ulang/baru');
   };
-  
+
   const handleCloseSnackbar = () => {
     setSnackbar(prev => ({ ...prev, open: false }));
   };
@@ -431,7 +437,7 @@ const DaurUlang = () => {
             </Box>
             
             {/* Add new tutorial button (visible for certain roles) */}
-            {auth?.roles?.includes('admin') && (
+            {isAdmin && (
               <Button 
                 variant="contained" 
                 startIcon={<AddCircleOutline />}
@@ -560,7 +566,7 @@ const DaurUlang = () => {
             </Grid>
             
             {/* Tried Filter - Only show if user is logged in */}
-            {auth?.accessToken && (
+            {localStorage.getItem('userToken') && (
               <Grid item xs={12} sm={6} md={3}>
                 <FormControlLabel
                   control={
@@ -732,7 +738,7 @@ const DaurUlang = () => {
         </Box>
         
         {/* Floating action button for mobile */}
-        {auth?.roles?.includes('admin') && (
+        {isAdmin && (
           <Box sx={{ 
             position: 'fixed', 
             bottom: 24, 

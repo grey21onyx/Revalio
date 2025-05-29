@@ -23,7 +23,10 @@ import {
   DialogActions,
   MobileStepper,
   useTheme,
-  Grid
+  Grid,
+  CircularProgress,
+  Alert,
+  Snackbar
 } from '@mui/material';
 import {
   ArrowBack,
@@ -42,153 +45,8 @@ import {
   Close as CloseIcon
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
-
-// Database tutorial
-const allTutorials = [
-  {
-    tutorial_id: 1,
-    judul: 'Membuat Pot dari Botol Plastik',
-    deskripsi: 'Panduan lengkap membuat pot tanaman dari botol plastik bekas dengan berbagai desain kreatif.',
-    jenis_tutorial: 'daur_ulang',
-    waste_id: 1,
-    media: '/assets/images/tutorials/green.png',
-    tingkat_kesulitan: 'EASY',
-    estimasi_waktu: 30,
-    rating: 4.5,
-    rating_count: 24,
-    kontributor: {
-      nama: 'admin Revalio',
-      avatar: '/assets/images/avatars/admin.png'
-    },
-    konten: {
-      bahan_dan_alat: [
-        {
-          nama: 'Botol plastik bekas',
-          gambar: '/assets/images/materials/green.png'
-        },
-        {
-          nama: 'Gunting/cutter',
-          gambar: '/assets/images/materials/green.png'
-        },
-        {
-          nama: 'Cat akrilik',
-          gambar: '/assets/images/materials/green.png'
-        },
-        {
-          nama: 'Kuas',
-          gambar: '/assets/images/materials/green.png'
-        }
-      ],
-      langkah_langkah: [
-        {
-          langkah: 1,
-          judul: 'Persiapan botol',
-          deskripsi: 'Bersihkan botol plastik dari label dan sisa minuman. Potong bagian atas botol sesuai dengan desain yang diinginkan.',
-          media: '/assets/images/steps/green.png',
-          media_type: 'image'
-        },
-        {
-          langkah: 2,
-          judul: 'Lubangi bagian bawah',
-          deskripsi: 'Buat beberapa lubang kecil di bagian bawah botol untuk drainase air. Gunakan paku yang dipanaskan atau bor kecil.',
-          media: '/assets/images/steps/green.png',
-          media_type: 'image'
-        },
-        {
-          langkah: 3,
-          judul: 'Hias botol',
-          deskripsi: 'Gunakan cat akrilik untuk menghias botol sesuai selera. Biarkan kering sebelum digunakan.',
-          media: '/assets/images/steps/green.png',
-          media_type: 'image'
-        }
-      ],
-      tips: 'Anda bisa menggunakan botol dengan berbagai ukuran untuk membuat set pot tanaman yang serasi. Untuk hasil lebih rapi, gunakan masking tape saat mengecat.'
-    },
-    komentar: [
-      {
-        id: 1,
-        user: {
-          nama: 'Budi Santoso',
-          avatar: '/assets/images/avatars/green.png'
-        },
-        teks: 'Sangat membantu! Sudah saya coba dan hasilnya bagus.',
-        rating: 5,
-        tanggal: '2023-05-15'
-      },
-      {
-        id: 2,
-        user: {
-          nama: 'Ani Wijaya',
-          avatar: '/assets/images/avatars/green.png'
-        },
-        teks: 'Bagus panduannya, tapi menurut saya bagian melubangi botol agak susah kalau tidak punya alat yang tepat.',
-        rating: 4,
-        tanggal: '2023-05-10'
-      }
-    ]
-  },
-  {
-    tutorial_id: 2,
-    judul: 'Membuat Tas dari Baju Bekas',
-    deskripsi: 'Ubah baju bekas menjadi tas unik dan stylish dengan panduan ini.',
-    jenis_tutorial: 'daur_ulang',
-    waste_id: 2,
-    media: '/assets/images/tutorials/green.png',
-    tingkat_kesulitan: 'MEDIUM',
-    estimasi_waktu: 60,
-    rating: 4.2,
-    rating_count: 15,
-    kontributor: {
-      nama: 'admin Revalio',
-      avatar: '/assets/images/avatars/admin.png'
-    },
-    konten: {
-      bahan_dan_alat: [
-        {
-          nama: 'Baju bekas',
-          gambar: '/assets/images/materials/green.png'
-        },
-        {
-          nama: 'Gunting',
-          gambar: '/assets/images/materials/green.png'
-        },
-        {
-          nama: 'Benang dan jarum',
-          gambar: '/assets/images/materials/green.png'
-        }
-      ],
-      langkah_langkah: [
-        {
-          langkah: 1,
-          judul: 'Persiapan bahan',
-          deskripsi: 'Pilih baju bekas yang akan digunakan dan potong sesuai pola.',
-          media: '/assets/images/steps/green.png',
-          media_type: 'image'
-        },
-        {
-          langkah: 2,
-          judul: 'Jahit bagian dasar',
-          deskripsi: 'Jahit bagian bawah baju untuk membentuk dasar tas.',
-          media: '/assets/images/steps/green.png',
-          media_type: 'image'
-        }
-      ],
-      tips: 'Gunakan baju dengan bahan yang kuat untuk hasil yang lebih tahan lama.'
-    },
-    komentar: [
-      {
-        id: 1,
-        user: {
-          nama: 'Citra Dewi',
-          avatar: '/assets/images/avatars/green.png'
-        },
-        teks: 'Hasilnya keren! Anak-anak suka dengan tasnya.',
-        rating: 5,
-        tanggal: '2023-06-10'
-      }
-    ]
-  }
-];
+import TutorialService from '../services/tutorialService';
+import { useAuth } from '../contexts/AuthContext';
 
 // Data jenis sampah
 const wasteTypes = [
@@ -201,6 +59,9 @@ const difficultyLevels = {
   VERY_EASY: 'Sangat Mudah',
   EASY: 'Mudah',
   MEDIUM: 'Sedang',
+  MODERATE: 'Sedang',
+  DIFFICULT: 'Sulit',
+  VERY_DIFFICULT: 'Sangat Sulit',
   HARD: 'Sulit',
   VERY_HARD: 'Sangat Sulit'
 };
@@ -209,6 +70,7 @@ const DetailPanduan = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const { id } = useParams();
+  const { isAuthenticated, user } = useAuth();
   const [tutorial, setTutorial] = useState(null);
   const [activeStep, setActiveStep] = useState(0);
   const [imageModalOpen, setImageModalOpen] = useState(false);
@@ -216,22 +78,174 @@ const DetailPanduan = () => {
   const [userRating, setUserRating] = useState(0);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
   
   // Load tutorial data berdasarkan ID
   useEffect(() => {
-    const foundTutorial = allTutorials.find(t => t.tutorial_id === parseInt(id));
-    
-    if (foundTutorial) {
-      // Simulasi loading
-      setTimeout(() => {
-        setTutorial(foundTutorial);
-      }, 500);
-    } else {
-      // Jika tutorial tidak ditemukan, redirect ke halaman daur ulang
-      navigate('/daur-ulang', { replace: true });
-    }
-  }, [id, navigate]);
+    const fetchTutorial = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // Validasi ID
+        if (!id) {
+          console.error('ID parameter tidak valid:', id);
+          setError('ID tutorial tidak valid, mohon kembali ke halaman panduan');
+          setIsLoading(false);
+          return;
+        }
+        
+        // Periksa apakah ada tutorial dummy tersimpan di localStorage
+        const storedDummyData = localStorage.getItem(`dummy_tutorial_${id}`);
+        if (storedDummyData) {
+          console.log('Menggunakan data dummy tutorial dari localStorage');
+          const dummyData = JSON.parse(storedDummyData);
+          
+          // Update dummy data dengan status login user jika ada
+          if (isAuthenticated && user) {
+            dummyData.is_saved = false;
+            dummyData.is_completed = false;
+            dummyData.user_rating = 0;
+          }
+          
+          setTutorial(dummyData);
+          setIsLoading(false);
+          return;
+        }
+        
+        try {
+          // Coba fetch dari API dulu
+          console.log('Fetching tutorial data from API with ID:', id);
+          const response = await TutorialService.getTutorialById(id);
+          console.log('Tutorial data received:', response.data);
+          const tutorialData = response.data;
+          setTutorial(tutorialData);
+          
+          // Set user interaksi jika sudah login
+          if (isAuthenticated) {
+            setIsBookmarked(tutorialData.is_saved || false);
+            setIsCompleted(tutorialData.is_completed || false);
+            if (tutorialData.user_rating) {
+              setUserRating(tutorialData.user_rating);
+            }
+          }
+        } catch (err) {
+          console.error('Error fetching tutorial:', err);
+          
+          // Jika error 500 atau 401, gunakan data dummy sementara
+          if (err.response && (err.response.status === 500 || err.response.status === 401 || err.response.status === 404)) {
+            console.warn(`Menggunakan data dummy karena API error: ${err.response.status}`);
+            
+            // Data dummy untuk pengujian UI
+            const dummyTutorial = {
+              id: parseInt(id),
+              judul: `Tutorial Daur Ulang ${id}`,
+              deskripsi: 'Ini adalah tutorial daur ulang sementara. Data ini ditampilkan karena API mengalami error.',
+              tingkat_kesulitan: 'EASY',
+              estimasi_waktu: 30,
+              jenis_sampah: { nama: 'Plastik', kategori_id: 1 },
+              is_completed: false,
+              is_saved: false,
+              user_rating: 0,
+              average_rating: 4.5,
+              rating_count: 10,
+              comments: [],
+              kontributor: {
+                nama: 'Demo User',
+                avatar: '/assets/images/avatars/default.png'
+              },
+              konten: JSON.stringify({
+                bahan_dan_alat: [
+                  { nama: 'Botol Plastik', gambar: '/assets/images/materials/default.jpg' },
+                  { nama: 'Gunting', gambar: '/assets/images/materials/default.jpg' },
+                  { nama: 'Cat', gambar: '/assets/images/materials/default.jpg' }
+                ],
+                langkah_langkah: [
+                  { 
+                    langkah: 1, 
+                    judul: 'Persiapan Bahan', 
+                    deskripsi: 'Siapkan semua bahan yang diperlukan',
+                    media: '/assets/images/tutorials/default.jpg'
+                  },
+                  { 
+                    langkah: 2, 
+                    judul: 'Potong Botol', 
+                    deskripsi: 'Potong botol plastik sesuai ukuran yang diinginkan',
+                    media: '/assets/images/tutorials/default.jpg'
+                  },
+                  { 
+                    langkah: 3, 
+                    judul: 'Finalisasi', 
+                    deskripsi: 'Hias botol sesuai keinginan',
+                    media: '/assets/images/tutorials/default.jpg'
+                  }
+                ],
+                tips: 'Pastikan botol plastik bersih sebelum digunakan. Gunakan cat non-toxic agar aman untuk penggunaan sehari-hari.'
+              })
+            };
+            
+            // Simpan data dummy di localStorage untuk digunakan nanti
+            localStorage.setItem(`dummy_tutorial_${id}`, JSON.stringify(dummyTutorial));
+            
+            setTutorial(dummyTutorial);
+            setError(null);
+            
+            // Tampilkan pesan error yang lebih user friendly berdasarkan status kode
+            let errorMessage = 'Menampilkan data sementara karena terjadi masalah pada server';
+            let severity = 'warning';
+            
+            if (err.response.status === 401) {
+              errorMessage = 'Menampilkan data sementara. Silakan login untuk melihat data sebenarnya';
+              severity = 'info';
+            } else if (err.response.status === 404) {
+              errorMessage = 'Tutorial tidak ditemukan. Menampilkan data contoh';
+              severity = 'warning';
+            }
+            
+            setSnackbar({
+              open: true,
+              message: errorMessage,
+              severity: severity
+            });
+          } else {
+            // Pesan error yang lebih spesifik berdasarkan jenis error
+            if (err.message === 'Tutorial ID tidak valid atau undefined') {
+              setError('ID tutorial tidak valid, mohon kembali ke halaman panduan');
+            } else if (err.response && err.response.status === 404) {
+              setError('Tutorial tidak ditemukan, mohon kembali ke halaman panduan');
+              // Redirect setelah 3 detik ke halaman daftar tutorial
+              setTimeout(() => navigate('/daur-ulang', { replace: true }), 3000);
+            } else {
+              setError('Terjadi kesalahan saat memuat panduan. Silakan coba lagi nanti.');
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching tutorial:', err);
+        
+        // Pesan error yang lebih spesifik berdasarkan jenis error
+        if (err.message === 'Tutorial ID tidak valid atau undefined') {
+          setError('ID tutorial tidak valid, mohon kembali ke halaman panduan');
+        } else if (err.response && err.response.status === 404) {
+          setError('Tutorial tidak ditemukan, mohon kembali ke halaman panduan');
+          // Redirect setelah 3 detik ke halaman daftar tutorial
+          setTimeout(() => navigate('/daur-ulang', { replace: true }), 3000);
+        } else {
+          setError('Terjadi kesalahan saat memuat panduan. Silakan coba lagi nanti.');
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTutorial();
+  }, [id, navigate, isAuthenticated, user]);
   
   const handleBack = () => {
     navigate(-1);
@@ -253,47 +267,163 @@ const DetailPanduan = () => {
     setImageModalOpen(false);
   };
   
-  const handleCommentSubmit = (e) => {
+  const handleCloseSnackbar = () => {
+    setSnackbar({...snackbar, open: false});
+  };
+  
+  const handleCommentSubmit = async (e) => {
     e.preventDefault();
-    console.log('Comment submitted:', comment);
-    console.log('Rating submitted:', userRating);
-    setComment('');
-    setUserRating(0);
+    
+    if (!isAuthenticated) {
+      setSnackbar({
+        open: true,
+        message: 'Anda harus login untuk memberikan ulasan',
+        severity: 'warning'
+      });
+      return;
+    }
+    
+    try {
+      await TutorialService.addComment(id, comment, userRating);
+      
+      // Refresh data tutorial untuk menampilkan komentar baru
+      const response = await TutorialService.getTutorialById(id);
+      setTutorial(response.data);
+      
+      setComment('');
+      setUserRating(0);
+      
+      setSnackbar({
+        open: true,
+        message: 'Ulasan berhasil dikirim',
+        severity: 'success'
+      });
+    } catch (err) {
+      console.error('Error submitting comment:', err);
+      setSnackbar({
+        open: true,
+        message: 'Terjadi kesalahan saat mengirim ulasan',
+        severity: 'error'
+      });
+    }
   };
   
-  const handleBookmarkToggle = () => {
-    setIsBookmarked(!isBookmarked);
+  const handleBookmarkToggle = async () => {
+    if (!isAuthenticated) {
+      setSnackbar({
+        open: true,
+        message: 'Anda harus login untuk menyimpan tutorial',
+        severity: 'warning'
+      });
+      return;
+    }
+    
+    try {
+      const response = await TutorialService.toggleSaved(id);
+      setIsBookmarked(response.data.is_saved);
+      
+      setSnackbar({
+        open: true,
+        message: response.data.message,
+        severity: 'success'
+      });
+    } catch (err) {
+      console.error('Error toggling bookmark:', err);
+      setSnackbar({
+        open: true,
+        message: 'Terjadi kesalahan saat menyimpan tutorial',
+        severity: 'error'
+      });
+    }
   };
   
-  const handleCompleteToggle = () => {
-    setIsCompleted(!isCompleted);
-  };
-  
-  const handleLikeToggle = () => {
-    setIsLiked(!isLiked);
+  const handleCompleteToggle = async () => {
+    if (!isAuthenticated) {
+      setSnackbar({
+        open: true,
+        message: 'Anda harus login untuk menandai tutorial sebagai selesai',
+        severity: 'warning'
+      });
+      return;
+    }
+    
+    try {
+      const response = await TutorialService.toggleCompleted(id);
+      setIsCompleted(response.data.is_completed);
+      
+      setSnackbar({
+        open: true,
+        message: response.data.message,
+        severity: 'success'
+      });
+    } catch (err) {
+      console.error('Error toggling completed status:', err);
+      setSnackbar({
+        open: true,
+        message: 'Terjadi kesalahan saat menandai tutorial sebagai selesai',
+        severity: 'error'
+      });
+    }
   };
   
   const handleShare = () => {
-    console.log('Sharing tutorial:', tutorial?.judul);
+    // Implementasi berbagi tutorial, bisa diperluas nanti
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      setSnackbar({
+        open: true,
+        message: 'Tautan berhasil disalin ke clipboard',
+        severity: 'success'
+      });
+    });
   };
   
   const handleDownloadPDF = () => {
-    console.log('Downloading PDF for tutorial:', tutorial?.judul);
+    // Implementasi download PDF, bisa diperluas nanti
+    setSnackbar({
+      open: true,
+      message: 'Fitur download PDF belum tersedia',
+      severity: 'info'
+    });
   };
   
-  if (!tutorial) {
+  if (isLoading) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh', flexDirection: 'column' }}>
+          <CircularProgress color="primary" sx={{ mb: 2 }} />
           <Typography variant="h6">Memuat panduan...</Typography>
         </Box>
       </Container>
     );
   }
   
-  const wasteType = wasteTypes.find(w => w.waste_id === tutorial.waste_id);
-  const steps = tutorial.konten.langkah_langkah;
+  if (error) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh', flexDirection: 'column' }}>
+          <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+          <Button variant="contained" onClick={() => navigate(-1)}>Kembali</Button>
+        </Box>
+      </Container>
+    );
+  }
+  
+  if (!tutorial) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+          <Typography variant="h6">Tutorial tidak ditemukan</Typography>
+        </Box>
+      </Container>
+    );
+  }
+  
+  // Parsing konten tutorial dari format JSON jika diperlukan
+  const tutorialContent = typeof tutorial.konten === 'string' ? JSON.parse(tutorial.konten) : tutorial.konten;
+  const steps = tutorialContent.langkah_langkah || [];
   const maxSteps = steps.length;
+  const bahanDanAlat = tutorialContent.bahan_dan_alat || [];
+  const tips = tutorialContent.tips;
 
   return (
     <Box sx={{ backgroundColor: '#f9f9f9', py: { xs: 3, md: 5 } }}>
@@ -318,30 +448,32 @@ const DetailPanduan = () => {
         
         {/* Meta Information */}
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Avatar 
-              src={tutorial.kontributor.avatar} 
-              alt={tutorial.kontributor.nama}
-              sx={{ width: 32, height: 32, mr: 1 }}
-            />
-            <Typography variant="body2">{tutorial.kontributor.nama}</Typography>
-          </Box>
+          {tutorial.kontributor && (
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Avatar 
+                src={tutorial.kontributor.avatar || '/assets/images/avatars/default.png'} 
+                alt={tutorial.kontributor.nama || 'Kontributor'}
+                sx={{ width: 32, height: 32, mr: 1 }}
+              />
+              <Typography variant="body2">{tutorial.kontributor.nama || 'Kontributor'}</Typography>
+            </Box>
+          )}
           
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Rating 
-              value={tutorial.rating} 
+              value={tutorial.average_rating || 0} 
               precision={0.5} 
               readOnly 
               size="small" 
               sx={{ mr: 1 }}
             />
             <Typography variant="body2" color="text.secondary">
-              ({tutorial.rating_count})
+              ({tutorial.rating_count || 0})
             </Typography>
           </Box>
           
           <Chip 
-            label={difficultyLevels[tutorial.tingkat_kesulitan]} 
+            label={difficultyLevels[tutorial.tingkat_kesulitan] || tutorial.tingkat_kesulitan} 
             size="small" 
             variant="outlined"
             sx={{ 
@@ -354,9 +486,9 @@ const DetailPanduan = () => {
             {tutorial.estimasi_waktu} menit
           </Typography>
           
-          {wasteType && (
+          {tutorial.jenis_sampah && (
             <Chip 
-              label={wasteType.nama} 
+              label={tutorial.jenis_sampah.nama || 'Sampah'} 
               size="small" 
               sx={{ 
                 backgroundColor: theme.palette.primary.main,
@@ -373,6 +505,7 @@ const DetailPanduan = () => {
             startIcon={isCompleted ? <CheckCircle /> : <CircleOutlined />}
             onClick={handleCompleteToggle}
             sx={{ borderRadius: 8 }}
+            disabled={!isAuthenticated}
           >
             {isCompleted ? 'Sudah Dicoba' : 'Tandai Selesai'}
           </Button>
@@ -382,6 +515,7 @@ const DetailPanduan = () => {
             startIcon={isBookmarked ? <Bookmark /> : <BookmarkBorder />}
             onClick={handleBookmarkToggle}
             sx={{ borderRadius: 8 }}
+            disabled={!isAuthenticated}
           >
             {isBookmarked ? 'Disimpan' : 'Simpan'}
           </Button>
@@ -420,7 +554,7 @@ const DetailPanduan = () => {
       >
         <Box
           component="img"
-          src={tutorial.media}
+          src={tutorial.gambar || '/assets/images/tutorials/default.jpg'}
           alt={tutorial.judul}
           sx={{
             width: '100%',
@@ -450,133 +584,137 @@ const DetailPanduan = () => {
       </Box>
       
       {/* Materials Needed Section */}
-      <Box sx={{ mb: 6 }}>
-        <Typography variant="h5" component="h2" fontWeight={700} gutterBottom>
-          Yang Anda Butuhkan
-        </Typography>
-        <Divider sx={{ mb: 3 }} />
-        
-        <Grid container spacing={3}>
-          {tutorial.konten.bahan_dan_alat.map((item, index) => (
-            <Grid item xs={6} sm={4} md={3} key={index}>
-              <Box sx={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                alignItems: 'center',
-                textAlign: 'center'
-              }}>
-                <Box
-                  component="img"
-                  src={item.gambar}
-                  alt={item.nama}
-                  sx={{
-                    width: 80,
-                    height: 80,
-                    objectFit: 'cover',
-                    borderRadius: '50%',
-                    mb: 1.5,
-                    border: '2px solid',
-                    borderColor: 'grey.200'
-                  }}
-                />
-                <Typography variant="body2">{item.nama}</Typography>
-              </Box>
-            </Grid>
-          ))}
-        </Grid>
-      </Box>
+      {bahanDanAlat && bahanDanAlat.length > 0 && (
+        <Box sx={{ mb: 6 }}>
+          <Typography variant="h5" component="h2" fontWeight={700} gutterBottom>
+            Yang Anda Butuhkan
+          </Typography>
+          <Divider sx={{ mb: 3 }} />
+          
+          <Grid container spacing={3}>
+            {bahanDanAlat.map((item, index) => (
+              <Grid item xs={6} sm={4} md={3} key={index}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  alignItems: 'center',
+                  textAlign: 'center'
+                }}>
+                  <Box
+                    component="img"
+                    src={item.gambar || '/assets/images/materials/default.jpg'}
+                    alt={item.nama}
+                    sx={{
+                      width: 80,
+                      height: 80,
+                      objectFit: 'cover',
+                      borderRadius: '50%',
+                      mb: 1.5,
+                      border: '2px solid',
+                      borderColor: 'grey.200'
+                    }}
+                  />
+                  <Typography variant="body2">{item.nama}</Typography>
+                </Box>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
+      )}
       
       {/* Steps Section */}
-      <Box sx={{ mb: 6 }}>
-        <Typography variant="h5" component="h2" fontWeight={700} gutterBottom>
-          Langkah-langkah
-        </Typography>
-        <Divider sx={{ mb: 3 }} />
-        
-        {/* Current Step */}
-        <Box sx={{ mb: 4 }}>
-          <Box sx={{ 
-            position: 'relative', 
-            borderRadius: 3, 
-            overflow: 'hidden', 
-            mb: 3,
-            height: { xs: 250, sm: 400 },
-            backgroundColor: 'grey.100'
-          }}>
-            <Box
-              component="img"
-              src={steps[activeStep].media}
-              alt={`Langkah ${steps[activeStep].langkah}`}
+      {steps && steps.length > 0 && (
+        <Box sx={{ mb: 6 }}>
+          <Typography variant="h5" component="h2" fontWeight={700} gutterBottom>
+            Langkah-langkah
+          </Typography>
+          <Divider sx={{ mb: 3 }} />
+          
+          {/* Current Step */}
+          <Box sx={{ mb: 4 }}>
+            <Box sx={{ 
+              position: 'relative', 
+              borderRadius: 3, 
+              overflow: 'hidden', 
+              mb: 3,
+              height: { xs: 250, sm: 400 },
+              backgroundColor: 'grey.100'
+            }}>
+              <Box
+                component="img"
+                src={steps[activeStep].media || '/assets/images/steps/default.jpg'}
+                alt={`Langkah ${steps[activeStep].langkah || activeStep + 1}`}
+                sx={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover'
+                }}
+              />
+            </Box>
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Box sx={{
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                backgroundColor: theme.palette.primary.main,
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mr: 2,
+                flexShrink: 0
+              }}>
+                {steps[activeStep].langkah || activeStep + 1}
+              </Box>
+              <Typography variant="h6" fontWeight={600}>
+                {steps[activeStep].judul || `Langkah ${activeStep + 1}`}
+              </Typography>
+            </Box>
+            
+            <Typography variant="body1" sx={{ mb: 3 }}>
+              {steps[activeStep].deskripsi}
+            </Typography>
+            
+            <MobileStepper
+              steps={maxSteps}
+              position="static"
+              activeStep={activeStep}
+              nextButton={
+                <Button
+                  size="small"
+                  onClick={handleNextStep}
+                  disabled={activeStep === maxSteps - 1}
+                  endIcon={<NavigateNext />}
+                >
+                  Berikutnya
+                </Button>
+              }
+              backButton={
+                <Button
+                  size="small"
+                  onClick={handleBackStep}
+                  disabled={activeStep === 0}
+                  startIcon={<NavigateBefore />}
+                >
+                  Sebelumnya
+                </Button>
+              }
               sx={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover'
+                justifyContent: 'center',
+                py: 2,
+                px: 3,
+                borderTop: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 3
               }}
             />
           </Box>
-          
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <Box sx={{
-              width: 32,
-              height: 32,
-              borderRadius: '50%',
-              backgroundColor: theme.palette.primary.main,
-              color: 'white',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              mr: 2,
-              flexShrink: 0
-            }}>
-              {steps[activeStep].langkah}
-            </Box>
-            <Typography variant="h6" fontWeight={600}>
-              {steps[activeStep].judul}
-            </Typography>
-          </Box>
-          
-          <Typography variant="body1" sx={{ mb: 3 }}>
-            {steps[activeStep].deskripsi}
-          </Typography>
-          
-          <MobileStepper
-            steps={maxSteps}
-            position="static"
-            activeStep={activeStep}
-            nextButton={
-              <Button
-                size="small"
-                onClick={handleNextStep}
-                disabled={activeStep === maxSteps - 1}
-                endIcon={<NavigateNext />}
-              >
-                Berikutnya
-              </Button>
-            }
-            backButton={
-              <Button
-                size="small"
-                onClick={handleBackStep}
-                disabled={activeStep === 0}
-                startIcon={<NavigateBefore />}
-              >
-                Sebelumnya
-              </Button>
-            }
-            sx={{
-              justifyContent: 'center',
-              py: 2,
-              px: 3,
-              borderTop: '1px solid',
-              borderColor: 'divider',
-              borderRadius: 3
-            }}
-          />
         </Box>
-      </Box>
+      )}
       
       {/* Tips Section */}
-      {tutorial.konten.tips && (
+      {tips && (
         <Box sx={{ mb: 6 }}>
           <Typography variant="h5" component="h2" fontWeight={700} gutterBottom>
             Tips dan Saran Tambahan
@@ -590,7 +728,7 @@ const DetailPanduan = () => {
             borderRadius: '12px',
             boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
           }}>
-            <Typography variant="body1">{tutorial.konten.tips}</Typography>
+            <Typography variant="body1">{tips}</Typography>
           </Paper>
         </Box>
       )}
@@ -650,9 +788,9 @@ const DetailPanduan = () => {
         </Paper>
         
         {/* Comments List */}
-        {tutorial.komentar.length > 0 ? (
+        {tutorial.comments && tutorial.comments.length > 0 ? (
           <List>
-            {tutorial.komentar.map((item) => (
+            {tutorial.comments.map((item) => (
               <ListItem 
                 key={item.id} 
                 alignItems="flex-start"
@@ -663,28 +801,34 @@ const DetailPanduan = () => {
                 }}
               >
                 <ListItemAvatar>
-                  <Avatar src={item.user.avatar} alt={item.user.nama} />
+                  <Avatar src={item.user?.foto_profil || '/assets/images/avatars/default.jpg'} alt={item.user?.nama_lengkap || 'User'} />
                 </ListItemAvatar>
                 <ListItemText
                   primary={
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                       <Typography variant="subtitle2" fontWeight={600} sx={{ mr: 1 }}>
-                        {item.user.nama}
+                        {item.user?.nama_lengkap || 'Pengguna'}
                       </Typography>
-                      <Rating 
-                        value={item.rating} 
-                        size="small" 
-                        readOnly 
-                        sx={{ mr: 1 }}
-                      />
+                      {item.rating && (
+                        <Rating 
+                          value={item.rating} 
+                          size="small" 
+                          readOnly 
+                          sx={{ mr: 1 }}
+                        />
+                      )}
                       <Typography variant="caption" color="text.secondary">
-                        {item.tanggal}
+                        {new Date(item.created_at).toLocaleDateString('id-ID', { 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        })}
                       </Typography>
                     </Box>
                   }
                   secondary={
                     <Typography variant="body2" color="text.primary">
-                      {item.teks}
+                      {item.content || item.comment}
                     </Typography>
                   }
                 />
@@ -722,7 +866,7 @@ const DetailPanduan = () => {
         <DialogContent sx={{ p: 0 }}>
           <Box
             component="img"
-            src={tutorial.media}
+            src={tutorial.gambar || '/assets/images/tutorials/default.jpg'}
             alt={tutorial.judul}
             sx={{
               width: '100%',
@@ -733,6 +877,18 @@ const DetailPanduan = () => {
           />
         </DialogContent>
       </Dialog>
+      
+      {/* Snackbar notifications */}
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={6000} 
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
     </Box>
   );

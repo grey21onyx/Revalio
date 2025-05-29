@@ -375,7 +375,16 @@ const DaurUlang = () => {
   };
   
   const handleTutorialClick = (tutorial) => {
-    navigate(`/daur-ulang/${tutorial.tutorial_id}`);
+    if (tutorial && tutorial.id) {
+      navigate(`/daur-ulang/${tutorial.id}`);
+    } else {
+      console.error('Tutorial ID tidak ditemukan:', tutorial);
+      setSnackbar({
+        open: true,
+        message: 'Tidak dapat membuka detail panduan. ID tidak valid.',
+        severity: 'error'
+      });
+    }
   };
   
   const handleCreateNew = () => {
@@ -652,8 +661,8 @@ const DaurUlang = () => {
           ) : tutorials.length > 0 ? (
             <>
               <Grid container spacing={3}>
-                {tutorials.map((tutorial, index) => (
-                  <Grid item xs={12} sm={6} md={4} key={tutorial.tutorial_id}>
+                {tutorials && tutorials.map((tutorial, index) => (
+                  <Grid item xs={12} sm={6} md={4} key={tutorial.id || index}>
                     <TutorialCard 
                       tutorial={tutorial} 
                       index={index} 

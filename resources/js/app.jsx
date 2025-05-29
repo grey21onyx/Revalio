@@ -30,6 +30,28 @@ function App() {
                 console.log('Mengambil CSRF cookie dengan retry logic...');
                 await fetchCsrfCookie(3, 30000); // 3 percobaan, timeout 30 detik
                 console.log('CSRF cookie berhasil diambil.');
+                
+                // Tambahkan meta tag CSRF token untuk axios
+                const token = document.cookie
+                    .split('; ')
+                    .find(row => row.startsWith('XSRF-TOKEN='))
+                    ?.split('=')[1];
+                
+                if (token) {
+                    // Decode token karena cookie di-encode
+                    const decodedToken = decodeURIComponent(token);
+                    
+                    // Tambahkan atau perbarui meta tag
+                    let metaTag = document.querySelector('meta[name="csrf-token"]');
+                    if (!metaTag) {
+                        metaTag = document.createElement('meta');
+                        metaTag.name = 'csrf-token';
+                        document.head.appendChild(metaTag);
+                    }
+                    metaTag.content = decodedToken;
+                    
+                    console.log('Meta tag CSRF token berhasil dibuat');
+                }
             } catch (error) {
                 console.error('Error fetching CSRF cookie:', error);
                 // Pertimbangkan untuk menampilkan notifikasi ke user jika ini gagal

@@ -359,38 +359,48 @@ class WasteTypeController extends Controller
      */
     public function showDetail($id)
     {
-        $wasteType = WasteType::with([
-            'category',
-            'values',
-            'tutorials',
-            'buyers.buyer',
-        ])->findOrFail($id);
-        
-        // Get price history grouped by month
-        $priceHistory = WasteValue::where('waste_id', $id)
-            ->orderBy('tanggal_update', 'asc')
-            ->get()
-            ->groupBy(function($date) {
-                return Carbon::parse($date->tanggal_update)->format('Y-m');
-            })
-            ->map(function($group) {
-                return [
-                    'min' => $group->avg('harga_minimum'),
-                    'max' => $group->avg('harga_maksimum'),
-                ];
-            });
-        
-        // Check if the user has favorited this waste type
-        $isFavorite = false;
-        if (auth()->check()) {
-            $isFavorite = auth()->user()->favoriteWasteTypes()->where('waste_id', $id)->exists();
+        try {
+            $wasteType = WasteType::with([
+                'category',
+                'wasteValues',
+                'tutorials',
+                'buyers.wasteBuyer',
+            ])->findOrFail($id);
+            
+            // Get price history grouped by month
+            $priceHistory = WasteValue::where('waste_id', $id)
+                ->orderBy('tanggal_update', 'asc')
+                ->get()
+                ->groupBy(function($date) {
+                    return Carbon::parse($date->tanggal_update)->format('Y-m');
+                })
+                ->map(function($group) {
+                    return [
+                        'min' => $group->avg('harga_minimum'),
+                        'max' => $group->avg('harga_maksimum'),
+                    ];
+                });
+            
+            // Check if the user has favorited this waste type
+            $isFavorite = false;
+            if (auth()->check()) {
+                $isFavorite = auth()->user()->favoriteWasteTypes()->where('waste_id', $id)->exists();
+            }
+            
+            return response()->json([
+                'waste_type' => new WasteTypeDetailResource($wasteType),
+                'price_history' => $priceHistory,
+                'is_favorite' => $isFavorite,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in showDetail: ' . $e->getMessage());
+            \Log::error($e->getTraceAsString());
+            return response()->json([
+                'error' => 'Terjadi kesalahan saat memproses data',
+                'message' => env('APP_DEBUG') ? $e->getMessage() : 'Hubungi administrator untuk bantuan',
+                'trace' => env('APP_DEBUG') ? $e->getTraceAsString() : null,
+            ], 500);
         }
-        
-        return response()->json([
-            'waste_type' => new WasteTypeDetailResource($wasteType),
-            'price_history' => $priceHistory,
-            'is_favorite' => $isFavorite,
-        ]);
     }
 
     /**

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { fetchCsrfCookie } from '../config/axios';
 
 // Base URL untuk API
 const API_URL = '/api/v1';
@@ -28,10 +29,61 @@ const TutorialService = {
    */
   getTutorialById: async (id) => {
     try {
-      const response = await axios.get(`${API_URL}/tutorials/${id}`);
+      // Memeriksa apakah ID valid dan bukan undefined
+      if (!id) {
+        throw new Error('Tutorial ID tidak valid atau undefined');
+      }
+      
+      // Pastikan CSRF token tersedia
+      await fetchCsrfCookie(1, 3000);
+      
+      console.log(`Memanggil API untuk mendapatkan tutorial dengan ID: ${id}`);
+      
+      // Persiapkan header otentikasi jika tersedia
+      const headers = {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Debug-Info': 'DetailPanduan-Component'
+      };
+      
+      // Tambahkan token otentikasi jika tersedia
+      const token = localStorage.getItem('userToken');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      // Panggil API dengan header yang sudah diperbaiki
+      const response = await axios.get(`${API_URL}/tutorials/${id}`, { headers });
+      
+      console.log('Respon API berhasil:', response.status);
       return response.data;
     } catch (error) {
-      throw error;
+      console.error('Error saat mengambil tutorial:', error);
+      
+      // Handle berbagai error dengan lebih spesifik
+      if (error.response) {
+        // Server memberikan respon dengan status error
+        if (error.response.status === 401) {
+          console.warn('Unauthorized: Token tidak valid atau tidak ditemukan');
+          // Bisa redirect ke halaman login atau memberikan error spesifik
+        } else if (error.response.status === 404) {
+          console.warn('Tutorial tidak ditemukan dengan ID:', id);
+        } else if (error.response.status === 500) {
+          console.error('Error server saat mengambil tutorial:', error.response.data);
+        }
+        
+        // Teruskan error response untuk dihandle di component
+        throw error;
+      } else if (error.request) {
+        // Request dibuat tapi tidak ada response dari server
+        console.error('Tidak ada respon dari server:', error.request);
+        throw new Error('Server tidak merespon. Silakan coba lagi nanti.');
+      } else {
+        // Ada kesalahan saat mengatur request
+        console.error('Error request:', error.message);
+        throw error;
+      }
     }
   },
 

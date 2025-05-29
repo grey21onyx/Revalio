@@ -7,6 +7,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class DatabaseSeeder extends Seeder
 {
@@ -172,5 +173,17 @@ class DatabaseSeeder extends Seeder
         foreach ($opportunities as $opportunity) {
             DB::table('business_opportunities')->insertOrIgnore($opportunity);
         }
+
+        // Tambah nilai sampah untuk waste_id 1
+        DB::table('waste_values')->insertOrIgnore([
+            'waste_id' => 1,
+            'harga_minimum' => 1000,
+            'harga_maksimum' => 2000,
+            'satuan' => 'kg',
+            'tanggal_update' => now(),
+            'sumber_data' => 'Seeder',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 }

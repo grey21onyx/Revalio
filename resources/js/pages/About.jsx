@@ -1,5 +1,36 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FaRecycle, FaLightbulb, FaUsers, FaChartLine, FaHandsHelping, FaLeaf, FaMoneyBillWave, FaBook, FaChartPie, FaMapMarkerAlt } from 'react-icons/fa';
+import { Link, useNavigate } from 'react-router-dom';
+import { 
+  Box, 
+  Typography, 
+  Grid, 
+  Paper, 
+  Container, 
+  Button,
+  Stack,
+  useTheme,
+  Divider,
+  Card,
+  CardContent,
+  CardMedia,
+  IconButton,
+  CircularProgress,
+  Alert
+} from '@mui/material';
+import {
+  NavigateNext as NavigateNextIcon, 
+  ArrowForward as ArrowForwardIcon,
+  ChevronRight as ChevronRightIcon,
+  ExitToApp as ExitToAppIcon
+} from '@mui/icons-material';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
+import axios from 'axios';
+// Import komponen ScrollToTop
+import ScrollToTop from '../components/ui/ScrollToTop';
+
 
 const About = () => {
   return (

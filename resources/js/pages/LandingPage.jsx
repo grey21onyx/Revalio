@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   Box, 
   Typography, 
@@ -15,7 +15,23 @@ import {
   CardMedia,
   IconButton,
   CircularProgress,
-  Alert
+  Alert,
+  AppBar,
+  Toolbar,
+  Menu,
+  MenuItem,
+  useScrollTrigger,
+  useMediaQuery,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Avatar,
+  TextField
 } from '@mui/material';
 import {
   Recycling as RecyclingIcon,
@@ -28,11 +44,28 @@ import {
   BusinessCenter as PeluangUsahaIcon,
   ChevronRight as ChevronRightIcon,
   ArrowForward as ArrowForwardIcon,
-  Article as ArticleIcon
+  Article as ArticleIcon,
+  Menu as MenuIcon,
+  Close as CloseIcon,
+  ExpandMore as ExpandMoreIcon,
+  NavigateBefore as NavigateBeforeIcon,
+  FormatQuote as FormatQuoteIcon,
+  Star as StarIcon,
+  Lock as LockIcon,
+  People as PeopleIcon,
+  LocationOn as LocationOnIcon,
+  Email as EmailIcon,
+  Phone as PhoneIcon,
+  Facebook as FacebookIcon,
+  Instagram as InstagramIcon,
+  Twitter as TwitterIcon,
+  LinkedIn as LinkedInIcon
 } from '@mui/icons-material';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
+import { Carousel } from 'react-responsive-carousel';
+import 'react-responsive-carousel/lib/styles/carousel.min.css';
 // import axios from 'axios'; // Akan diaktifkan jika ada panggilan API di landing page
 
 // Import komponen ScrollToTop
@@ -40,6 +73,29 @@ import ScrollToTop from '../components/ui/ScrollToTop';
 
 // Register GSAP plugins
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
+
+// Komponen untuk navbar dengan efek elevasi saat scroll
+function ElevationScroll(props) {
+  const { children } = props;
+  const trigger = useScrollTrigger({
+    disableHysteresis: true,
+    threshold: 0,
+  });
+
+  return React.cloneElement(children, {
+    elevation: trigger ? 6 : 0,
+    sx: {
+      backgroundColor: 'rgba(41, 98, 41, 0.85)', // Warna hijau konsisten
+      color: 'white', // Warna teks putih konsisten
+      transition: 'all 0.3s ease',
+      backdropFilter: trigger ? 'blur(10px)' : 'blur(5px)',
+      borderBottom: trigger ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.1)',
+      boxShadow: trigger 
+        ? '0 4px 20px rgba(0,0,0,0.2)' 
+        : '0 2px 10px rgba(0,0,0,0.1)',
+    },
+  });
+}
 
 // Komponen untuk section fitur dengan animasi hover (sama seperti di Home.jsx)
 const FeatureCard = ({ icon: Icon, title, description, path, color }) => {
@@ -196,6 +252,9 @@ const SectionHeading = ({ title, subtitle, actionText, actionLink }) => {
 
 const LandingPage = () => {
   const theme = useTheme();
+  const navigate = useNavigate();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const heroRef = useRef(null);
   const heroContentRef = useRef(null);
   const heroImageRef = useRef(null);
@@ -206,6 +265,38 @@ const LandingPage = () => {
   const heroSubtitleRef = useRef(null);
   const heroButtonsRef = useRef(null);
   const aboutSectionRef = useRef(null);
+  const faqSectionRef = useRef(null);
+  const testimonialSectionRef = useRef(null);
+  const howItWorksSectionRef = useRef(null);
+
+  const handleScrollToSection = (elementRef) => {
+    if (elementRef && elementRef.current) {
+      window.scrollTo({
+        top: elementRef.current.offsetTop - 80, // Adjust for navbar height
+        behavior: 'smooth',
+      });
+    }
+    setMobileMenuOpen(false); // Close mobile menu after clicking
+  };
+
+  const handleNavLogin = () => {
+    navigate('/login');
+  };
+
+  const handleNavRegister = () => {
+    navigate('/register');
+  };
+
+  // Menu items for navbar
+  const navItems = [
+    { label: 'Beranda', action: () => window.scrollTo({ top: 0, behavior: 'smooth' }) },
+    { label: 'Fitur', action: () => handleScrollToSection(featuresRef) },
+    { label: 'Tentang', action: () => handleScrollToSection(aboutSectionRef) },
+    { label: 'Cara Kerja', action: () => handleScrollToSection(howItWorksSectionRef) },
+    { label: 'Dampak', action: () => handleScrollToSection(impactSectionRef) },
+    { label: 'Testimoni', action: () => handleScrollToSection(testimonialSectionRef) },
+    { label: 'FAQ', action: () => handleScrollToSection(faqSectionRef) },
+  ];
 
   useEffect(() => {
     // Hero section animations
@@ -521,6 +612,232 @@ const LandingPage = () => {
 
   return (
     <Box sx={{ backgroundColor: '#f8f9fa' }}>
+      {/* Navbar */}
+      <ElevationScroll>
+        <AppBar position="fixed" color="transparent">
+          <Container maxWidth="lg">
+            <Toolbar disableGutters sx={{ py: 1 }}>
+              {/* Logo */}
+              <Box
+                component={Link}
+                to="/"
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  textDecoration: 'none',
+                  color: 'inherit',
+                  mr: 3,
+                  position: 'relative',
+                  zIndex: 2,
+                  '&:hover': {
+                    '& .logo-icon': {
+                      transform: 'rotate(20deg)',
+                    }
+                  }
+                }}
+              >
+                <RecyclingIcon 
+                  className="logo-icon"
+                  sx={{ 
+                    mr: 1, 
+                    fontSize: 35,
+                    textShadow: '0 2px 10px rgba(0,0,0,0.3)',
+                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.35))',
+                    transition: 'transform 0.3s ease',
+                  }} 
+                />
+                <Typography 
+                  variant="h5" 
+                  fontWeight={700}
+                  sx={{
+                    textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                    position: 'relative',
+                    '&::after': {
+                      content: '""',
+                      position: 'absolute',
+                      bottom: -2,
+                      left: 0,
+                      width: '100%',
+                      height: '2px',
+                      backgroundColor: 'secondary.main',
+                      opacity: 0.8,
+                    }
+                  }}
+                >
+                  Revalio
+                </Typography>
+              </Box>
+
+              {/* Desktop Menu */}
+              <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
+                {navItems.map((item, index) => (
+                  <Button
+                    key={index}
+                    onClick={item.action}
+                    sx={{ 
+                      mx: 1, 
+                      color: 'inherit',
+                      fontWeight: 600,
+                      position: 'relative',
+                      overflow: 'hidden',
+                      px: 1.5,
+                      '&::after': {
+                        content: '""',
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '3px',
+                        backgroundColor: 'secondary.main',
+                        transform: 'scaleX(0)',
+                        transformOrigin: 'bottom right',
+                        transition: 'transform 0.3s',
+                        borderRadius: '3px 3px 0 0',
+                      },
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                        '&::after': {
+                          transform: 'scaleX(1)',
+                          transformOrigin: 'bottom left',
+                        }
+                      }
+                    }}
+                  >
+                    {item.label}
+                  </Button>
+                ))}
+              </Box>
+
+              {/* Auth Buttons - Desktop */}
+              <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
+                <Button 
+                  onClick={handleNavLogin} 
+                  sx={{ 
+                    mx: 1,
+                    borderWidth: 2,
+                    fontWeight: 600,
+                    borderColor: 'white',
+                    '&:hover': {
+                      borderWidth: 2,
+                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      borderColor: 'white',
+                    }
+                  }}
+                  variant="outlined" 
+                  color="inherit"
+                >
+                  Masuk
+                </Button>
+                <Button 
+                  onClick={handleNavRegister}
+                  variant="contained" 
+                  sx={{ 
+                    ml: 1,
+                    borderRadius: 8,
+                    px: 3,
+                    fontWeight: 600,
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
+                    backgroundColor: 'white',
+                    color: 'rgba(41, 98, 41, 0.85)',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    }
+                  }}
+                >
+                  Daftar
+                </Button>
+              </Box>
+
+              {/* Mobile menu icon - Posisi diubah ke kanan */}
+              <Box sx={{ 
+                display: { xs: 'flex', md: 'none' },
+                marginLeft: 'auto', // Mendorong hamburger icon ke kanan
+                justifyContent: 'flex-end' // Memastikan icon berada di sisi kanan
+              }}>
+                <IconButton 
+                  size="large" 
+                  color="inherit"
+                  sx={{ 
+                    bgcolor: 'rgba(255, 255, 255, 0.15)', 
+                    '&:hover': {
+                      bgcolor: 'rgba(255, 255, 255, 0.25)'
+                    }
+                  }}
+                  onClick={() => setMobileMenuOpen(true)}
+                >
+                  <MenuIcon />
+                </IconButton>
+              </Box>
+            </Toolbar>
+          </Container>
+        </AppBar>
+      </ElevationScroll>
+
+      {/* Mobile Menu Drawer */}
+      <Drawer
+        anchor="right"
+        open={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+        sx={{
+          '& .MuiDrawer-paper': { 
+            width: '80%', 
+            maxWidth: 300,
+            boxSizing: 'border-box',
+            borderTopLeftRadius: 16,
+            borderBottomLeftRadius: 16,
+          },
+        }}
+      >
+        <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="h6" fontWeight={600}>Menu</Typography>
+          <IconButton onClick={() => setMobileMenuOpen(false)}>
+            <CloseIcon />
+          </IconButton>
+        </Box>
+        <Divider />
+        <List>
+          {navItems.map((item, index) => (
+            <ListItem key={index} disablePadding>
+              <ListItemButton onClick={item.action}>
+                <ListItemText primary={item.label} />
+              </ListItemButton>
+            </ListItem>
+          ))}
+          <Divider sx={{ my: 1 }} />
+          <ListItem disablePadding>
+            <ListItemButton onClick={handleNavLogin}>
+              <ListItemText primary="Masuk" />
+            </ListItemButton>
+          </ListItem>
+          <ListItem disablePadding>
+            <ListItemButton 
+              onClick={handleNavRegister}
+              sx={{ 
+                bgcolor: theme.palette.secondary.main,
+                color: 'white',
+                mx: 2,
+                my: 1,
+                borderRadius: 2,
+                '&:hover': {
+                  bgcolor: theme.palette.secondary.dark,
+                }
+              }}
+            >
+              <ListItemText 
+                primary="Daftar Sekarang" 
+                primaryTypographyProps={{ 
+                  align: 'center',
+                  fontWeight: 600
+                }} 
+              />
+            </ListItemButton>
+          </ListItem>
+        </List>
+      </Drawer>
+
+      {/* Toolbar offset for fixed navbar */}
+      <Toolbar />
+
       {/* Hero Section */}
       <Box 
         ref={heroRef}
@@ -552,43 +869,44 @@ const LandingPage = () => {
                     fontSize: { xs: '2.5rem', sm: '3rem', md: '3.75rem' },
                     textShadow: '0 2px 4px rgba(0,0,0,0.2)',
                     letterSpacing: '-0.5px',
-                    mb: 3
+                    mb: 2
                   }}
                 >
-                  Ubah Sampah Menjadi Penghasilan
+                  Ubah Sampah Menjadi <Box component="span" sx={{ color: theme.palette.secondary.main }}>Nilai Ekonomis</Box>
                 </Typography>
                 <Typography 
                   ref={heroSubtitleRef}
                   variant="h6" 
                   gutterBottom 
                   sx={{ 
-                    mb: 4, 
+                    mb: 3, 
                     fontWeight: 400,
                     fontSize: { xs: '1.1rem', sm: '1.2rem', md: '1.35rem' },
-                    opacity: 0.95,
+                    opacity: 0.9,
                     maxWidth: '700px',
                     lineHeight: 1.6
                   }}
                 >
-                  Platform edukasi digital untuk memberdayakan sampah menjadi sumber penghasilan yang berkelanjutan
+                  Temukan cara praktis mendaur ulang sampah, dapatkan pendapatan tambahan, dan berkontribusi pada lingkungan yang lebih bersih.
                 </Typography>
+                
                 <Stack 
                   ref={heroButtonsRef}
                   direction={{ xs: 'column', sm: 'row' }} 
                   spacing={{ xs: 2, sm: 3 }}
-                  sx={{ mt: 6 }}
+                  sx={{ mt: 3 }}
                 >
                   <Button 
                     variant="contained" 
                     color="secondary" 
                     size="large"
                     component={Link}
-                    to="/register" // Mengarah ke halaman registrasi
+                    to="/register"
                     sx={{ 
                       borderRadius: 8,
                       px: { xs: 3, md: 5 },
                       py: 1.75,
-                      fontSize: '1 rem',
+                      fontSize: '1.1rem',
                       fontWeight: 600,
                       boxShadow: '0 4px 15px rgba(0,0,0,0.25)',
                       transition: 'all 0.3s',
@@ -605,12 +923,12 @@ const LandingPage = () => {
                     color="inherit" 
                     size="large"
                     component={Link}
-                    to="/tentang" // Mengarah ke halaman Tentang Kami (jika ada, atau section di LandingPage)
+                    to="/tentang"
                     sx={{ 
                       borderRadius: 8,
                       px: { xs: 3, md: 5 },
                       py: 1.75,
-                      fontSize: '1 rem',
+                      fontSize: '1.1rem',
                       fontWeight: 600,
                       borderColor: 'white',
                       borderWidth: 2,
@@ -851,6 +1169,144 @@ const LandingPage = () => {
           </Grid>
         </Box>
 
+
+        {/* How It Works Section */}
+        <Box sx={{ mb: { xs: 6, md: 8 } }} ref={howItWorksSectionRef}>
+          <SectionHeading 
+            title="Cara Kerja Revalio"
+            subtitle="Ikuti langkah-langkah sederhana ini untuk mulai mendaur ulang dan menghasilkan pendapatan tambahan dari sampah."
+          />
+          
+          <Box sx={{ position: 'relative', py: 4 }}>
+            <Box 
+              sx={{ 
+                position: 'absolute', 
+                top: '50%', 
+                left: 0, 
+                right: 0, 
+                height: 4, 
+                bgcolor: 'grey.100', 
+                zIndex: 0,
+                display: { xs: 'none', md: 'block' }
+              }}
+            />
+            
+            <Grid container spacing={3}>
+              {[
+                {
+                  icon: <RecyclingIcon sx={{ fontSize: 40, color: 'white' }} />,
+                  color: theme.palette.primary.main,
+                  title: 'Kumpulkan Sampah',
+                  description: 'Pisahkan sampah berdasarkan jenisnya (plastik, kertas, logam, dll.) dan bersihkan seperlunya.'
+                },
+                {
+                  icon: <KatalogIcon sx={{ fontSize: 40, color: 'white' }} />,
+                  color: theme.palette.secondary.main,
+                  title: 'Identifikasi Nilai',
+                  description: 'Gunakan katalog Revalio untuk mengetahui nilai ekonomis dan cara terbaik mengelola sampah Anda.'
+                },
+                {
+                  icon: <DaurUlangIcon sx={{ fontSize: 40, color: 'white' }} />,
+                  color: theme.palette.success.main,
+                  title: 'Daur Ulang / Jual',
+                  description: 'Ikuti tutorial daur ulang atau temukan pengepul terdekat untuk menjual sampah tersebut.'
+                },
+                {
+                  icon: <MonetisasiIcon sx={{ fontSize: 40, color: 'white' }} />,
+                  color: theme.palette.warning.main,
+                  title: 'Dapatkan Keuntungan',
+                  description: 'Hasilkan pendapatan dari penjualan sampah atau produk daur ulang yang bernilai lebih tinggi.'
+                },
+              ].map((step, index) => (
+                <Grid item xs={12} sm={6} md={3} key={index}>
+                  <Box sx={{ 
+                    textAlign: 'center', 
+                    height: '100%', 
+                    display: 'flex', 
+                    flexDirection: 'column',
+                    position: 'relative',
+                    zIndex: 1
+                  }}>
+                    <Box 
+                      sx={{ 
+                        width: 80, 
+                        height: 80, 
+                        borderRadius: '50%', 
+                        backgroundColor: step.color, 
+                        display: 'flex', 
+                        justifyContent: 'center', 
+                        alignItems: 'center',
+                        boxShadow: `0 4px 20px ${step.color}40`,
+                        mx: 'auto',
+                        mb: 2,
+                        position: 'relative',
+                        '&::before': {
+                          content: `"${index + 1}"`,
+                          position: 'absolute',
+                          top: -10,
+                          right: -10,
+                          width: 28,
+                          height: 28,
+                          borderRadius: '50%',
+                          bgcolor: 'background.paper',
+                          border: `2px solid ${step.color}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 'bold',
+                          fontSize: '0.875rem'
+                        }
+                      }}
+                    >
+                      {step.icon}
+                    </Box>
+                    <Typography variant="h6" fontWeight={600} gutterBottom>
+                      {step.title}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      {step.description}
+                    </Typography>
+                    
+                    {index < 3 && (
+                      <Box 
+                        sx={{ 
+                          display: { xs: 'none', md: 'block' }, 
+                          position: 'absolute', 
+                          top: 40, 
+                          right: -16, 
+                          transform: 'rotate(-20deg)',
+                          color: step.color
+                        }}
+                      >
+                        <NavigateNextIcon sx={{ fontSize: 40 }} />
+                      </Box>
+                    )}
+                  </Box>
+                </Grid>
+              ))}
+            </Grid>
+            
+            <Box sx={{ textAlign: 'center', mt: 5 }}>
+              <Button 
+                variant="contained" 
+                color="primary" 
+                component={Link}
+                to="/login" 
+                endIcon={<ArrowForwardIcon />}
+                sx={{ 
+                  borderRadius: 8,
+                  px: 4,
+                  py: 1.5,
+                  fontSize: '1rem',
+                  fontWeight: 600
+                }}
+              >
+                Mulai Sekarang
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+
         {/* Environmental Impact Section */}
         <Box 
           ref={impactSectionRef}
@@ -910,6 +1366,115 @@ const LandingPage = () => {
             </Grid>
           </Grid>
         </Box>
+        
+        {/* FAQ Section */}
+        <Box sx={{ mb: { xs: 6, md: 8 } }} ref={faqSectionRef}>
+          <SectionHeading 
+            title="Pertanyaan Umum"
+            subtitle="Temukan jawaban atas pertanyaan yang sering ditanyakan tentang Revalio dan cara kerjanya."
+          />
+          
+          <Grid container spacing={4}>
+            <Grid item xs={12} md={6}>
+              {/* FAQ Accordion - Column 1 */}
+              {[
+                {
+                  question: "Apa itu Revalio?",
+                  answer: "Revalio adalah platform edukasi digital yang fokus pada pengelolaan sampah menjadi sumber penghasilan. Kami menyediakan informasi, tutorial, dan alat untuk membantu Anda mengidentifikasi, mengelola, dan memonetisasi sampah."
+                },
+                {
+                  question: "Bagaimana cara memulai di Revalio?",
+                  answer: "Cukup daftar akun gratis, lalu akses katalog sampah dan panduan daur ulang. Anda bisa mulai mencatat sampah yang terkumpul, mempelajari tutorial, dan terhubung dengan komunitas penggiat daur ulang."
+                },
+                {
+                  question: "Apakah Revalio gratis digunakan?",
+                  answer: "Ya, sebagian besar fitur Revalio tersedia secara gratis. Kami menyediakan layanan premium dengan fitur tambahan untuk pengguna yang membutuhkan analisis mendalam dan alat pengelolaan sampah yang lebih canggih."
+                }
+              ].map((item, index) => (
+                <Accordion 
+                  key={index} 
+                  sx={{ 
+                    mb: 1.5, 
+                    borderRadius: '10px', 
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                    border: '1px solid rgba(0,0,0,0.05)',
+                    overflow: 'hidden',
+                    '&:before': {
+                      display: 'none',
+                    },
+                  }}
+                >
+                  <AccordionSummary
+                    expandIcon={<ExpandMoreIcon />}
+                    aria-controls={`panel${index}-content`}
+                    id={`panel${index}-header`}
+                    sx={{ 
+                      backgroundColor: 'rgba(0,0,0,0.02)', 
+                      borderBottom: '1px solid rgba(0,0,0,0.05)', 
+                    }}
+                  >
+                    <Typography fontWeight={600}>{item.question}</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails sx={{ py: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      {item.answer}
+                    </Typography>
+                  </AccordionDetails>
+                </Accordion>
+              ))}
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              {/* FAQ Accordion - Column 2 */}
+              {[
+                {
+                  question: "Bagaimana Revalio membantu memonetisasi sampah?",
+                  answer: "Revalio menyediakan informasi lengkap tentang jenis sampah bernilai ekonomi, estimasi harga pasaran, dan kontak pengepul di sekitar Anda. Kami juga memberikan tutorial daur ulang sampah menjadi produk bernilai jual."
+                },
+                {
+                  question: "Siapa saja yang bisa menggunakan Revalio?",
+                  answer: "Revalio bisa digunakan oleh siapa saja - individu, komunitas, lembaga pendidikan, dan bisnis yang peduli dengan pengelolaan sampah dan ingin mendapatkan nilai ekonomis dari aktivitas daur ulang."
+                },
+                {
+                  question: "Bagaimana cara melacak sampah yang sudah saya kumpulkan?",
+                  answer: "Di dashboard Revalio, Anda bisa mencatat jenis dan jumlah sampah yang dikumpulkan. Platform akan menghitung estimasi nilai ekonomisnya dan menampilkan statistik perkembangan Anda dari waktu ke waktu."
+                }
+              ].map((item, index) => (
+                <Accordion 
+                  key={index} 
+                  sx={{ 
+                    mb: 1.5, 
+                    borderRadius: '10px', 
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                    border: '1px solid rgba(0,0,0,0.05)',
+                    overflow: 'hidden',
+                    '&:before': {
+                      display: 'none',
+                    },
+                  }}
+                >
+                  <AccordionSummary
+                    expandIcon={<ExpandMoreIcon />}
+                    aria-controls={`panel${index+3}-content`}
+                    id={`panel${index+3}-header`}
+                    sx={{ 
+                      backgroundColor: 'rgba(0,0,0,0.02)', 
+                      borderBottom: '1px solid rgba(0,0,0,0.05)', 
+                    }}
+                  >
+                    <Typography fontWeight={600}>{item.question}</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails sx={{ py: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      {item.answer}
+                    </Typography>
+                  </AccordionDetails>
+                </Accordion>
+              ))}
+              
+            </Grid>
+          </Grid>
+        </Box>
 
         {/* Call to Action */}
         <Card
@@ -947,42 +1512,128 @@ const LandingPage = () => {
                   fontWeight={800} 
                   gutterBottom
                 >
-                  Mulai Kelola Sampah Anda Sekarang
+                  Mulai Perjalanan Daur Ulang Anda Sekarang
                 </Typography>
                 <Typography 
                   className="cta-description"
                   variant="body1" 
-                  sx={{ mb: 3, opacity: 0.9, fontSize: '1.1rem', maxWidth: '600px' }}
+                  sx={{ mb: 4, opacity: 0.9, fontSize: '1.1rem', maxWidth: '600px' }}
                 >
-                  Bergabunglah dengan komunitas Revalio untuk mendapatkan akses penuh ke seluruh fitur dan mulai memonetisasi sampah Anda. Kami akan membimbing Anda langkah demi langkah.
+                  Dapatkan akses penuh ke fitur Revalio dan jadilah bagian dari komunitas yang peduli lingkungan sambil menghasilkan pendapatan tambahan dari sampah.
                 </Typography>
                 
-                <Grid container spacing={2} sx={{ mb: 4 }} className="cta-steps">
-                  <Grid item xs={12} sm={6}>
-                    <Box className="cta-step" sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Box sx={{ borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.15)', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', mr: 2 }}>1</Box>
-                      <Typography variant="body1" fontWeight={500}>Daftar akun gratis</Typography>
-                    </Box>
+                {/* Feature highlights */}
+                <Box className="cta-features" sx={{ mb: 4 }}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <Box sx={{ display: 'flex', mb: 2 }}>
+                        <Box 
+                          sx={{ 
+                            width: 40, 
+                            height: 40, 
+                            borderRadius: '50%', 
+                            bgcolor: 'rgba(255,255,255,0.15)', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            mr: 2,
+                            flexShrink: 0
+                          }}
+                        >
+                          <KatalogIcon />
+                        </Box>
+                        <Box>
+                          <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 0.5 }}>
+                            Katalog Sampah Lengkap
+                          </Typography>
+                          <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                            Akses informasi 500+ jenis sampah berharga
+                          </Typography>
+                        </Box>
+                      </Box>
+                      
+                      <Box sx={{ display: 'flex', mb: 2 }}>
+                        <Box 
+                          sx={{ 
+                            width: 40, 
+                            height: 40, 
+                            borderRadius: '50%', 
+                            bgcolor: 'rgba(255,255,255,0.15)', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            mr: 2,
+                            flexShrink: 0
+                          }}
+                        >
+                          <DaurUlangIcon />
+                        </Box>
+                        <Box>
+                          <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 0.5 }}>
+                            Panduan Daur Ulang
+                          </Typography>
+                          <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                            Tutorial langkah demi langkah dengan gambar dan video
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Grid>
+                    
+                    <Grid item xs={12} sm={6}>
+                      <Box sx={{ display: 'flex', mb: 2 }}>
+                        <Box 
+                          sx={{ 
+                            width: 40, 
+                            height: 40, 
+                            borderRadius: '50%', 
+                            bgcolor: 'rgba(255,255,255,0.15)', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            mr: 2,
+                            flexShrink: 0
+                          }}
+                        >
+                          <TrackingIcon />
+                        </Box>
+                        <Box>
+                          <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 0.5 }}>
+                            Tracking & Analisis
+                          </Typography>
+                          <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                            Pantau progres dan analisa nilai ekonomi sampah Anda
+                          </Typography>
+                        </Box>
+                      </Box>
+                      
+                      <Box sx={{ display: 'flex', mb: 2 }}>
+                        <Box 
+                          sx={{ 
+                            width: 40, 
+                            height: 40, 
+                            borderRadius: '50%', 
+                            bgcolor: 'rgba(255,255,255,0.15)', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            mr: 2,
+                            flexShrink: 0
+                          }}
+                        >
+                          <ForumIcon />
+                        </Box>
+                        <Box>
+                          <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 0.5 }}>
+                            Komunitas Aktif
+                          </Typography>
+                          <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                            Forum diskusi dan berbagi pengalaman antar penggiat daur ulang
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Grid>
                   </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Box className="cta-step" sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Box sx={{ borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.15)', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', mr: 2 }}>2</Box>
-                      <Typography variant="body1" fontWeight={500}>Akses panduan & tutorial</Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Box className="cta-step" sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Box sx={{ borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.15)', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', mr: 2 }}>3</Box>
-                      <Typography variant="body1" fontWeight={500}>Mulai tracking sampah</Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Box className="cta-step" sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Box sx={{ borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.15)', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', mr: 2 }}>4</Box>
-                      <Typography variant="body1" fontWeight={500}>Dapatkan nilai ekonomis</Typography>
-                    </Box>
-                  </Grid>
-                </Grid>
+                </Box>
                 
                 <Stack 
                   className="cta-buttons"
@@ -1017,10 +1668,28 @@ const LandingPage = () => {
                     Masuk
                   </Button>
                 </Stack>
+                
+
               </Grid>
               
               <Grid item xs={12} md={5} sx={{ display: { xs: 'none', md: 'block' } }}>
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', position: 'relative' }}>
+                  <Box 
+                    sx={{ 
+                      position: 'absolute',
+                      width: '280px',
+                      height: '280px',
+                      borderRadius: '50%',
+                      background: 'rgba(255,255,255,0.05)',
+                      filter: 'blur(20px)',
+                      animation: 'pulse 3s infinite',
+                      '@keyframes pulse': {
+                        '0%': { transform: 'scale(1)', opacity: 0.6 },
+                        '50%': { transform: 'scale(1.1)', opacity: 0.4 },
+                        '100%': { transform: 'scale(1)', opacity: 0.6 }
+                      }
+                    }}
+                  />
                   <Box sx={{ width: '280px', height: '280px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', display: 'flex', justifyContent: 'center', alignItems: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', border: '1px solid rgba(255,255,255,0.2)' }}>
                     <Box 
                       className="cta-image"
@@ -1038,7 +1707,8 @@ const LandingPage = () => {
         </Card>
       </Container>
 
-      <ScrollToTop threshold={400} color="secondary" />
+      {/* Back to Top Button */}
+      <ScrollToTop />
     </Box>
   );
 };

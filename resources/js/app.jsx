@@ -6,7 +6,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
-import axios from './config/axios';
+import axios, { fetchCsrfCookie } from './config/axios';
 import 'leaflet/dist/leaflet.css'; // Import Leaflet CSS
 import '../css/gis.css'; // Import CSS untuk komponen GIS
 
@@ -27,12 +27,13 @@ function App() {
     useEffect(() => {
         const getCsrfToken = async () => {
             try {
-                console.log('Attempting to fetch CSRF cookie...');
-                await axios.get('/sanctum/csrf-cookie');
-                console.log('CSRF cookie fetched successfully.');
+                console.log('Mengambil CSRF cookie dengan retry logic...');
+                await fetchCsrfCookie(3, 30000); // 3 percobaan, timeout 30 detik
+                console.log('CSRF cookie berhasil diambil.');
             } catch (error) {
                 console.error('Error fetching CSRF cookie:', error);
                 // Pertimbangkan untuk menampilkan notifikasi ke user jika ini gagal
+                // Tapi kita tidak perlu menghentikan aplikasi berjalan
             }
         };
 

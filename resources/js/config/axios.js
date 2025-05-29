@@ -12,6 +12,49 @@ const instance = axios.create({
   }
 });
 
+// Fungsi khusus untuk mendapatkan CSRF cookie dengan retry logic
+export const fetchCsrfCookie = async (retries = 3, timeout = 30000) => {
+  const csrfInstance = axios.create({
+    baseURL: '/', // URL dasar ke root karena sanctum/csrf-cookie bukan di /api
+    timeout: timeout, // Timeout lebih lama untuk permintaan ini
+    withCredentials: true,
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  });
+
+  let lastError;
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      console.log(`Attempting to fetch CSRF cookie (attempt ${attempt + 1}/${retries})...`);
+      const response = await csrfInstance.get('/sanctum/csrf-cookie');
+      console.log('CSRF cookie fetched successfully.');
+      return response;
+    } catch (error) {
+      console.warn(`Attempt ${attempt + 1} failed:`, error.message);
+      lastError = error;
+      
+      // Jika bukan error timeout dan bukan network error, break loop
+      if (error.code !== 'ECONNABORTED' && !error.message.includes('Network Error')) {
+        break;
+      }
+      
+      // Tunggu sejenak sebelum mencoba lagi (backoff exponential)
+      if (attempt < retries - 1) {
+        const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s, etc.
+        console.log(`Waiting ${delay}ms before next attempt...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  // Semua percobaan gagal
+  console.error(`Failed to fetch CSRF cookie after ${retries} attempts:`, lastError);
+  throw lastError;
+};
+
 // Interceptor untuk menambahkan token otentikasi dan CSRF token ke semua request
 instance.interceptors.request.use(
   (config) => {
@@ -59,7 +102,7 @@ instance.interceptors.request.use(
         // coba ambil token baru di background (tanpa blocking request saat ini)
         if (!config.url.includes('/sanctum/csrf-cookie')) {
           console.debug('Attempting to fetch new CSRF token in background');
-          axios.get('/sanctum/csrf-cookie')
+          fetchCsrfCookie(2, 20000) // 2 percobaan dengan timeout 20 detik
             .catch(err => console.error('Failed to fetch CSRF token:', err));
         }
       }
@@ -102,7 +145,7 @@ instance.interceptors.response.use(
       console.log('CSRF token mismatch detected, refreshing CSRF token');
       
       // Refresh CSRF token
-      axios.get('/sanctum/csrf-cookie')
+      fetchCsrfCookie(2, 20000) // 2 percobaan dengan timeout 20 detik
         .then(() => {
           console.log('CSRF token refreshed successfully');
         })

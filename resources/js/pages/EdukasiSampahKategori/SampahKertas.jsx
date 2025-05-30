@@ -185,16 +185,16 @@ const SampahKertas = () => {
             </Typography>
             <Divider sx={{ mb: 3 }} />
             
-            <Grid container spacing={4}>
-              <Grid item xs={12} md={6}>
+            <Paper sx={{ p: 4, borderRadius: 2 }}>
+              <Grid container spacing={4}>
+              <Grid item xs={12} md={6}> 
                 <Box 
                   component="img" 
-                  src="/assets/images/paper-recycling-process.jpg" 
+                  src="/assets/images/lambang-daur-ulang.png" 
                   alt="Proses Daur Ulang Kertas"
                   sx={{ 
                     width: '100%', 
-                    borderRadius: 2,
-                    boxShadow: '0 5px 15px rgba(0,0,0,0.1)'
+                    borderRadius: 2
                   }}
                 />
               </Grid>
@@ -248,6 +248,7 @@ const SampahKertas = () => {
                 </List>
               </Grid>
             </Grid>
+            </Paper>
           </Grid>
           
           {/* Kerajinan dari Kertas */}

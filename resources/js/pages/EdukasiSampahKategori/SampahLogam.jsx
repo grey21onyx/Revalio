@@ -204,12 +204,11 @@ const SampahLogam = () => {
                 <Grid item xs={12} md={6}>
                   <Box 
                     component="img" 
-                    src="/assets/images/metal-recycling-process.jpg" 
+                    src="/assets/images/lambang-daur-ulang.png" 
                     alt="Proses Daur Ulang Logam"
                     sx={{ 
                       width: '100%', 
-                      borderRadius: 2,
-                      boxShadow: '0 5px 15px rgba(0,0,0,0.1)'
+                      borderRadius: 2
                     }}
                   />
                 </Grid>

@@ -14,13 +14,16 @@ import {
   Avatar,
   IconButton,
   Divider,
-  Pagination
+  Pagination,
+  Rating
 } from '@mui/material';
 import ForumIcon from '@mui/icons-material/Forum';
 import SearchIcon from '@mui/icons-material/Search';
 import DeleteIcon from '@mui/icons-material/Delete';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import SortIcon from '@mui/icons-material/Sort';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import StarIcon from '@mui/icons-material/Star';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import api from '../services/api';
@@ -115,7 +118,7 @@ const Forum = () => {
         setLoading(true);
         // Pilih endpoint yang sesuai berdasarkan sortOption
         const endpoint = sortOption === 'popular' 
-          ? '/public/forum-threads/popular'
+          ? '/public/forum-threads'  // Changed to fetch all threads for manual sorting
           : '/public/forum-threads';
         
         // Siapkan parameter untuk filter category dan search
@@ -141,22 +144,80 @@ const Forum = () => {
         
         // Format data dari API ke format yang digunakan di frontend
         const formattedThreads = response.data.data.map(thread => {
-          // Log detail komentar untuk debugging
-          console.log(`Thread ${thread.id}: ${thread.judul} - Comments count:`, thread.comments_count);
+          // Debug data yang diterima untuk memastikan format average_rating
+          console.log(`Thread ${thread.id || thread.thread_id} raw rating data:`, {
+            rating: thread.average_rating,
+            rating_type: typeof thread.average_rating,
+            rating_count: thread.rating_count
+          });
+          
+          // Validasi data dan pastikan tipe data numerik dengan fallback
+          const commentsCount = parseInt(thread.comments_count) || 0;
+          const likesCount = parseInt(thread.likes_count) || 0;
+          const viewCount = parseInt(thread.view_count) || 0;
+          
+          // Penanganan khusus untuk average_rating dengan validasi yang lebih ketat
+          let avgRating = 0;
+          if (thread.average_rating !== undefined && thread.average_rating !== null) {
+            // Coba konversi ke float dengan sanitasi
+            if (typeof thread.average_rating === 'string') {
+              avgRating = parseFloat(thread.average_rating.replace(/[^\d.-]/g, '')) || 0;
+            } else {
+              avgRating = parseFloat(thread.average_rating) || 0;
+            }
+          }
+          
+          // Validasi kisaran rating (1-5)
+          const validRating = avgRating > 0 && avgRating <= 5 ? avgRating : 0;
+          
+          // Penanganan khusus untuk rating_count
+          const ratingCount = thread.rating_count !== undefined && thread.rating_count !== null
+            ? parseInt(thread.rating_count)
+            : 0;
+          
+          // Calculate popularity score dengan validasi
+          const commentScore = commentsCount * 2;
+          const likeScore = likesCount * 3;
+          const viewScore = viewCount * 0.5;
+          const ratingScore = validRating * 5;
+          const popularityScore = commentScore + likeScore + viewScore + ratingScore;
+          
+          // Log untuk debugging hasil processing
+          console.log(`Thread ${thread.id || thread.thread_id} processed rating:`, { 
+            originalRating: thread.average_rating,
+            parsedRating: avgRating,
+            finalRating: validRating,
+            ratingCount: ratingCount
+          });
           
           return {
-            id: thread.id,
+            id: thread.id || thread.thread_id,
             title: thread.judul || 'Tanpa Judul',
             author: thread.user ? (thread.user.nama || thread.user.name || 'Pengguna') : 'Pengguna',
-            replies: thread.comments_count || 0,
+            replies: commentsCount,
+            likes: likesCount,
+            views: viewCount,
+            rating: validRating,
+            rating_count: ratingCount,
             lastPost: thread.tanggal_posting || new Date().toISOString(),
             category: getCategoryFromTags(thread.tags),
             tags: thread.tags ? thread.tags.split(',').filter(tag => tag.trim()) : [],
             avatar: thread.user ? thread.user.foto_profil || thread.user.avatar : null,
+            popularityScore: popularityScore
           };
         });
         
-        console.log('Formatted threads with comment counts:', formattedThreads.map(t => ({ id: t.id, title: t.title, replies: t.replies })));
+        console.log('Formatted threads with popularity scores:', formattedThreads.map(t => ({ 
+          id: t.id, 
+          title: t.title, 
+          popularityScore: t.popularityScore 
+        })));
+        
+        // Sort by popularity if needed
+        if (sortOption === 'popular') {
+          formattedThreads.sort((a, b) => b.popularityScore - a.popularityScore);
+        }
+        
         setThreads(formattedThreads);
         setFilteredThreads(formattedThreads);
       } catch (err) {
@@ -229,7 +290,19 @@ const Forum = () => {
 
   // Handle sort option change untuk setiap tab
   const handleSortChange = (e) => {
-    setSortOption(e.target.value);
+    const newSortOption = e.target.value;
+    setSortOption(newSortOption);
+    
+    // Apply sorting
+    if (newSortOption === 'popular') {
+      const sortedThreads = [...threads].sort((a, b) => b.popularityScore - a.popularityScore);
+      setFilteredThreads(sortedThreads);
+    } else {
+      // Default sort by latest date
+      const sortedThreads = [...threads].sort((a, b) => new Date(b.lastPost) - new Date(a.lastPost));
+      setFilteredThreads(sortedThreads);
+    }
+    
     setAllThreadsPage(1); // Reset pagination when filter changes
   };
 
@@ -269,7 +342,7 @@ const Forum = () => {
     if (sortOpt === 'latest') {
       filtered.sort((a, b) => new Date(b.lastPost) - new Date(a.lastPost));
     } else if (sortOpt === 'popular') {
-      filtered.sort((a, b) => b.replies - a.replies);
+      filtered.sort((a, b) => b.popularityScore - a.popularityScore);
     }
     
     setFilteredMyThreads(filtered);
@@ -341,7 +414,7 @@ const Forum = () => {
       } else {
         // Jika tab yang sama diklik lagi, trigger refresh dengan parameter yang sama
         const endpoint = sortOption === 'popular' 
-          ? '/public/forum-threads/popular'
+          ? '/public/forum-threads'
           : '/public/forum-threads';
         
         setLoading(true);
@@ -363,10 +436,14 @@ const Forum = () => {
                 title: thread.judul || 'Tanpa Judul',
                 author: thread.user ? (thread.user.nama || thread.user.name || 'Pengguna') : 'Pengguna',
                 replies: thread.comments_count || 0,
+                likes: thread.likes_count || 0,
+                views: thread.view_count || 0,
+                rating: thread.average_rating || 0,
                 lastPost: thread.tanggal_posting || new Date().toISOString(),
                 category: getCategoryFromTags(thread.tags),
                 tags: thread.tags ? thread.tags.split(',').filter(tag => tag.trim()) : [],
                 avatar: thread.user ? thread.user.foto_profil || thread.user.avatar : null,
+                popularityScore: thread.popularityScore
               }));
               setThreads(formattedThreads);
               setFilteredThreads(formattedThreads);
@@ -397,10 +474,14 @@ const Forum = () => {
           title: thread.judul || 'Tanpa Judul',
           author: thread.user ? (thread.user.nama || thread.user.nama_lengkap || thread.user.name || 'Pengguna') : 'Pengguna',
           replies: thread.comments_count || 0,
+          likes: thread.likes_count || 0,
+          views: thread.view_count || 0,
+          rating: thread.average_rating || 0,
           lastPost: thread.tanggal_posting || new Date().toISOString(),
           category: getCategoryFromTags(thread.tags),
           tags: thread.tags ? thread.tags.split(',').filter(tag => tag.trim()) : [],
           avatar: thread.user ? thread.user.foto_profil || thread.user.avatar : null,
+          popularityScore: thread.popularityScore
         }));
         
         setMyThreads(formattedThreads);
@@ -905,6 +986,54 @@ const Forum = () => {
                             <Typography>Terakhir: {formatDateTime(thread.lastPost)}</Typography>
                             <Typography sx={{ textTransform: 'capitalize' }}>Kategori: {thread.category}</Typography>
                           </Stack>
+                          
+                          {/* Added Ratings and Views */}
+                          <Stack direction="row" spacing={2} mt={1} sx={{ color: 'text.secondary', fontSize: '0.875rem', alignItems: 'center' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <VisibilityIcon fontSize="small" sx={{ mr: 0.5 }} />
+                              <Typography>{thread.views || 0} dilihat</Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <StarIcon 
+                                fontSize="small" 
+                                sx={{ 
+                                  mr: 0.5, 
+                                  color: thread.rating > 0 ? 'gold' : 'text.secondary' 
+                                }} 
+                              />
+                              <Typography sx={{ mr: 1 }}>
+                                {thread.rating > 0 ? parseFloat(thread.rating).toFixed(1) : '0.0'}
+                              </Typography>
+                              {thread.rating > 0 ? (
+                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                  <Rating 
+                                    value={parseFloat(thread.rating)} 
+                                    readOnly 
+                                    size="small" 
+                                    precision={0.5} 
+                                  />
+                                  {thread.rating_count > 0 && (
+                                    <Typography variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                                      ({thread.rating_count})
+                                    </Typography>
+                                  )}
+                                </Box>
+                              ) : (
+                                <Typography variant="caption" color="text.secondary">
+                                  (Belum ada rating)
+                                </Typography>
+                              )}
+                            </Box>
+                            {sortOption === 'popular' && (
+                              <Chip 
+                                label={`Skor: ${Math.round(thread.popularityScore)}`} 
+                                size="small" 
+                                color="primary"
+                                sx={{ height: 24 }}
+                              />
+                            )}
+                          </Stack>
+                          
                           {thread.tags && thread.tags.length > 0 && (
                             <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap' }}>
                               {thread.tags.map((tag, idx) => (

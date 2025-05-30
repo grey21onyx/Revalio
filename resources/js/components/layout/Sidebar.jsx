@@ -102,16 +102,24 @@ const Sidebar = ({ open, onClose }) => {
         <ListItem disablePadding>
           <ListItemButton
             component={Link}
-            to="/tentang"
-            selected={location.pathname === '/tentang'}
+            to="/about"
+            selected={location.pathname === '/about'}
             sx={{
               mx: 1,
               borderRadius: 1,
+              color: 'inherit',
+              '&:hover': {
+                backgroundColor: theme.palette.primary.main,
+                color: '#fff',
+                '& .MuiListItemIcon-root': {
+                  color: '#fff',
+                },
+              },
               '&.Mui-selected': {
                 backgroundColor: theme.palette.primary.light,
-                color: theme.palette.primary.main,
+                color: 'black',
                 '& .MuiListItemIcon-root': {
-                  color: theme.palette.primary.main,
+                  color: 'black',
                 },
               },
             }}

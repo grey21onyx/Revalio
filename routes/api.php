@@ -21,6 +21,8 @@ use App\Http\Controllers\API\v1\HomeController;
 use App\Http\Controllers\API\v1\MonetizationController;
 use App\Http\Controllers\API\v1\HealthController;
 use App\Http\Controllers\API\v1\GISController;
+use App\Http\Controllers\API\v1\ForumRatingController;
+use App\Http\Controllers\API\v1\ForumViewController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -187,7 +189,17 @@ Route::prefix('v1')->group(function () {
         Route::get('waste-tracking/{id}', [UserWasteTrackingController::class, 'show']);
         Route::put('waste-tracking/{id}', [UserWasteTrackingController::class, 'update']);
         Route::delete('waste-tracking/{id}', [UserWasteTrackingController::class, 'destroy']);
+
+        // Forum thread rating
+        Route::post('/forum-threads/{threadId}/rating', [ForumRatingController::class, 'rateThread']);
+        Route::get('/forum-threads/{threadId}/rating', [ForumRatingController::class, 'getUserRating']);
+
+        // Forum thread view count
+        Route::post('/forum-threads/{threadId}/view', [ForumViewController::class, 'incrementView']);
     });
+
+    // Forum thread view count - public route
+    Route::post('/public/forum-threads/{threadId}/view', [\App\Http\Controllers\API\v1\ForumViewController::class, 'incrementView']);
 });
 
 // GIS Routes untuk peta pengepul sampah

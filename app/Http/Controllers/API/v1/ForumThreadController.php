@@ -67,6 +67,23 @@ class ForumThreadController extends Controller
             }
         }
         
+        // Proses data sebelum dikirim ke client
+        $threads->getCollection()->transform(function ($thread) {
+            // Pastikan average_rating dalam format float
+            if (isset($thread->average_rating)) {
+                $thread->average_rating = (float) $thread->average_rating;
+            }
+            // Pastikan rating_count dalam format integer
+            if (isset($thread->rating_count)) {
+                $thread->rating_count = (int) $thread->rating_count;
+            }
+            // Pastikan view_count dalam format integer
+            if (isset($thread->view_count)) {
+                $thread->view_count = (int) $thread->view_count;
+            }
+            return $thread;
+        });
+        
         return ForumThreadResource::collection($threads)
             ->additional([
                 'meta' => [
@@ -157,6 +174,25 @@ class ForumThreadController extends Controller
             } else {
                 $thread->is_liked = false;
             }
+            
+            // Pastikan data rating dalam tipe numerik yang tepat
+            if (isset($thread->average_rating)) {
+                $thread->average_rating = (float) $thread->average_rating;
+            } else {
+                $thread->average_rating = 0.0;
+            }
+            
+            if (isset($thread->rating_count)) {
+                $thread->rating_count = (int) $thread->rating_count;
+            } else {
+                $thread->rating_count = 0;
+            }
+            
+            // Debugging info untuk rating
+            Log::info("Thread {$id} rating data: average_rating=" . 
+                (isset($thread->average_rating) ? $thread->average_rating : 'null') . 
+                ", rating_count=" . 
+                (isset($thread->rating_count) ? $thread->rating_count : 'null'));
             
             return response()->json([
                 'thread' => new ForumThreadResource($thread)
@@ -365,6 +401,23 @@ class ForumThreadController extends Controller
         $perPage = $request->input('per_page', 15);
         $threads = $query->paginate($perPage);
         
+        // Proses data sebelum dikirim ke client
+        $threads->getCollection()->transform(function ($thread) {
+            // Pastikan average_rating dalam format float
+            if (isset($thread->average_rating)) {
+                $thread->average_rating = (float) $thread->average_rating;
+            }
+            // Pastikan rating_count dalam format integer
+            if (isset($thread->rating_count)) {
+                $thread->rating_count = (int) $thread->rating_count;
+            }
+            // Pastikan view_count dalam format integer
+            if (isset($thread->view_count)) {
+                $thread->view_count = (int) $thread->view_count;
+            }
+            return $thread;
+        });
+        
         return ForumThreadResource::collection($threads)
             ->additional([
                 'meta' => [
@@ -384,12 +437,16 @@ class ForumThreadController extends Controller
      */
     public function popular(Request $request)
     {
+        // Tambahkan log untuk debugging
+        Log::info("popular() method called with params:", $request->all());
+        
         $limit = $request->input('limit', 5);
         $timeFrame = $request->input('time_frame', 'week'); // day, week, month, all
         
+        Log::info("Fetching popular threads with limit: $limit, timeFrame: $timeFrame");
+        
         $query = ForumThread::aktif()
-            ->with(['user'])
-            ->withCount(['comments', 'likes']);
+            ->with(['user']);
         
         // Apply time frame filter
         if ($timeFrame !== 'all') {
@@ -409,11 +466,57 @@ class ForumThreadController extends Controller
             $query->where('tanggal_posting', '>=', $date);
         }
         
-        // Define a popularity score based on views, comments, and likes
-        // Can be adjusted based on business requirements
-        $threads = $query->orderByRaw('(view_count * 1 + comments_count * 3 + likes_count * 5) DESC')
-            ->limit($limit)
-            ->get();
+        // Gunakan scope popular dari model ForumThread
+        $threads = $query->popular($limit)->get();
+        
+        Log::info("Found " . $threads->count() . " popular threads");
+        
+        // Default threads jika tidak ada data
+        if ($threads->isEmpty()) {
+            Log::warning("No popular threads found. Checking if there are any active threads.");
+            // Ambil thread aktif tanpa filter lain sebagai fallback
+            $threads = ForumThread::aktif()->with(['user'])->limit($limit)->get();
+            Log::info("Fallback found " . $threads->count() . " active threads");
+            
+            // Jika masih kosong, cek semua thread tanpa filter status
+            if ($threads->isEmpty()) {
+                Log::warning("No active threads found. Getting any threads as fallback.");
+                $threads = ForumThread::with(['user'])->limit($limit)->get();
+                Log::info("Last resort fallback found " . $threads->count() . " threads");
+            }
+        }
+        
+        // Proses data sebelum dikirim ke client
+        $threads->transform(function ($thread) {
+            // Pastikan average_rating dalam format float
+            if (isset($thread->average_rating)) {
+                $thread->average_rating = (float) $thread->average_rating;
+            } else {
+                $thread->average_rating = 0.0;
+            }
+            
+            // Pastikan rating_count dalam format integer
+            if (isset($thread->rating_count)) {
+                $thread->rating_count = (int) $thread->rating_count;
+            } else {
+                $thread->rating_count = 0;
+            }
+            
+            // Pastikan view_count dalam format integer
+            if (isset($thread->view_count)) {
+                $thread->view_count = (int) $thread->view_count;
+            } else {
+                $thread->view_count = 0;
+            }
+            
+            return $thread;
+        });
+        
+        // Log hasil transform
+        Log::info("Transformed threads for response", [
+            'count' => $threads->count(),
+            'first_thread_title' => $threads->first() ? $threads->first()->judul : 'No threads found'
+        ]);
         
         return ForumThreadResource::collection($threads);
     }

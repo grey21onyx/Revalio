@@ -561,49 +561,127 @@ class ForumCommentController extends Controller
         }
         
         try {
-            // Check if thread exists
-            $thread = ForumThread::findOrFail($threadId);
-            
-            // Get comment
-            $comment = ForumComment::where('thread_id', $threadId)
-                ->where('komentar_id', $id)
-                ->firstOrFail();
-            
-            $user = Auth::user();
-            $isLiked = false;
-            
-            // Check if user already liked this comment
-            $existingLike = $comment->likes()->where('user_id', $user->user_id)->first();
-            
-            if ($existingLike) {
-                // Unlike
-                $existingLike->delete();
-                $message = 'Like berhasil dihapus';
-            } else {
-                // Like
-                $like = new Like();
-                $like->user_id = $user->user_id;
-                $like->likeable_id = $comment->komentar_id;
-                $like->likeable_type = ForumComment::class;
-                $like->save();
-                
-                $isLiked = true;
-                $message = 'Komentar berhasil disukai';
-            }
-            
-            // Get updated like count
-            $likesCount = $comment->likes()->count();
-            
-            return response()->json([
-                'message' => $message,
-                'is_liked' => $isLiked,
-                'likes_count' => $likesCount
+            Log::info('Toggling like for comment', [
+                'thread_id' => $threadId,
+                'comment_id' => $id,
+                'user_id' => Auth::id()
             ]);
+            
+            // Gunakan transaksi database untuk mencegah race condition
+            DB::beginTransaction();
+            
+            try {
+                // Check if thread exists
+                $thread = ForumThread::findOrFail($threadId);
+                
+                // Get comment with lock to prevent concurrent updates
+                $comment = ForumComment::where('thread_id', $threadId)
+                    ->where('komentar_id', $id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+                
+                $user = Auth::user();
+                $userId = $user->user_id;
+                $isLiked = false;
+                
+                Log::info('Processing like toggle', [
+                    'comment_id' => $comment->komentar_id,
+                    'user_id' => $userId
+                ]);
+                
+                // Gunakan table name yang tepat dan column names yang spesifik
+                $likeTable = (new Like)->getTable();
+                
+                // Check if user already liked this comment - gunakan query yang tepat dengan JOIN
+                $existingLike = DB::table($likeTable)
+                    ->where('user_id', $userId)
+                    ->where('likeable_type', ForumComment::class)
+                    ->where('likeable_id', $comment->komentar_id)
+                    ->first();
+                
+                Log::info('Existing like check', [
+                    'exists' => $existingLike ? 'yes' : 'no'
+                ]);
+                
+                if ($existingLike) {
+                    // Unlike - only delete if actually exists
+                    DB::table($likeTable)
+                        ->where('id', $existingLike->id)
+                        ->delete();
+                    
+                    $message = 'Like berhasil dihapus';
+                    $isLiked = false;
+                    
+                    Log::info('Like removed', [
+                        'like_id' => $existingLike->id
+                    ]);
+                } else {
+                    // Double-check tidak ada like yang sudah ada (untuk keamanan extra)
+                    $duplicateCheck = DB::table($likeTable)
+                        ->where('user_id', $userId)
+                        ->where('likeable_type', ForumComment::class)
+                        ->where('likeable_id', $comment->komentar_id)
+                        ->exists();
+                    
+                    if (!$duplicateCheck) {
+                        // Buat like baru
+                        $like = new Like();
+                        $like->user_id = $userId;
+                        $like->likeable_id = $comment->komentar_id;
+                        $like->likeable_type = ForumComment::class;
+                        $like->save();
+                        
+                        $isLiked = true;
+                        $message = 'Komentar berhasil disukai';
+                        
+                        Log::info('Like created', [
+                            'like_id' => $like->id
+                        ]);
+                    } else {
+                        // Like already exists but wasn't found in first check (rare race condition)
+                        $isLiked = true;
+                        $message = 'Komentar sudah disukai sebelumnya';
+                        
+                        Log::info('Like already exists (race condition)', [
+                            'user_id' => $userId,
+                            'comment_id' => $comment->komentar_id
+                        ]);
+                    }
+                }
+                
+                // Get updated like count - query langsung ke database untuk memastikan akurasi
+                $likesCount = DB::table($likeTable)
+                    ->where('likeable_type', ForumComment::class)
+                    ->where('likeable_id', $comment->komentar_id)
+                    ->count();
+                
+                Log::info('Final like status', [
+                    'is_liked' => $isLiked,
+                    'likes_count' => $likesCount
+                ]);
+                
+                DB::commit();
+                
+                return response()->json([
+                    'message' => $message,
+                    'is_liked' => $isLiked,
+                    'likes_count' => $likesCount
+                ]);
+                
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error('Error in like toggle transaction', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                throw $e;
+            }
         } catch (\Exception $e) {
             Log::error('Error toggling like', [
                 'thread_id' => $threadId,
                 'comment_id' => $id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
             
             return response()->json([

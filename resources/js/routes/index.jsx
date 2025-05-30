@@ -105,6 +105,9 @@ const AppRoutes = () => {
 
           {/* Route untuk peta lokasi pengepul sampah (publik dan admin) */}
           <Route path="/peta-pengepul" element={<WasteBuyerMap />} />
+
+          {/* About */}
+          <Route path="/about" element={<About />} />
         </Route>
       </Route>
       

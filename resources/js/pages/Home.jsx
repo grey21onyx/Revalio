@@ -15,13 +15,18 @@ import {
   CardMedia,
   IconButton,
   CircularProgress,
-  Alert
+  Alert,
+  Chip,
+  Rating
 } from '@mui/material';
 import {
   NavigateNext as NavigateNextIcon, 
   ArrowForward as ArrowForwardIcon,
   ChevronRight as ChevronRightIcon,
-  ExitToApp as ExitToAppIcon
+  ExitToApp as ExitToAppIcon,
+  Visibility as VisibilityIcon,
+  Star as StarIcon,
+  Category as CategoryIcon
 } from '@mui/icons-material';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -38,6 +43,7 @@ gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
 // Import komponen kustom
 import WasteCardItem from '../components/ui/WasteCardItem';
 import TutorialCard from '../components/ui/TutorialCard';
+import api from '../services/api'; // Import API service
 
 // Data dummy untuk tampilan (bisa dipindahkan ke state jika perlu)
 const featuredWasteItems = [
@@ -163,6 +169,30 @@ const SectionHeading = ({ title, subtitle, actionText, actionLink }) => {
   );
 };
 
+// Tambahkan fungsi helper untuk mendapatkan kategori dari tags
+const getCategoryFromTags = (tags) => {
+  if (!tags) return 'Umum';
+  
+  try {
+    // Pastikan tags adalah string, bukan array atau null
+    const tagString = typeof tags === 'string' ? tags : '';
+    if (!tagString) return 'Umum';
+    
+    const tagList = tagString.toLowerCase().split(',');
+    
+    // Cek secara case-insensitive
+    if (tagList.some(tag => tag.includes('tips') || tag.includes('trik'))) {
+      return 'Tips & Trik';
+    } else if (tagList.some(tag => tag.includes('daur') || tag.includes('recycling'))) {
+      return 'Daur Ulang';
+    }
+    return 'Umum';
+  } catch (error) {
+    console.error('Error processing tags:', error);
+    return 'Umum';
+  }
+};
+
 const Home = () => {
   const theme = useTheme();
   const { user, logout } = useAuth();
@@ -180,7 +210,6 @@ const Home = () => {
   const [articles, setArticles] = useState([]);
   const [communityThreads, setCommunityThreads] = useState([]);
   const [userStats, setUserStats] = useState(null);
-  const [userName, setUserName] = useState('Pengguna Revalio'); // Nama pengguna default
   
   // State untuk loading dan error
   const [loading, setLoading] = useState({
@@ -272,34 +301,88 @@ const Home = () => {
   // Fungsi untuk mengambil data aktivitas komunitas terkini
   const fetchCommunityThreads = async () => {
     setLoading(prev => ({ ...prev, community: true }));
+    console.log('Memulai fetchCommunityThreads...'); // Debugging
     try {
-      // Ganti dengan panggilan API sesungguhnya
-      // const response = await axios.get('/api/forum/recent-threads');
-      // setCommunityThreads(response.data);
-      setTimeout(() => {
-        setCommunityThreads([
-          {
-            id: 1,
-            title: 'Dimana tempat jual kardus bekas di Jakarta Selatan?',
-            excerpt: 'Saya punya banyak kardus bekas pindahan, ada yang tahu tempat jual yang harganya bagus?',
-            author: 'Budi Santoso',
-            replies: 8,
-            lastActivity: '2023-05-18T14:35:00Z'
-          },
-          {
-            id: 2,
-            title: 'Sharing pengalaman jualan ecobrick ke pengepul',
-            excerpt: 'Sudah 3 bulan saya rutin membuat ecobrick, ini pengalaman dan tips saya menjualnya...',
-            author: 'Siti Aminah',
-            replies: 12,
-            lastActivity: '2023-05-17T09:20:00Z'
+      // Menggunakan API yang sama dengan halaman Forum.jsx untuk mendapatkan thread populer
+      console.log('Memanggil API: /public/forum-threads/popular'); // Debugging
+      const response = await api.get('/public/forum-threads/popular', { params: { limit: 3 } });
+      console.log('Response API:', response); // Debugging - tampilkan seluruh response
+      console.log('Forum threads response data:', response.data); // Debugging
+      
+      // Validasi format response
+      if (!response.data || !Array.isArray(response.data.data)) {
+        console.error('Invalid response format:', response.data);
+        console.log('Format data tidak valid - type:', typeof response.data, 'data:', response.data); // Debugging
+        setError(prev => ({ ...prev, community: 'Format data tidak valid. Silakan coba lagi.' }));
+        return;
+      }
+      
+      console.log('Jumlah thread yang ditemukan:', response.data.data.length); // Debugging
+      
+      // Format data dari API ke format yang digunakan di frontend
+      const formattedThreads = response.data.data.map(thread => {
+        // Validasi data dan pastikan tipe data numerik dengan fallback
+        const commentsCount = parseInt(thread.comments_count) || 0;
+        const likesCount = parseInt(thread.likes_count) || 0;
+        const viewCount = parseInt(thread.view_count) || 0;
+        
+        // Penanganan khusus untuk average_rating dengan validasi yang lebih ketat
+        let avgRating = 0;
+        if (thread.average_rating !== undefined && thread.average_rating !== null) {
+          // Coba konversi ke float dengan sanitasi
+          if (typeof thread.average_rating === 'string') {
+            avgRating = parseFloat(thread.average_rating.replace(/[^\d.-]/g, '')) || 0;
+          } else {
+            avgRating = parseFloat(thread.average_rating) || 0;
           }
-        ]);
-        setLoading(prev => ({ ...prev, community: false }));
-      }, 600);
+        }
+        
+        // Validasi kisaran rating (1-5)
+        const validRating = avgRating > 0 && avgRating <= 5 ? avgRating : 0;
+        
+        // Penanganan khusus untuk rating_count
+        const ratingCount = thread.rating_count !== undefined && thread.rating_count !== null
+          ? parseInt(thread.rating_count)
+          : 0;
+        
+        // Calculate popularity score dengan validasi
+        const commentScore = commentsCount * 2;
+        const likeScore = likesCount * 3;
+        const viewScore = viewCount * 0.5;
+        const ratingScore = validRating * 5;
+        const popularityScore = commentScore + likeScore + viewScore + ratingScore;
+        
+        return {
+          id: thread.id || thread.thread_id,
+          title: thread.judul || 'Tanpa Judul',
+          excerpt: thread.konten 
+            ? thread.konten.replace(/<[^>]*>?/gm, ' ').substring(0, 120) + '...' 
+            : 'Tidak ada deskripsi',
+          author: thread.user ? (thread.user.nama || thread.user.name || 'Pengguna') : 'Pengguna',
+          replies: commentsCount,
+          likes: likesCount,
+          views: viewCount,
+          rating: validRating,
+          rating_count: ratingCount,
+          lastActivity: thread.tanggal_posting || new Date().toISOString(),
+          category: getCategoryFromTags(thread.tags),
+          tags: thread.tags ? thread.tags.split(',').filter(tag => tag.trim()) : [],
+          popularityScore: popularityScore
+        };
+      });
+      
+      // Sort berdasarkan popularityScore (terpopuler)
+      formattedThreads.sort((a, b) => b.popularityScore - a.popularityScore);
+      
+      console.log('Formatted community threads (final):', formattedThreads); // Debugging
+      console.log('Setting state communityThreads dengan', formattedThreads.length, 'items'); // Debugging
+      setCommunityThreads(formattedThreads.slice(0, 3)); // Batasi hanya 3 thread terpopuler
     } catch (err) {
       console.error('Error fetching community threads:', err);
+      console.error('Error details:', err.response?.status, err.response?.data); // Debugging detail error
       setError(prev => ({ ...prev, community: 'Gagal memuat data aktivitas komunitas' }));
+    } finally {
+      console.log('fetchCommunityThreads selesai'); // Debugging
       setLoading(prev => ({ ...prev, community: false }));
     }
   };
@@ -368,21 +451,40 @@ const Home = () => {
 
   // Format time ago helper
   const formatTimeAgo = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now - date) / 1000);
-    
-    if (diffInSeconds < 60) return `${diffInSeconds} detik yang lalu`;
-    const diffInMinutes = Math.floor(diffInSeconds / 60);
-    if (diffInMinutes < 60) return `${diffInMinutes} menit yang lalu`;
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours} jam yang lalu`;
-    const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays < 30) return `${diffInDays} hari yang lalu`;
-    const diffInMonths = Math.floor(diffInDays / 30);
-    if (diffInMonths < 12) return `${diffInMonths} bulan yang lalu`;
-    const diffInYears = Math.floor(diffInMonths / 12);
-    return `${diffInYears} tahun yang lalu`;
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      if (isNaN(date.getTime())) {
+        console.warn('Invalid date format:', dateString);
+        return 'beberapa waktu lalu';
+      }
+      
+      const diffInSeconds = Math.floor((now - date) / 1000);
+      
+      if (diffInSeconds < 60) return `${diffInSeconds} detik yang lalu`;
+      const diffInMinutes = Math.floor(diffInSeconds / 60);
+      if (diffInMinutes < 60) return `${diffInMinutes} menit yang lalu`;
+      const diffInHours = Math.floor(diffInMinutes / 60);
+      if (diffInHours < 24) return `${diffInHours} jam yang lalu`;
+      const diffInDays = Math.floor(diffInHours / 24);
+      if (diffInDays < 30) return `${diffInDays} hari yang lalu`;
+      const diffInMonths = Math.floor(diffInDays / 30);
+      if (diffInMonths < 12) return `${diffInMonths} bulan yang lalu`;
+      const diffInYears = Math.floor(diffInMonths / 12);
+      return `${diffInYears} tahun yang lalu`;
+    } catch (error) {
+      console.error('Error calculating time ago:', error);
+      return 'beberapa waktu lalu';
+    }
+  };
+
+  // Function to handle thread click navigation
+  const handleThreadClick = (threadId) => {
+    if (!threadId) {
+      console.error('Invalid thread ID:', threadId);
+      return;
+    }
+    navigate(`/detail-forum/${threadId}`);
   };
 
   // Tambahkan fungsi handleLogout
@@ -561,7 +663,7 @@ const Home = () => {
         <Box sx={{ mb: { xs: 4, md: 6 } }} ref={statsRef}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography variant="h4" component="h1" fontWeight={700} gutterBottom sx={{ mb: 1 }}>
-              Selamat Datang Kembali, {user?.name || userName}!
+              Selamat Datang Kembali, {user ? (user.nama_lengkap || user.nama || user.name || 'Pengguna Revalio') : 'Pengguna Revalio'}!
             </Typography>
             <Button 
               variant="outlined" 
@@ -703,43 +805,6 @@ const Home = () => {
           )}
         </Box>
 
-        {/* Artikel Edukasi Terbaru */}
-        <Box sx={{ mb: { xs: 6, md: 8 } }} ref={articlesRef}>
-          <SectionHeading 
-            title="Bacaan Terbaru"
-            subtitle="Perluas wawasan Anda tentang pengelolaan sampah dan isu lingkungan."
-            actionText="Lihat Semua Artikel" 
-            actionLink="/artikel"
-          />
-          
-          {loading.articles ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>
-          ) : error.articles ? (
-            <Alert severity="error" sx={{ mb: 4 }}>{error.articles}</Alert>
-          ) : (
-            <Grid container spacing={3}>
-              {articles.slice(0, 2).map((article) => ( // Tampilkan 2 artikel
-                <Grid item xs={12} md={6} key={article.id}>
-                  <Card sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, height: '100%', borderRadius: 3, overflow: 'hidden', boxShadow: 2, transition: 'transform 0.3s ease', '&:hover': { transform: 'translateY(-5px)', boxShadow: 3 } }}>
-                    <CardMedia component="img" sx={{ width: { xs: '100%', sm: 140 }, height: { xs: 200, sm: 'auto' } }} image={article.imageUrl} alt={article.title} />
-                    <CardContent sx={{ flex: '1 0 auto', p: 3 }}>
-                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>{formatDate(article.createdAt)}</Typography>
-                      <Typography variant="h6" component="h3" gutterBottom fontWeight={600}>{article.title}</Typography>
-                      <Typography variant="body2" color="text.secondary" paragraph>{article.excerpt}</Typography>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
-                        <Typography variant="caption" color="text.secondary">Oleh: {article.author}</Typography>
-                        <Button component={Link} to={`/artikel/${article.id}`} endIcon={<ArrowForwardIcon />} sx={{ fontWeight: 600, '&:hover': { backgroundColor: 'transparent', transform: 'translateX(3px)' }, transition: 'transform 0.2s ease' }}>
-                          Baca Selengkapnya
-                        </Button>
-                      </Box>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
-          )}
-        </Box>
-
         {/* Aktivitas Komunitas Terkini */}
         <Box sx={{ mb: { xs: 6, md: 8 } }} ref={communityRef}>
           <SectionHeading 
@@ -753,11 +818,22 @@ const Home = () => {
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>
           ) : error.community ? (
             <Alert severity="error" sx={{ mb: 4 }}>{error.community}</Alert>
-          ) : (
+          ) : communityThreads && communityThreads.length > 0 ? (
             <Box sx={{ borderRadius: 3, overflow: 'hidden', boxShadow: 2, backgroundColor: 'white' }}>
-              {communityThreads.slice(0, 3).map((thread, index) => ( // Tampilkan 3 thread
+              {communityThreads.map((thread, index) => (
                 <React.Fragment key={thread.id}>
-                  <Box component={Link} to={`/forum/thread/${thread.id}`} sx={{ display: 'flex', p: 3, textDecoration: 'none', color: 'text.primary', transition: 'background-color 0.2s ease', '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.03)' } }}>
+                  <Box 
+                    sx={{ 
+                      display: 'flex', 
+                      p: 3, 
+                      textDecoration: 'none', 
+                      color: 'text.primary', 
+                      transition: 'background-color 0.2s ease', 
+                      '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.03)' },
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => handleThreadClick(thread.id)}
+                  >
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mr: 3, minWidth: { xs: 50, md: 80 } }}>
                       <Box sx={{ bgcolor: theme.palette.primary.light, color: theme.palette.primary.contrastText, borderRadius: '50%', width: { xs: 40, md: 50 }, height: { xs: 40, md: 50 }, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: { xs: '1rem', md: '1.2rem' }, mb: 1 }}>
                         {thread.replies}
@@ -778,17 +854,73 @@ const Home = () => {
                         <Typography variant="caption" color="text.secondary">Oleh: <Box component="span" fontWeight={500}>{thread.author}</Box></Typography>
                         <Typography variant="caption" color="text.secondary">{formatTimeAgo(thread.lastActivity)}</Typography>
                       </Box>
+                      
+                      {/* Tampilkan rating, views, dan kategori */}
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 1, alignItems: 'center' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <VisibilityIcon fontSize="small" sx={{ mr: 0.5, fontSize: '0.875rem', color: 'text.secondary' }} />
+                          <Typography variant="caption" color="text.secondary">{thread.views || 0} dilihat</Typography>
+                        </Box>
+                        
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <StarIcon fontSize="small" sx={{ mr: 0.5, fontSize: '0.875rem', color: thread.rating > 0 ? 'gold' : 'text.secondary' }} />
+                          {thread.rating > 0 ? (
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <Typography variant="caption" color="text.secondary" sx={{ mr: 0.5 }}>
+                                {parseFloat(thread.rating).toFixed(1)}
+                              </Typography>
+                              <Rating 
+                                value={parseFloat(thread.rating)} 
+                                readOnly 
+                                size="small" 
+                                precision={0.5}
+                                sx={{ fontSize: '0.75rem' }}
+                              />
+                              {thread.rating_count > 0 && (
+                                <Typography variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                                  ({thread.rating_count})
+                                </Typography>
+                              )}
+                            </Box>
+                          ) : (
+                            <Typography variant="caption" color="text.secondary">
+                              Belum ada rating
+                            </Typography>
+                          )}
+                        </Box>
+                        
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
+                          <CategoryIcon fontSize="small" sx={{ mr: 0.5, fontSize: '0.875rem' }} />
+                          <span style={{ textTransform: 'capitalize' }}>{thread.category}</span>
+                        </Typography>
+                        
+                        <Chip 
+                          label={`Skor: ${Math.round(thread.popularityScore)}`} 
+                          size="small" 
+                          color="primary"
+                          sx={{ height: 20, fontSize: '0.7rem' }}
+                        />
+                      </Box>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', ml: 2, color: theme.palette.primary.main }}><ChevronRightIcon /></Box>
                   </Box>
-                  {index < communityThreads.slice(0, 3).length - 1 && <Divider />}
+                  {index < communityThreads.length - 1 && <Divider />}
                 </React.Fragment>
               ))}
               <Box sx={{ p: 2, display: 'flex', justifyContent: 'center', bgcolor: 'rgba(0, 0, 0, 0.01)' }}>
-                <Button component={Link} to="/forum/new" variant="contained" color="primary" sx={{ borderRadius: 8, px: 3, py: 1, fontWeight: 600 }}>
+                <Button component={Link} to="/forum/new-topic" variant="contained" color="primary" sx={{ borderRadius: 8, px: 3, py: 1, fontWeight: 600 }}>
                   Mulai Diskusi Baru
                 </Button>
               </Box>
+            </Box>
+          ) : (
+            <Box sx={{ p: 3, textAlign: 'center', borderRadius: 3, boxShadow: 2, backgroundColor: 'white' }}>
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+                Belum ada diskusi aktif. Jadilah yang pertama memulai diskusi!
+              </Typography>
+              <Button component={Link} to="/forum/new-topic" variant="contained" color="primary" sx={{ borderRadius: 8, px: 3, py: 1, fontWeight: 600 }}>
+                Mulai Diskusi Baru
+              </Button>
             </Box>
           )}
         </Box>

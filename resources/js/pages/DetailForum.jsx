@@ -15,7 +15,9 @@ import {
   ListItemAvatar, 
   ListItemText, 
   IconButton,
-  Chip
+  Chip,
+  Rating,
+  Tooltip
 } from '@mui/material';
 import {
   ArrowBack,
@@ -29,7 +31,8 @@ import {
   Forum as ForumIcon,
   CalendarToday as CalendarTodayIcon,
   Category as CategoryIcon,
-  Visibility as VisibilityIcon
+  Visibility as VisibilityIcon,
+  Star as StarIcon
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
@@ -123,6 +126,8 @@ const DetailForum = () => {
   const [expandedComments, setExpandedComments] = useState({});
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(5);
   const [isThreadContentExpanded, setIsThreadContentExpanded] = useState(false);
+  const [userRating, setUserRating] = useState(0);
+  const [viewCountUpdated, setViewCountUpdated] = useState(false);
 
   // Definisikan loadComments sebagai fungsi di level komponen 
   // agar bisa diakses dari manapun dalam komponen
@@ -158,6 +163,8 @@ const DetailForum = () => {
         
         // Proses ke format yang dibutuhkan frontend
         const allComments = [];
+        // Inisialisasi map untuk status likes
+        const likesMap = {};
         
         // Extract current user ID for ownership comparison
         const currentUserId = user ? (user.id || user.user_id) : null;
@@ -201,6 +208,11 @@ const DetailForum = () => {
               isEdited: comment.updated_at && comment.updated_at !== comment.tanggal_komentar
             };
             
+            // Jika komentar disukai oleh user, catat di likesMap
+            if (comment.is_liked) {
+              likesMap[comment.komentar_id] = true;
+            }
+            
             // Tambahkan komentar utama ke daftar
             allComments.push(mainComment);
             console.log('Added valid comment:', mainComment.id, mainComment.text.substring(0, 30), `isOwnComment: ${mainComment.isOwnComment}`);
@@ -243,6 +255,11 @@ const DetailForum = () => {
                     isEdited: reply.updated_at && reply.updated_at !== reply.tanggal_komentar
                   };
                   
+                  // Jika balasan disukai oleh user, catat di likesMap
+                  if (reply.is_liked) {
+                    likesMap[reply.komentar_id] = true;
+                  }
+                  
                   // Tambahkan balasan ke daftar
                   allComments.push(replyComment);
                   console.log('Added valid reply:', replyComment.id, replyComment.text.substring(0, 30), `isOwnComment: ${replyComment.isOwnComment}`);
@@ -257,7 +274,11 @@ const DetailForum = () => {
         });
         
         console.log('Processed comments for UI:', allComments);
+        console.log('Initial likes state:', likesMap);
+        
+        // Set comments dan likes state
         setComments(allComments);
+        setLikes(likesMap);
       } catch (error) {
         console.error('Error loading comments:', error);
         console.error('Error details:', error.response?.status, error.response?.data);
@@ -269,14 +290,16 @@ const DetailForum = () => {
           
           if (publicResponse.data && publicResponse.data.data) {
             // Proses data dari API publik dengan cara yang sama
-            const publicComments = processPublicComments(publicResponse.data.data);
+            const { comments: publicComments, likes: publicLikes } = processPublicComments(publicResponse.data.data);
             setComments(publicComments);
+            setLikes(publicLikes);
             return;
           }
         }
         
         // Default ke array kosong jika semua upaya gagal
         setComments([]);
+        setLikes({});
       }
     } finally {
       setLoadingComments(false);
@@ -300,201 +323,13 @@ const DetailForum = () => {
     setEditingCommentId(null);
     setEditText('');
     
-    const loadThread = async () => {
-      try {
-        setLoadingThread(true);
-        console.log('Fetching forum thread details for ID:', id);
-        
-        try {
-          // Coba mendapatkan thread dari API utama dulu
-          const response = await api.get(`/forum-threads/${id}`);
-          console.log('Forum thread detail response:', response.data);
-          
-          // Defensive check untuk memastikan data yang diharapkan ada
-          if (!response.data || !response.data.thread) {
-            console.error('Thread data missing or in unexpected format:', response.data);
-            throw new Error('Invalid response format');
-          }
-          
-          const threadData = response.data.thread;
-          processThreadData(threadData);
-        } catch (error) {
-          console.error('Error loading thread:', error);
-          console.error('Error details:', error.response?.status, error.response?.data);
-          
-          // Coba API public sebagai fallback
-          console.log('Trying public API as fallback');
-          const publicResponse = await api.get(`/public/forum-threads/${id}`);
-          if (publicResponse.data && publicResponse.data.thread) {
-            processThreadData(publicResponse.data.thread);
-            return;
-          } else {
-            throw new Error('Invalid format from public API');
-          }
-        }
-      } catch (error) {
-        console.error('Error loading thread:', error);
-        console.error('Error details:', error.response?.status, error.response?.data);
-        
-        // Coba API public sebagai fallback dalam kasus error
-        if (error.response && (error.response.status === 401 || error.response.status === 500)) {
-          try {
-            console.log('Trying public API after main API error');
-            const publicResponse = await api.get(`/public/forum-threads/${id}`);
-            if (publicResponse.data && publicResponse.data.thread) {
-              processThreadData(publicResponse.data.thread);
-              return;
-            }
-          } catch (publicError) {
-            console.error('Public API also failed:', publicError);
-          }
-        }
-        
-        // Set thread ke null agar UI menampilkan pesan error
-        setThread(null);
-        
-        // Informasi error yang lebih spesifik
-        let errorMessage = 'Gagal memuat data thread forum';
-        
-        if (error.response) {
-          if (error.response.status === 404) {
-            errorMessage = 'Thread forum tidak ditemukan';
-          } else if (error.response.status === 403) {
-            errorMessage = 'Anda tidak memiliki akses ke thread ini';
-          } else if (error.response.status === 500) {
-            // Error dari server, tampilkan detail jika tersedia
-            if (error.response.data && error.response.data.message) {
-              errorMessage = `Error Server: ${error.response.data.message}`;
-              
-              // Jika error berkaitan dengan kolom database
-              if (error.response.data.message.includes('Column not found')) {
-                errorMessage = 'Terjadi kesalahan pada struktur database. Harap hubungi administrator.';
-              }
-            } else {
-              errorMessage = 'Terjadi kesalahan pada server. Silakan coba lagi nanti.';
-            }
-          }
-        }
-        
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: errorMessage,
-          confirmButtonText: 'Kembali ke Forum',
-          showCancelButton: true,
-          cancelButtonText: 'Coba Lagi'
-        }).then((result) => {
-          if (result.isConfirmed) {
-            navigate('/forum');
-          } else {
-            window.location.reload();
-          }
-        });
-      } finally {
-        setLoadingThread(false);
-      }
-    };
+    // Inisialisasi rating
+    setUserRating(0);
     
-    // Fungsi untuk memproses data thread dari API
-    const processThreadData = (threadData) => {
-      console.log('Processing thread data:', threadData);
-      console.log('User data:', threadData.user);
-      
-      // Sanitasi data untuk mencegah error
-      setThread({
-        id: threadData.id || id,
-        title: threadData.judul || 'Tanpa Judul',
-        author: getUserDisplayName(threadData.user),
-        authorId: threadData.user ? threadData.user.id || threadData.user.user_id : null,
-        authorAvatar: getUserAvatarUrl(threadData.user),
-        authorRole: threadData.user ? threadData.user.role : null,
-        authorJoinDate: threadData.user ? (threadData.user.tanggal_registrasi || threadData.user.created_at) : null,
-        replies: threadData.comments_count || 0,
-        lastPost: threadData.tanggal_posting || new Date().toISOString(),
-        category: threadData.tags ? getCategoryFromTags(threadData.tags) : 'Umum',
-        tags: threadData.tags ? threadData.tags.split(',').filter(tag => tag.trim()) : [],
-        content: threadData.konten || '',
-        viewCount: threadData.view_count || 0
-      });
-      
-      console.log('Processed thread state:', {
-        author: getUserDisplayName(threadData.user),
-        authorAvatar: getUserAvatarUrl(threadData.user),
-        authorRole: threadData.user ? threadData.user.role : null
-      });
-    };
+    // Penting: set flag ke false saat komponen dimount
+    setViewCountUpdated(false);
     
-    // Helper function untuk memproses komentar dari API publik
-    const processPublicComments = (commentsData) => {
-      if (!Array.isArray(commentsData)) return [];
-      
-      const processedComments = [];
-      
-      // Extract current user ID for ownership comparison
-      const currentUserId = user ? (user.id || user.user_id) : null;
-      console.log('Current user ID for public comments comparison:', currentUserId);
-      
-      commentsData.forEach(comment => {
-        // Extract comment user ID for comparison
-        const commentUserId = comment.user ? (comment.user.id || comment.user.user_id || comment.user_id) : comment.user_id;
-        
-        // Determine ownership by direct comparison of IDs
-        const isOwned = Boolean(currentUserId && commentUserId && 
-                      (String(currentUserId) === String(commentUserId)));
-                      
-        console.log(`Public comment ID: ${comment.id || comment.komentar_id}, User ID: ${commentUserId}, Current User ID: ${currentUserId}, Is Owned: ${isOwned}`);
-        
-        processedComments.push({
-          id: comment.id || comment.komentar_id,
-          user: {
-            id: commentUserId,
-            name: getUserDisplayName(comment.user),
-            avatar: getUserAvatarUrl(comment.user)
-          },
-          postedAt: comment.tanggal_komentar,
-          text: comment.konten,
-          parentId: comment.parent_komentar_id,
-          likes: comment.likes_count || 0,
-          isOwnComment: isOwned,
-          isEdited: comment.updated_at && comment.updated_at !== comment.tanggal_komentar
-        });
-        
-        // Proses balasan jika ada dalam format API publik
-        if (comment.replies && Array.isArray(comment.replies)) {
-          comment.replies.forEach(reply => {
-            // Extract reply user ID for comparison
-            const replyUserId = reply.user ? (reply.user.id || reply.user.user_id || reply.user_id) : reply.user_id;
-            
-            // Determine reply ownership by direct comparison of IDs
-            const isReplyOwned = Boolean(currentUserId && replyUserId && 
-                              (String(currentUserId) === String(replyUserId)));
-                              
-            console.log(`Public reply ID: ${reply.id || reply.komentar_id}, User ID: ${replyUserId}, Current User ID: ${currentUserId}, Is Owned: ${isReplyOwned}`);
-            
-            processedComments.push({
-              id: reply.id || reply.komentar_id,
-              user: {
-                id: replyUserId,
-                name: getUserDisplayName(reply.user),
-                avatar: getUserAvatarUrl(reply.user)
-              },
-              postedAt: reply.tanggal_komentar,
-              text: reply.konten,
-              parentId: comment.id || comment.komentar_id,
-              likes: reply.likes_count || 0,
-              isOwnComment: isReplyOwned,
-              isEdited: reply.updated_at && reply.updated_at !== reply.tanggal_komentar
-            });
-          });
-        }
-      });
-      
-      return processedComments;
-    };
-
     loadThread();
-    
-    // Komentar diatur untuk selalu dimuat saat komponen dimount
     loadComments();
     
     // Cleanup function saat unmount
@@ -504,7 +339,302 @@ const DetailForum = () => {
       setComments([]);
       setThread(null);
     };
-  }, [id]); // Dependency hanya pada ID, tidak pada user
+  }, [id, isAuthenticated, user]); // Added isAuthenticated and user as dependencies
+
+  // Fungsi untuk memuat thread detail dengan view count yang diperbarui
+  const loadThread = async () => {
+    try {
+      setLoadingThread(true);
+      console.log('Fetching forum thread details for ID:', id);
+      
+      try {
+        // Coba mendapatkan thread dari API utama dulu
+        const response = await api.get(`/forum-threads/${id}`);
+        console.log('Forum thread detail response:', response.data);
+        
+        // Defensive check untuk memastikan data yang diharapkan ada
+        if (!response.data || !response.data.thread) {
+          console.error('Thread data missing or in unexpected format:', response.data);
+          throw new Error('Invalid response format');
+        }
+        
+        const threadData = response.data.thread;
+        
+        // Jika view count belum diupdate, panggil API increment view
+        if (!viewCountUpdated) {
+          try {
+            // Panggil API untuk increment view count
+            const viewResponse = await api.post(`/forum-threads/${id}/view`);
+            console.log('View count incremented for thread:', id, viewResponse.data);
+            
+            // Set flag bahwa view sudah diupdate
+            setViewCountUpdated(true);
+            
+            // Gunakan view count dari response API
+            if (viewResponse.data && viewResponse.data.data && viewResponse.data.data.view_count) {
+              // Update threadData dengan nilai view_count yang dikembalikan dari server
+              threadData.view_count = viewResponse.data.data.view_count;
+            }
+          } catch (viewError) {
+            console.error('Error incrementing view count:', viewError);
+            
+            // Coba API publik sebagai fallback
+            try {
+              if (!viewCountUpdated) {
+                const publicViewResponse = await api.post(`/public/forum-threads/${id}/view`);
+                console.log('View count incremented via public API:', id, publicViewResponse.data);
+                
+                // Set flag bahwa view sudah diupdate
+                setViewCountUpdated(true);
+                
+                // Gunakan view count dari response API publik
+                if (publicViewResponse.data && publicViewResponse.data.data && publicViewResponse.data.data.view_count) {
+                  threadData.view_count = publicViewResponse.data.data.view_count;
+                }
+              }
+            } catch (publicViewError) {
+              console.error('Error incrementing view count via public API:', publicViewError);
+            }
+          }
+        }
+        
+        // Get user's rating from API if user is authenticated
+        if (isAuthenticated && user) {
+          try {
+            console.log('Fetching user rating for thread ID:', id);
+            const ratingResponse = await api.get(`/forum-threads/${id}/rating`);
+            console.log('Rating response:', ratingResponse.data);
+            
+            if (ratingResponse.data && ratingResponse.data.data) {
+              // Pastikan nilai rating dikonversi ke tipe number
+              const userRatingValue = Number(ratingResponse.data.data.user_rating || 0);
+              console.log('Setting user rating to:', userRatingValue);
+              setUserRating(userRatingValue);
+            } else {
+              console.log('No user rating data found, setting to 0');
+              setUserRating(0);
+            }
+          } catch (ratingError) {
+            console.error('Error getting user rating:', ratingError);
+            // Fallback to 0 if API fails
+            setUserRating(0);
+          }
+        }
+        
+        // Proses data thread untuk tampilan
+        processThreadData(threadData);
+      } catch (error) {
+        console.error('Error loading thread:', error);
+        console.error('Error details:', error.response?.status, error.response?.data);
+        
+        // Coba API public sebagai fallback
+        console.log('Trying public API as fallback');
+        try {
+          const publicResponse = await api.get(`/public/forum-threads/${id}`);
+          if (publicResponse.data && publicResponse.data.thread) {
+            const threadData = publicResponse.data.thread;
+            
+            // Jika view count belum diupdate, coba increment melalui API publik
+            if (!viewCountUpdated) {
+              try {
+                const publicViewResponse = await api.post(`/public/forum-threads/${id}/view`);
+                console.log('View count incremented via public API fallback:', id, publicViewResponse.data);
+                
+                // Set flag bahwa view sudah diupdate
+                setViewCountUpdated(true);
+                
+                // Gunakan view count dari response API
+                if (publicViewResponse.data && publicViewResponse.data.data && publicViewResponse.data.data.view_count) {
+                  threadData.view_count = publicViewResponse.data.data.view_count;
+                }
+              } catch (publicViewError) {
+                console.error('Error incrementing view count via public API fallback:', publicViewError);
+              }
+            }
+            
+            processThreadData(threadData);
+            return;
+          } else {
+            throw new Error('Invalid format from public API');
+          }
+        } catch (publicError) {
+          console.error('Public API fallback also failed:', publicError);
+          throw error;
+        }
+      }
+    } catch (error) {
+      console.error('Error loading thread:', error);
+      console.error('Error details:', error.response?.status, error.response?.data);
+      
+      // Set thread ke null agar UI menampilkan pesan error
+      setThread(null);
+      
+      // Informasi error yang lebih spesifik
+      let errorMessage = 'Gagal memuat data thread forum';
+      
+      if (error.response) {
+        if (error.response.status === 404) {
+          errorMessage = 'Thread forum tidak ditemukan';
+        } else if (error.response.status === 403) {
+          errorMessage = 'Anda tidak memiliki akses ke thread ini';
+        } else if (error.response.status === 500) {
+          // Error dari server, tampilkan detail jika tersedia
+          if (error.response.data && error.response.data.message) {
+            errorMessage = `Error Server: ${error.response.data.message}`;
+            
+            // Jika error berkaitan dengan kolom database
+            if (error.response.data.message.includes('Column not found')) {
+              errorMessage = 'Terjadi kesalahan pada struktur database. Harap hubungi administrator.';
+            }
+          } else {
+            errorMessage = 'Terjadi kesalahan pada server. Silakan coba lagi nanti.';
+          }
+        }
+      }
+      
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: errorMessage,
+        confirmButtonText: 'Kembali ke Forum',
+        showCancelButton: true,
+        cancelButtonText: 'Coba Lagi'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate('/forum');
+        } else {
+          window.location.reload();
+        }
+      });
+    } finally {
+      setLoadingThread(false);
+    }
+  };
+
+  // Fungsi untuk memproses data thread dan memastikan nilai rating dikonversi dengan benar
+  const processThreadData = (threadData) => {
+    console.log('Processing thread data for rating display:', threadData);
+    console.log('Average rating from API:', threadData.average_rating, 'type:', typeof threadData.average_rating);
+    
+    // Konversi nilai numerik ke tipe number dengan fallback yang aman
+    const viewCount = threadData.view_count ? Number(threadData.view_count) : 0;
+    const rating = threadData.average_rating !== undefined && threadData.average_rating !== null
+      ? Number(threadData.average_rating) 
+      : 0;
+    const ratingCount = threadData.rating_count ? Number(threadData.rating_count) : 0;
+    
+    console.log('Processed rating value:', rating);
+    
+    // Sanitasi data untuk mencegah error
+    setThread({
+      id: threadData.id || id,
+      title: threadData.judul || 'Tanpa Judul',
+      author: getUserDisplayName(threadData.user),
+      authorId: threadData.user ? threadData.user.id || threadData.user.user_id : null,
+      authorAvatar: getUserAvatarUrl(threadData.user),
+      authorRole: threadData.user ? threadData.user.role : null,
+      authorJoinDate: threadData.user ? (threadData.user.tanggal_registrasi || threadData.user.created_at) : null,
+      replies: threadData.comments_count || 0,
+      lastPost: threadData.tanggal_posting || new Date().toISOString(),
+      category: threadData.tags ? getCategoryFromTags(threadData.tags) : 'Umum',
+      tags: threadData.tags ? threadData.tags.split(',').filter(tag => tag.trim()) : [],
+      content: threadData.konten || '',
+      viewCount: viewCount,
+      rating: rating, // Pastikan sudah dikonversi ke number
+      rating_count: ratingCount
+    });
+    
+    console.log('Processed thread state:', {
+      rating: rating,
+      rating_count: ratingCount
+    });
+  };
+
+  // Helper function untuk memproses komentar dari API publik
+  const processPublicComments = (commentsData) => {
+    if (!Array.isArray(commentsData)) return { comments: [], likes: {} };
+    
+    const processedComments = [];
+    const likesMap = {};
+    
+    // Extract current user ID for ownership comparison
+    const currentUserId = user ? (user.id || user.user_id) : null;
+    console.log('Current user ID for public comments comparison:', currentUserId);
+    
+    commentsData.forEach(comment => {
+      // Extract comment user ID for comparison
+      const commentUserId = comment.user ? (comment.user.id || comment.user.user_id || comment.user_id) : comment.user_id;
+      
+      // Determine ownership by direct comparison of IDs
+      const isOwned = Boolean(currentUserId && commentUserId && 
+                    (String(currentUserId) === String(commentUserId)));
+                        
+      console.log(`Public comment ID: ${comment.id || comment.komentar_id}, User ID: ${commentUserId}, Current User ID: ${currentUserId}, Is Owned: ${isOwned}`);
+      
+      const commentId = comment.id || comment.komentar_id;
+      
+      processedComments.push({
+        id: commentId,
+        user: {
+          id: commentUserId,
+          name: getUserDisplayName(comment.user),
+          avatar: getUserAvatarUrl(comment.user)
+        },
+        postedAt: comment.tanggal_komentar,
+        text: comment.konten,
+        parentId: comment.parent_komentar_id,
+        likes: comment.likes_count || 0,
+        isOwnComment: isOwned,
+        isEdited: comment.updated_at && comment.updated_at !== comment.tanggal_komentar
+      });
+      
+      // Catat like jika ada
+      if (comment.is_liked) {
+        likesMap[commentId] = true;
+      }
+      
+      // Proses balasan jika ada dalam format API publik
+      if (comment.replies && Array.isArray(comment.replies)) {
+        comment.replies.forEach(reply => {
+          // Extract reply user ID for comparison
+          const replyUserId = reply.user ? (reply.user.id || reply.user.user_id || reply.user_id) : reply.user_id;
+          
+          // Determine reply ownership by direct comparison of IDs
+          const isReplyOwned = Boolean(currentUserId && replyUserId && 
+                            (String(currentUserId) === String(replyUserId)));
+                              
+          console.log(`Public reply ID: ${reply.id || reply.komentar_id}, User ID: ${replyUserId}, Current User ID: ${currentUserId}, Is Owned: ${isReplyOwned}`);
+          
+          const replyId = reply.id || reply.komentar_id;
+          
+          processedComments.push({
+            id: replyId,
+            user: {
+              id: replyUserId,
+              name: getUserDisplayName(reply.user),
+              avatar: getUserAvatarUrl(reply.user)
+            },
+            postedAt: reply.tanggal_komentar,
+            text: reply.konten,
+            parentId: commentId,
+            likes: reply.likes_count || 0,
+            isOwnComment: isReplyOwned,
+            isEdited: reply.updated_at && reply.updated_at !== reply.tanggal_komentar
+          });
+          
+          // Catat like jika ada
+          if (reply.is_liked) {
+            likesMap[replyId] = true;
+          }
+        });
+      }
+    });
+    
+    console.log('Processed public comments:', processedComments);
+    console.log('Processed public likes:', likesMap);
+    
+    return { comments: processedComments, likes: likesMap };
+  };
 
   // Helper function untuk mendapatkan kategori dari tags
   const getCategoryFromTags = (tags) => {
@@ -747,6 +877,7 @@ const DetailForum = () => {
     }
   };
 
+  // Fungsi toggleLike yang diperbaiki - mengandalkan sepenuhnya data dari server
   const toggleLike = async (commentId) => {
     if (!isAuthenticated) {
       navigate('/login');
@@ -754,33 +885,56 @@ const DetailForum = () => {
     }
 
     try {
+      // Cari komentar yang akan dilike/unlike untuk validasi
+      const commentToUpdate = comments.find(c => c.id === commentId);
+      
+      if (!commentToUpdate) {
+        console.error('Comment not found:', commentId);
+        return;
+      }
+      
+      // Tampilkan loading jika diperlukan (opsional)
+      // Ini bisa menggunakan state loading per comment jika UI perlu responsif
+      
+      // Panggil API
       const response = await api.post(
         `/forum-threads/${id}/comments/${commentId}/like`
       );
       
-      // Update local state
-      setLikes((prev) => {
-        const newLikes = { ...prev };
-        if (response.data.is_liked) {
-          newLikes[commentId] = true;
-        } else {
-          delete newLikes[commentId];
-        }
-        return newLikes;
-      });
+      console.log('Like response:', response.data);
       
-      // Update comment likes count
-      setComments((prev) => 
-        prev.map(comment => {
-          if (comment.id === commentId) {
-            return {
-              ...comment,
-              likes: response.data.likes_count
-            };
+      // Hanya update UI setelah menerima response dari server
+      if (response.data) {
+        // Update status like berdasarkan data dari server
+        const isLiked = response.data.is_liked;
+        const likesCount = response.data.likes_count;
+        
+        // Update state likes berdasarkan response server
+        setLikes(prev => {
+          const newLikes = { ...prev };
+          if (isLiked) {
+            newLikes[commentId] = true;
+          } else {
+            delete newLikes[commentId];
           }
-          return comment;
-        })
-      );
+          return newLikes;
+        });
+        
+        // Update likes count berdasarkan data dari server
+        if (likesCount !== undefined) {
+          setComments(prev => 
+            prev.map(comment => {
+              if (comment.id === commentId) {
+                return {
+                  ...comment,
+                  likes: likesCount
+                };
+              }
+              return comment;
+            })
+          );
+        }
+      }
     } catch (error) {
       console.error('Error toggling like:', error);
       console.error('Error details:', error.response?.status, error.response?.data);
@@ -930,10 +1084,8 @@ const DetailForum = () => {
     if (commentFilter === 'terbaru') {
       return new Date(b.postedAt) - new Date(a.postedAt);
     } else if (commentFilter === 'teratas') {
-      // Calculate likes including user likes
-      const likesA = a.likes + (likes[a.id] ? 1 : 0);
-      const likesB = b.likes + (likes[b.id] ? 1 : 0);
-      return likesB - likesA;
+      // Gunakan nilai likes dari server tanpa optimistic update
+      return b.likes - a.likes;
     }
     return 0;
   });
@@ -1093,6 +1245,101 @@ const DetailForum = () => {
     setVisibleCommentsCount(prev => prev + 5);
   };
 
+  // Menggunakan API untuk fitur rating
+  const handleRatingChange = async (event, newValue) => {
+    if (!isAuthenticated) {
+      Swal.fire({
+        title: 'Login Diperlukan',
+        text: 'Anda harus login terlebih dahulu untuk memberikan rating.',
+        icon: 'info',
+        confirmButtonText: 'Login',
+        showCancelButton: true,
+        cancelButtonText: 'Batal',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate('/login', { state: { from: `/detail-forum/${id}` } });
+        }
+      });
+      return;
+    }
+    
+    try {
+      // Simpan rating saat ini untuk fallback jika gagal
+      const prevRating = userRating;
+      
+      // Pastikan newValue adalah number
+      const ratingValue = Number(newValue);
+      
+      // Update UI secara optimistic
+      setUserRating(ratingValue);
+      
+      // Tampilkan loading
+      Swal.fire({
+        title: 'Menyimpan Rating',
+        text: 'Mohon tunggu...',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+      
+      // Panggil API untuk menyimpan rating
+      console.log('Sending rating to API:', ratingValue);
+      const response = await api.post(`/forum-threads/${id}/rating`, {
+        rating: ratingValue
+      });
+      
+      console.log('Rating saved to API:', response.data);
+      
+      // Update thread rating dari response API
+      if (response.data && response.data.data) {
+        const avgRating = response.data.data.average_rating ? 
+          Number(response.data.data.average_rating) : 
+          0;
+        
+        const ratingCount = response.data.data.rating_count ? 
+          Number(response.data.data.rating_count) : 
+          0;
+        
+        // Update thread state dengan nilai rating baru
+        setThread(prevThread => {
+          if (!prevThread) return null;
+          
+          return {
+            ...prevThread,
+            rating: avgRating,
+            rating_count: ratingCount
+          };
+        });
+        
+        // Update nilai userRating dengan nilai yang dikonfirmasi dari server
+        setUserRating(Number(response.data.data.rating));
+      }
+      
+      // Tampilkan pesan sukses
+      Swal.fire({
+        title: 'Berhasil!',
+        text: 'Rating berhasil disimpan.',
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false
+      });
+    } catch (error) {
+      console.error('Error saving rating:', error);
+      
+      // Tampilkan pesan error
+      Swal.fire({
+        title: 'Error',
+        text: 'Gagal menyimpan rating. Silakan coba lagi.',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
+      
+      // Reset ke nilai awal jika gagal
+      setUserRating(prevRating);
+    }
+  };
+
   return (
     <Box sx={{ backgroundColor: '#f9f9f9', py: { xs: 3, md: 5 } }}>
       <Container maxWidth="lg" sx={{ py: 0 }}>
@@ -1238,6 +1485,41 @@ const DetailForum = () => {
                   <Typography variant="body2" color="text.secondary" sx={{ mr: 2, display: 'flex', alignItems: 'center' }}>
                     <VisibilityIcon fontSize="small" sx={{ mr: 0.5 }} /> {thread.viewCount} dilihat
                   </Typography>
+                </Box>
+                
+                {/* Add Rating Component */}
+                <Box sx={{ mt: 3, display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mr: 3 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+                      Rating:
+                    </Typography>
+                    <Rating 
+                      value={thread && thread.rating ? Number(thread.rating) : 0} 
+                      precision={0.5} 
+                      readOnly 
+                      size="small"
+                    />
+                    <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                      ({thread && thread.rating ? parseFloat(thread.rating).toFixed(1) : '0'}/5)
+                      {thread && thread.rating_count > 0 && ` (${thread.rating_count} penilaian)`}
+                    </Typography>
+                  </Box>
+                  
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+                      Beri Rating:
+                    </Typography>
+                    <Tooltip title={isAuthenticated ? "Klik untuk memberi rating" : "Login untuk memberi rating"}>
+                      <Box>
+                        <Rating
+                          value={Number(userRating)}
+                          onChange={handleRatingChange}
+                          size="medium"
+                          icon={<StarIcon fontSize="inherit" />}
+                        />
+                      </Box>
+                    </Tooltip>
+                  </Box>
                 </Box>
                 
                 {thread.tags && thread.tags.length > 0 && (
@@ -1435,7 +1717,7 @@ const DetailForum = () => {
                           <ThumbUpIcon fontSize="small" />
                         </IconButton>
                         <Typography variant="body2" sx={{ mr: { xs: 1, sm: 2 } }}>
-                          {comment.likes + (likes[comment.id] ? 1 : 0)}
+                          {comment.likes}
                         </Typography>
                       </Box>
                       
@@ -1685,7 +1967,7 @@ const DetailForum = () => {
                               <ThumbUpIcon fontSize="small" />
                             </IconButton>
                             <Typography variant="body2" sx={{ mr: { xs: 1, sm: 2 } }}>
-                              {reply.likes + (likes[reply.id] ? 1 : 0)}
+                              {reply.likes}
                             </Typography>
                           </Box>
                           

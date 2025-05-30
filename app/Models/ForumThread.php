@@ -50,6 +50,8 @@ class ForumThread extends Model
      */
     protected $casts = [
         'tanggal_posting' => 'datetime',
+        'average_rating' => 'float',
+        'rating_count' => 'integer',
     ];
     
     /**
@@ -104,7 +106,7 @@ class ForumThread extends Model
     
     /**
      * Method tambahan untuk mendapatkan thread yang populer
-     * berdasarkan jumlah komentar
+     * berdasarkan gabungan dari jumlah komentar, views, likes, dan rating
      *
      * @param \Illuminate\Database\Eloquent\Builder $query
      * @param int $limit
@@ -112,8 +114,8 @@ class ForumThread extends Model
      */
     public function scopePopular($query, $limit = 5)
     {
-        return $query->withCount('comments')
-            ->orderBy('comments_count', 'desc')
+        return $query->withCount(['comments', 'likes'])
+            ->orderByRaw('(IFNULL(view_count, 0) * 1 + IFNULL(comments_count, 0) * 3 + IFNULL(likes_count, 0) * 5 + IFNULL(average_rating, 0) * 4) DESC')
             ->limit($limit);
     }
     
@@ -135,5 +137,49 @@ class ForumThread extends Model
     public function comments(): HasMany
     {
         return $this->hasMany(ForumComment::class, 'thread_id', 'thread_id');
+    }
+    
+    /**
+     * Relasi ke model ForumRating (rating untuk thread).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function ratings(): HasMany
+    {
+        return $this->hasMany(ForumRating::class, 'thread_id', 'thread_id');
+    }
+    
+    /**
+     * Mengupdate rating rata-rata thread
+     *
+     * @return void
+     */
+    public function updateAverageRating(): void
+    {
+        // Hitung rata-rata rating dengan validasi nilai
+        $averageRating = $this->ratings()->avg('rating');
+        
+        // Pastikan nilai adalah numeric yang valid
+        $this->average_rating = $averageRating !== null ? (float)$averageRating : 0.0;
+        
+        // Hitung jumlah rating
+        $this->rating_count = $this->ratings()->count();
+        
+        // Debug info
+        \Illuminate\Support\Facades\Log::info("Updating rating for thread {$this->thread_id}: avg={$this->average_rating}, count={$this->rating_count}");
+        
+        $this->save();
+    }
+    
+    /**
+     * Mendapatkan rating dari user tertentu
+     *
+     * @param int $userId
+     * @return int|null
+     */
+    public function getRatingFromUser(int $userId): ?int
+    {
+        $rating = $this->ratings()->where('user_id', $userId)->first();
+        return $rating ? $rating->rating : null;
     }
 } 

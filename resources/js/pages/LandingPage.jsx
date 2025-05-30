@@ -1441,7 +1441,7 @@ const LandingPage = () => {
                       component="img"
                       src="/assets/images/kelola-sampah.png"
                       alt="Revalio App"
-                      sx={{ width: '90%', height: 'auto', borderRadius: '10px', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', transform: 'rotate(-5deg)', transition: 'transform 0.3s ease', '&:hover': { transform: 'rotate(0deg) scale(1.05)' }
+                      sx={{ width: '90%', height: 'auto', borderRadius: '10px', transform: 'rotate(-5deg)', transition: 'transform 0.3s ease', '&:hover': { transform: 'rotate(0deg) scale(1.05)' }
                       }}
                     />
                   </Box>

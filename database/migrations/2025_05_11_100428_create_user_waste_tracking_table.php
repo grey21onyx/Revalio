@@ -25,6 +25,7 @@ return new class extends Migration
             $table->text('catatan')->nullable();
             $table->string('foto', 255)->nullable();
             $table->timestamp('updated_at')->nullable();
+            $table->softDeletes();
             
             $table->index('user_id', 'idx_user_id');
             $table->index('waste_id', 'idx_waste_id');

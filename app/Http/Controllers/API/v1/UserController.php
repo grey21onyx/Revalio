@@ -183,11 +183,20 @@ class UserController extends Controller
     {
         $user = $request->user();
         $user->load('wasteTrackings', 'roles.permissions');
+        
+        // Format data user untuk respons
+        $userData = $user->toArray();
+        
+        // Pastikan URL foto profil sudah dalam format yang benar
+        if (!empty($userData['foto_profil'])) {
+            // Tidak perlu modifikasi path, FE akan menambahkan /storage/ prefix
+            $userData['foto_profil'] = $userData['foto_profil'];
+        }
 
         return response()->json([
             'status' => 'success',
             'data' => [
-                'user' => $user,
+                'user' => $userData,
             ]
         ]);
     }
@@ -285,7 +294,7 @@ class UserController extends Controller
     public function uploadPhoto(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'foto' => 'required|image|max:2048', // max 2MB
+            'foto' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -298,24 +307,28 @@ class UserController extends Controller
 
         $user = $request->user();
 
-        // Hapus foto lama jika bukan default
-        if ($user->foto_profil && $user->foto_profil != 'profiles/default.jpg') {
-            Storage::disk('public')->delete($user->foto_profil);
+        // Hapus foto lama jika ada
+        if ($user->foto_profil) {
+            $oldPath = str_replace('/storage/', '', $user->foto_profil);
+            if (Storage::disk('public')->exists($oldPath)) {
+                Storage::disk('public')->delete($oldPath);
+            }
         }
 
-        // Simpan foto baru
-        $path = $request->file('foto')->store('profiles', 'public');
+        // Upload foto baru
+        $foto = $request->file('foto');
+        $filename = 'profile_' . $user->user_id . '_' . time() . '.' . $foto->getClientOriginalExtension();
+        $path = $foto->storeAs('profiles', $filename, 'public');
 
-        $user->update([
-            'foto_profil' => $path
-        ]);
+        // Update user dengan path foto baru
+        $user->foto_profil = $path;
+        $user->save();
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Foto profil berhasil diperbarui',
+            'message' => 'Foto profil berhasil diupload',
             'data' => [
                 'foto_profil' => $path,
-                'foto_url' => asset('storage/' . $path)
             ]
         ]);
     }

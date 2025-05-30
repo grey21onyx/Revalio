@@ -28,14 +28,14 @@ import {
   useTheme,
   useMediaQuery,
   Badge,
-  Stack
+  Stack,
+  CircularProgress
 } from '@mui/material';
 import {
   Edit as EditIcon,
   Save as SaveIcon,
   PhotoCamera as PhotoCameraIcon,
   Lock as LockIcon,
-  Notifications as NotificationsIcon,
   Logout as LogoutIcon,
   Favorite as FavoriteIcon,
   Recycling as RecyclingIcon,
@@ -47,11 +47,15 @@ import {
   Category as CategoryIcon,
   CheckCircle as CheckCircleIcon,
   Security as SecurityIcon,
-  VerifiedUser as VerifiedUserIcon
+  VerifiedUser as VerifiedUserIcon,
+  Visibility as VisibilityIcon,
+  VisibilityOff as VisibilityOffIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import Swal from 'sweetalert2';
+import axiosInstance from '../config/axios';
+import SimpleImageCrop from '../components/ui/SimpleImageCrop';
 
 // Data dummy untuk profil pengguna
 const userDummyData = {
@@ -89,17 +93,80 @@ const activityDummyData = {
   ]
 };
 
+// Definisikan BASE_URL sebagai konstanta
+const BASE_URL = window.location.origin;
+
 const Profile = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, refreshUser } = useAuth();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [tabValue, setTabValue] = useState(0);
   const [editMode, setEditMode] = useState(false);
-  const [userData, setUserData] = useState(userDummyData);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
+  const [userData, setUserData] = useState({
+    nama_lengkap: '',
+    email: '',
+    no_telepon: '',
+    alamat: '',
+    foto_profil: '',
+    status_akun: ''
+  });
+  
   const fileInputRef = useRef(null);
+  
+  // State for crop image dialog
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [tempImageUrl, setTempImageUrl] = useState('');
 
-  // Cek autentikasi saat halaman dimuat
+  // Password form state
+  const [passwordForm, setPasswordForm] = useState({
+    current_password: '',
+    password: '',
+    password_confirmation: ''
+  });
+  
+  // Password form error state
+  const [passwordErrors, setPasswordErrors] = useState({});
+  
+  // Loading state for password update
+  const [isPasswordLoading, setIsPasswordLoading] = useState(false);
+
+  // Password visibility state
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  // Form states
+  const [formData, setFormData] = useState({
+    nama_lengkap: '',
+    email: '',
+    no_telepon: '',
+    alamat: '',
+    foto_profil: '',
+    status_akun: ''
+  });
+  
+  // Form errors
+  const [formErrors, setFormErrors] = useState({});
+  
+  // Loading state for profile update
+  const [isUpdateLoading, setIsUpdateLoading] = useState(false);
+  
+  // Toggle password visibility handlers
+  const toggleCurrentPasswordVisibility = () => {
+    setShowCurrentPassword(!showCurrentPassword);
+  };
+  
+  const toggleNewPasswordVisibility = () => {
+    setShowNewPassword(!showNewPassword);
+  };
+  
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
+  };
+
+  // Fetch user data when authenticated
   useEffect(() => {
     if (!isAuthenticated) {
       Swal.fire({
@@ -107,30 +174,53 @@ const Profile = () => {
         text: 'Anda harus login terlebih dahulu untuk mengakses halaman profil.',
         icon: 'warning',
         confirmButtonText: 'Login Sekarang',
-      }).then((result) => {
+      }).then(() => {
         navigate('/login', { state: { from: '/profile' } });
       });
-    } else if (user) {
-      // Jika user data tersedia dari auth context, gunakan itu
-      setUserData({
-        ...userDummyData,
-        ...user,
-        nama_lengkap: user.nama_lengkap || user.name || userDummyData.nama_lengkap,
-        email: user.email || userDummyData.email,
-      });
-      setFormData({
-        ...userDummyData,
-        ...user,
-        nama_lengkap: user.nama_lengkap || user.name || userDummyData.nama_lengkap,
-        email: user.email || userDummyData.email,
-      });
+      return;
     }
+    
+    // Fetch user profile data
+    const fetchUserProfile = async () => {
+      setIsProfileLoading(true);
+      try {
+        const response = await axiosInstance.get('/v1/profile');
+        
+        if (response.data && response.data.status === 'success') {
+          const profileData = response.data.data.user;
+          
+          setUserData({
+            nama_lengkap: profileData.nama_lengkap || '',
+            email: profileData.email || '',
+            no_telepon: profileData.no_telepon || '',
+            alamat: profileData.alamat || '',
+            foto_profil: profileData.foto_profil ? `/storage/${profileData.foto_profil}` : '',
+            status_akun: profileData.status_akun || 'active'
+          });
+          
+          setFormData({
+            nama_lengkap: profileData.nama_lengkap || '',
+            email: profileData.email || '',
+            no_telepon: profileData.no_telepon || '',
+            alamat: profileData.alamat || '',
+            foto_profil: profileData.foto_profil ? `/storage/${profileData.foto_profil}` : '',
+            status_akun: profileData.status_akun || 'active'
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+        Swal.fire({
+          title: 'Error',
+          text: 'Gagal memuat data profil. Silakan coba lagi nanti.',
+          icon: 'error',
+        });
+      } finally {
+        setIsProfileLoading(false);
+      }
+    };
+    
+    fetchUserProfile();
   }, [isAuthenticated, user, navigate]);
-
-  // State untuk form
-  const [formData, setFormData] = useState({
-    ...userDummyData
-  });
 
   // Handler untuk perubahan tab
   const handleTabChange = (event, newValue) => {
@@ -144,6 +234,14 @@ const Profile = () => {
       ...formData,
       [name]: value,
     });
+    
+    // Clear error for this field if exists
+    if (formErrors[name]) {
+      setFormErrors({
+        ...formErrors,
+        [name]: null
+      });
+    }
   };
 
   // Handler untuk unggah foto profil
@@ -154,21 +252,255 @@ const Profile = () => {
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData({
-          ...formData,
-          foto_profil: reader.result
-        });
-      };
-      reader.readAsDataURL(file);
+      // Create temp URL for cropping
+      const imageUrl = URL.createObjectURL(file);
+      setTempImageUrl(imageUrl);
+      setCropDialogOpen(true);
     }
   };
 
+  // Handler untuk crop dialog
+  const handleCropDialogClose = () => {
+    setCropDialogOpen(false);
+    URL.revokeObjectURL(tempImageUrl); // Clean up URL
+  };
+
+  const handleCropComplete = (croppedImageUrl) => {
+    setFormData({
+      ...formData,
+      foto_profil: croppedImageUrl
+    });
+  };
+
   // Handler untuk tombol simpan perubahan
-  const handleSaveChanges = () => {
-    setUserData(formData);
-    setEditMode(false);
+  const handleSaveChanges = async () => {
+    // Validate form
+    let formIsValid = true;
+    let errors = {};
+    
+    if (!formData.nama_lengkap) {
+      errors.nama_lengkap = 'Nama lengkap wajib diisi';
+      formIsValid = false;
+    }
+    
+    if (!formIsValid) {
+      setFormErrors(errors);
+      return;
+    }
+    
+    setIsUpdateLoading(true);
+    
+    try {
+      // Check if photo was updated (data URL format)
+      let updateData = {
+        nama_lengkap: formData.nama_lengkap,
+        no_telepon: formData.no_telepon,
+        alamat: formData.alamat
+      };
+      
+      // Update profile info
+      const profileResponse = await axiosInstance.put('/v1/profile', updateData);
+      
+      // If photo was changed (starts with data:image)
+      if (formData.foto_profil && formData.foto_profil.startsWith('data:image')) {
+        // Upload photo
+        const base64Data = formData.foto_profil;
+        const blob = await fetch(base64Data).then(res => res.blob());
+        const formDataPhoto = new FormData();
+        formDataPhoto.append('foto', blob, 'profile.jpg');
+        
+        await axiosInstance.post('/v1/upload-photo', formDataPhoto, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+      }
+      
+      // Refresh user data
+      if (refreshUser) {
+        await refreshUser();
+      }
+      
+      // Show success message
+      Swal.fire({
+        icon: 'success',
+        title: 'Berhasil',
+        text: 'Profil berhasil diperbarui',
+        timer: 1500,
+        showConfirmButton: false
+      });
+      
+      // Update displayed user data
+      setUserData({...formData});
+      setEditMode(false);
+      
+      // Fetch updated profile
+      const response = await axiosInstance.get('/v1/profile');
+      if (response.data && response.data.status === 'success') {
+        const profileData = response.data.data.user;
+        
+        // Update photo URL from server response
+        setUserData(prevData => ({
+          ...prevData,
+          foto_profil: profileData.foto_profil ? `/storage/${profileData.foto_profil}` : ''
+        }));
+        
+        setFormData(prevData => ({
+          ...prevData,
+          foto_profil: profileData.foto_profil ? `/storage/${profileData.foto_profil}` : ''
+        }));
+      }
+      
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      
+      // Handle API errors
+      if (error.response && error.response.data) {
+        if (error.response.data.errors) {
+          setFormErrors(error.response.data.errors);
+        } else if (error.response.data.message) {
+          Swal.fire({
+            title: 'Gagal',
+            text: error.response.data.message,
+            icon: 'error',
+            confirmButtonText: 'OK'
+          });
+        }
+      } else {
+        Swal.fire({
+          title: 'Gagal',
+          text: 'Terjadi kesalahan. Silakan coba lagi nanti.',
+          icon: 'error',
+          confirmButtonText: 'OK'
+        });
+      }
+    } finally {
+      setIsUpdateLoading(false);
+    }
+  };
+
+  // Handle password form input change
+  const handlePasswordInputChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordForm({
+      ...passwordForm,
+      [name]: value,
+    });
+    
+    // Clear error for this field when user starts typing
+    if (passwordErrors[name]) {
+      setPasswordErrors({
+        ...passwordErrors,
+        [name]: null
+      });
+    }
+  };
+  
+  // Handle password change submission
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    
+    // Reset errors
+    setPasswordErrors({});
+    
+    // Validate form
+    let formIsValid = true;
+    let errors = {};
+    
+    if (!passwordForm.current_password) {
+      errors.current_password = 'Password saat ini wajib diisi';
+      formIsValid = false;
+    }
+    
+    if (!passwordForm.password) {
+      errors.password = 'Password baru wajib diisi';
+      formIsValid = false;
+    } else if (passwordForm.password.length < 8) {
+      errors.password = 'Password baru minimal 8 karakter';
+      formIsValid = false;
+    }
+    
+    if (!passwordForm.password_confirmation) {
+      errors.password_confirmation = 'Konfirmasi password wajib diisi';
+      formIsValid = false;
+    } else if (passwordForm.password_confirmation !== passwordForm.password) {
+      errors.password_confirmation = 'Konfirmasi password tidak cocok';
+      formIsValid = false;
+    }
+    
+    if (!formIsValid) {
+      setPasswordErrors(errors);
+      return;
+    }
+    
+    // Submit form to API
+    setIsPasswordLoading(true);
+    
+    try {
+      const response = await axiosInstance.post('/v1/change-password', passwordForm);
+      
+      // Reset form
+      setPasswordForm({
+        current_password: '',
+        password: '',
+        password_confirmation: ''
+      });
+      
+      // Show success message
+      Swal.fire({
+        title: 'Berhasil!',
+        text: 'Password berhasil diperbarui',
+        icon: 'success',
+        confirmButtonText: 'OK'
+      });
+      
+    } catch (error) {
+      // Handle API errors
+      if (error.response && error.response.data) {
+        if (error.response.data.errors) {
+          setPasswordErrors(error.response.data.errors);
+        } else if (error.response.data.message) {
+          Swal.fire({
+            title: 'Gagal',
+            text: error.response.data.message,
+            icon: 'error',
+            confirmButtonText: 'OK'
+          });
+        }
+      } else {
+        Swal.fire({
+          title: 'Gagal',
+          text: 'Terjadi kesalahan. Silakan coba lagi nanti.',
+          icon: 'error',
+          confirmButtonText: 'OK'
+        });
+      }
+    } finally {
+      setIsPasswordLoading(false);
+    }
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    Swal.fire({
+      title: 'Keluar Akun',
+      text: 'Apakah Anda yakin ingin keluar?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Ya, Keluar',
+      cancelButtonText: 'Batal',
+      reverseButtons: true
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Call logout from auth context
+        if (useAuth().logout) {
+          useAuth().logout();
+        }
+        
+        // Redirect to home
+        navigate('/');
+      }
+    });
   };
 
   // Jika belum terautentikasi, tidak perlu render halaman
@@ -176,9 +508,27 @@ const Profile = () => {
     return null;
   }
 
+  // Show loading state when profile is loading
+  if (isProfileLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '70vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ backgroundColor: '#f8f9fa', py: 4, minHeight: '100vh' }}>
       <Container maxWidth="lg">
+        {/* Image Crop Dialog */}
+        <SimpleImageCrop
+          open={cropDialogOpen}
+          onClose={handleCropDialogClose}
+          imageUrl={tempImageUrl}
+          onSave={handleCropComplete}
+          aspect={1}
+        />
+      
         {/* Header */}
         <Paper elevation={0} sx={{ 
           p: { xs: 2, md: 3 }, 
@@ -268,15 +618,6 @@ const Profile = () => {
                 <Typography variant="body2" sx={{ opacity: 0.9 }}>
                   {userData.email}
                 </Typography>
-                <Chip 
-                  label={`Member sejak ${new Date(userData.tanggal_registrasi).getFullYear()}`} 
-                  size="small" 
-                  sx={{ 
-                    mt: 1, 
-                    bgcolor: 'rgba(255,255,255,0.2)', 
-                    color: 'white' 
-                  }} 
-                />
               </Box>
 
               <Divider />
@@ -315,42 +656,13 @@ const Profile = () => {
                   </ListItemIcon>
                   <ListItemText primary="Keamanan Akun" primaryTypographyProps={{ variant: 'body2' }} />
                 </ListItemButton>
-                <ListItemButton 
-                  selected={tabValue === 2} 
-                  onClick={() => setTabValue(2)}
-                  sx={{ 
-                    borderRadius: 1,
-                    '&.Mui-selected': {
-                      bgcolor: `${theme.palette.primary.light}20`,
-                      color: theme.palette.primary.main
-                    }
-                  }}
-                >
-                  <ListItemIcon sx={{ minWidth: 36 }}>
-                    <RecyclingIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText primary="Aktivitas Sampah" primaryTypographyProps={{ variant: 'body2' }} />
-                </ListItemButton>
-                <ListItemButton 
-                  selected={tabValue === 3} 
-                  onClick={() => setTabValue(3)}
-                  sx={{ 
-                    borderRadius: 1,
-                    '&.Mui-selected': {
-                      bgcolor: `${theme.palette.primary.light}20`,
-                      color: theme.palette.primary.main
-                    }
-                  }}
-                >
-                  <ListItemIcon sx={{ minWidth: 36 }}>
-                    <NotificationsIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText primary="Notifikasi" primaryTypographyProps={{ variant: 'body2' }} />
-                </ListItemButton>
                 
                 <Divider sx={{ my: 1 }} />
                 
-                <ListItemButton sx={{ borderRadius: 1 }}>
+                <ListItemButton 
+                  onClick={handleLogout}
+                  sx={{ borderRadius: 1 }}
+                >
                   <ListItemIcon sx={{ minWidth: 36 }}>
                     <LogoutIcon fontSize="small" />
                   </ListItemIcon>
@@ -363,38 +675,6 @@ const Profile = () => {
                   />
                 </ListItemButton>
               </List>
-            </Paper>
-
-            {/* Quick Stats */}
-            <Paper sx={{ 
-              mt: 3, 
-              p: 2, 
-              borderRadius: 3,
-              boxShadow: theme.shadows[1]
-            }}>
-              <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-                Ringkasan Aktivitas
-              </Typography>
-              <Stack spacing={1}>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <RecyclingIcon color="primary" fontSize="small" sx={{ mr: 1 }} />
-                  <Typography variant="body2">
-                    <strong>{activityDummyData.total_terkelola} kg</strong> sampah dikelola
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <FavoriteIcon color="error" fontSize="small" sx={{ mr: 1 }} />
-                  <Typography variant="body2">
-                    <strong>{activityDummyData.tutorial_favorit.length}</strong> tutorial favorit
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <CommentIcon color="info" fontSize="small" sx={{ mr: 1 }} />
-                  <Typography variant="body2">
-                    <strong>{activityDummyData.kontribusi_forum.komentar}</strong> komentar forum
-                  </Typography>
-                </Box>
-              </Stack>
             </Paper>
           </Grid>
 
@@ -428,8 +708,6 @@ const Profile = () => {
                   >
                     <Tab label="Informasi Profil" id="tab-0" />
                     <Tab label="Keamanan" id="tab-1" />
-                    <Tab label="Aktivitas" id="tab-2" />
-                    <Tab label="Notifikasi" id="tab-3" />
                   </Tabs>
                   {tabValue === 0 && (
                     <Button 
@@ -439,8 +717,13 @@ const Profile = () => {
                       onClick={editMode ? handleSaveChanges : () => setEditMode(true)}
                       size="small"
                       sx={{ borderRadius: 2 }}
+                      disabled={isUpdateLoading}
                     >
-                      {editMode ? 'Simpan' : 'Edit Profil'}
+                      {isUpdateLoading ? (
+                        <CircularProgress size={24} />
+                      ) : (
+                        editMode ? 'Simpan' : 'Edit Profil'
+                      )}
                     </Button>
                   )}
                 </Box>
@@ -464,8 +747,13 @@ const Profile = () => {
                           startIcon={editMode ? <SaveIcon /> : <EditIcon />} 
                           onClick={editMode ? handleSaveChanges : () => setEditMode(true)}
                           size="small"
+                          disabled={isUpdateLoading}
                         >
-                          {editMode ? 'Simpan' : 'Edit'}
+                          {isUpdateLoading ? (
+                            <CircularProgress size={24} />
+                          ) : (
+                            editMode ? 'Simpan' : 'Edit'
+                          )}
                         </Button>
                       </Box>
                     )}
@@ -484,6 +772,9 @@ const Profile = () => {
                           variant={editMode ? "outlined" : "filled"}
                           margin="normal"
                           sx={{ mb: 2 }}
+                          error={!!formErrors.nama_lengkap}
+                          helperText={formErrors.nama_lengkap}
+                          required
                         />
                       </Grid>
                       <Grid item xs={12} md={6}>
@@ -524,22 +815,24 @@ const Profile = () => {
                           variant={editMode ? "outlined" : "filled"}
                           margin="normal"
                           sx={{ mb: 2 }}
+                          error={!!formErrors.no_telepon}
+                          helperText={formErrors.no_telepon}
                         />
                       </Grid>
                       <Grid item xs={12} md={6}>
                         <TextField
                           fullWidth
                           label="Status Akun"
-                          value={userData.status_akun === 'active' ? 'Aktif' : 'Tidak Aktif'}
+                          value="Aktif"
                           InputProps={{
                             readOnly: true,
                             startAdornment: (
                               <InputAdornment position="start">
                                 <Chip 
-                                  label={userData.status_akun === 'active' ? 'Aktif' : 'Tidak Aktif'} 
+                                  label="Aktif" 
                                   size="small" 
-                                  color={userData.status_akun === 'active' ? "success" : "error"} 
-                                  icon={userData.status_akun === 'active' ? <CheckCircleIcon fontSize="small" /> : null}
+                                  color="success" 
+                                  icon={<CheckCircleIcon fontSize="small" />}
                                 />
                               </InputAdornment>
                             ),
@@ -569,26 +862,8 @@ const Profile = () => {
                           variant={editMode ? "outlined" : "filled"}
                           margin="normal"
                           sx={{ mb: 2 }}
-                        />
-                      </Grid>
-                      <Grid item xs={12}>
-                        <TextField
-                          fullWidth
-                          label="Preferensi Sampah"
-                          name="preferensi_sampah"
-                          value={editMode ? formData.preferensi_sampah : userData.preferensi_sampah}
-                          onChange={handleInputChange}
-                          InputProps={{
-                            readOnly: !editMode,
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <CategoryIcon color="action" />
-                              </InputAdornment>
-                            ),
-                          }}
-                          helperText="Pisahkan dengan koma (contoh: Plastik, Kertas, Elektronik)"
-                          variant={editMode ? "outlined" : "filled"}
-                          margin="normal"
+                          error={!!formErrors.alamat}
+                          helperText={formErrors.alamat}
                         />
                       </Grid>
                     </Grid>
@@ -609,322 +884,111 @@ const Profile = () => {
                         avatar={<SecurityIcon color="primary" />}
                       />
                       <CardContent>
-                        <Grid container spacing={2}>
-                          <Grid item xs={12}>
-                            <TextField
-                              fullWidth
-                              label="Password Saat Ini"
-                              type="password"
-                              variant="outlined"
-                              size="small"
-                            />
+                        <form onSubmit={handlePasswordChange}>
+                          <Grid container spacing={2}>
+                            <Grid item xs={12}>
+                              <TextField
+                                fullWidth
+                                label="Password Saat Ini"
+                                name="current_password"
+                                type={showCurrentPassword ? "text" : "password"}
+                                variant="outlined"
+                                size="small"
+                                value={passwordForm.current_password}
+                                onChange={handlePasswordInputChange}
+                                error={!!passwordErrors.current_password}
+                                helperText={passwordErrors.current_password}
+                                required
+                                InputProps={{
+                                  endAdornment: (
+                                    <InputAdornment position="end">
+                                      <IconButton
+                                        aria-label="toggle password visibility"
+                                        onClick={toggleCurrentPasswordVisibility}
+                                        edge="end"
+                                        size="small"
+                                      >
+                                        {showCurrentPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                                      </IconButton>
+                                    </InputAdornment>
+                                  ),
+                                }}
+                              />
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                              <TextField
+                                fullWidth
+                                label="Password Baru"
+                                name="password"
+                                type={showNewPassword ? "text" : "password"}
+                                variant="outlined"
+                                size="small"
+                                value={passwordForm.password}
+                                onChange={handlePasswordInputChange}
+                                error={!!passwordErrors.password}
+                                helperText={passwordErrors.password || 'Minimal 8 karakter'}
+                                required
+                                InputProps={{
+                                  endAdornment: (
+                                    <InputAdornment position="end">
+                                      <IconButton
+                                        aria-label="toggle password visibility"
+                                        onClick={toggleNewPasswordVisibility}
+                                        edge="end"
+                                        size="small"
+                                      >
+                                        {showNewPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                                      </IconButton>
+                                    </InputAdornment>
+                                  ),
+                                }}
+                              />
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                              <TextField
+                                fullWidth
+                                label="Konfirmasi Password Baru"
+                                name="password_confirmation"
+                                type={showConfirmPassword ? "text" : "password"}
+                                variant="outlined"
+                                size="small"
+                                value={passwordForm.password_confirmation}
+                                onChange={handlePasswordInputChange}
+                                error={!!passwordErrors.password_confirmation}
+                                helperText={passwordErrors.password_confirmation}
+                                required
+                                InputProps={{
+                                  endAdornment: (
+                                    <InputAdornment position="end">
+                                      <IconButton
+                                        aria-label="toggle password visibility"
+                                        onClick={toggleConfirmPasswordVisibility}
+                                        edge="end"
+                                        size="small"
+                                      >
+                                        {showConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                                      </IconButton>
+                                    </InputAdornment>
+                                  ),
+                                }}
+                              />
+                            </Grid>
                           </Grid>
-                          <Grid item xs={12} md={6}>
-                            <TextField
-                              fullWidth
-                              label="Password Baru"
-                              type="password"
-                              variant="outlined"
-                              size="small"
-                            />
-                          </Grid>
-                          <Grid item xs={12} md={6}>
-                            <TextField
-                              fullWidth
-                              label="Konfirmasi Password Baru"
-                              type="password"
-                              variant="outlined"
-                              size="small"
-                            />
-                          </Grid>
-                        </Grid>
-                        <Button 
-                          variant="contained" 
-                          color="primary" 
-                          sx={{ mt: 2, borderRadius: 2 }}
-                          startIcon={<LockIcon />}
-                        >
-                          Ubah Password
-                        </Button>
-                      </CardContent>
-                    </Card>
-
-                    {/* Two-Factor Authentication */}
-                    <Card sx={{ borderRadius: 2 }}>
-                      <CardHeader 
-                        title="Verifikasi Dua Faktor" 
-                        titleTypographyProps={{ variant: 'subtitle1', fontWeight: 600 }}
-                        avatar={<VerifiedUserIcon color="action" />}
-                        action={
-                          <Switch color="primary" />
-                        }
-                      />
-                      <CardContent>
-                        <Typography variant="body2" color="text.secondary" paragraph>
-                          Aktifkan verifikasi dua faktor untuk meningkatkan keamanan akun Anda. 
-                          Setelah diaktifkan, Anda akan dimintai kode verifikasi saat login dari perangkat baru.
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  </Box>
-                )}
-              </Box>
-
-              <Box role="tabpanel" hidden={tabValue !== 2}>
-                {tabValue === 2 && (
-                  <Box>
-                    <Typography variant="h6" fontWeight={600} gutterBottom>Aktivitas Sampah</Typography>
-                    
-                    {/* Stats Cards */}
-                    <Grid container spacing={2} sx={{ mb: 3 }}>
-                      <Grid item xs={12} sm={6}>
-                        <Card sx={{ 
-                          bgcolor: 'primary.main', 
-                          color: 'white',
-                          borderRadius: 2,
-                          height: '100%'
-                        }}>
-                          <CardContent>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                              <RecyclingIcon sx={{ mr: 1 }} />
-                              <Typography variant="subtitle1">Total Sampah Dikelola</Typography>
-                            </Box>
-                            <Typography variant="h4" fontWeight={700}>
-                              {activityDummyData.total_terkelola} kg
-                            </Typography>
-                            <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                              Sejak bergabung {new Date(userData.tanggal_registrasi).getFullYear()}
-                            </Typography>
-                          </CardContent>
-                        </Card>
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <Card sx={{ 
-                          bgcolor: 'success.main', 
-                          color: 'white',
-                          borderRadius: 2,
-                          height: '100%'
-                        }}>
-                          <CardContent>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                              <FavoriteIcon sx={{ mr: 1 }} />
-                              <Typography variant="subtitle1">Total Nilai Ekonomis</Typography>
-                            </Box>
-                            <Typography variant="h4" fontWeight={700}>
-                              Rp {activityDummyData.total_nilai.toLocaleString('id-ID')}
-                            </Typography>
-                            <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                              Dari pengelolaan sampah
-                            </Typography>
-                          </CardContent>
-                        </Card>
-                      </Grid>
-                    </Grid>
-
-                    {/* Recent Activity */}
-                    <Card sx={{ mb: 3, borderRadius: 2 }}>
-                      <CardHeader 
-                        title="Riwayat Terakhir" 
-                        titleTypographyProps={{ variant: 'subtitle1', fontWeight: 600 }}
-                        avatar={<HistoryIcon color="action" />}
-                      />
-                      <CardContent>
-                        {activityDummyData.riwayat_terakhir.length > 0 ? (
-                          <List disablePadding>
-                            {activityDummyData.riwayat_terakhir.map((item, index) => (
-                              <React.Fragment key={item.id}>
-                                <ListItem disablePadding sx={{ py: 1.5 }}>
-                                  <ListItemIcon sx={{ minWidth: 40 }}>
-                                    {item.jenis === 'Penjualan' ? (
-                                      <FavoriteIcon color="error" />
-                                    ) : (
-                                      <RecyclingIcon color="primary" />
-                                    )}
-                                  </ListItemIcon>
-                                  <ListItemText
-                                    primary={item.item}
-                                    secondary={`${item.jumlah} ${item.satuan} • ${new Date(item.tanggal).toLocaleDateString('id-ID')}`}
-                                  />
-                                  <Typography variant="subtitle2" fontWeight={600}>
-                                    Rp {item.nilai.toLocaleString('id-ID')}
-                                  </Typography>
-                                </ListItem>
-                                {index < activityDummyData.riwayat_terakhir.length - 1 && (
-                                  <Divider component="li" />
-                                )}
-                              </React.Fragment>
-                            ))}
-                          </List>
-                        ) : (
-                          <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 3 }}>
-                            Belum ada riwayat aktivitas
-                          </Typography>
-                        )}
-                      </CardContent>
-                    </Card>
-
-                    {/* Favorite Lists */}
-                    <Grid container spacing={2}>
-                      <Grid item xs={12} md={6}>
-                        <Card sx={{ borderRadius: 2 }}>
-                          <CardHeader 
-                            title="Tutorial Favorit" 
-                            titleTypographyProps={{ variant: 'subtitle1', fontWeight: 600 }}
-                            avatar={<FavoriteIcon color="error" />}
-                          />
-                          <CardContent>
-                            {activityDummyData.tutorial_favorit.length > 0 ? (
-                              <List disablePadding>
-                                {activityDummyData.tutorial_favorit.map((tutorial, index) => (
-                                  <React.Fragment key={tutorial.id}>
-                                    <ListItem disablePadding sx={{ py: 1.5 }}>
-                                      <ListItemIcon sx={{ minWidth: 40 }}>
-                                        <FavoriteIcon color="error" fontSize="small" />
-                                      </ListItemIcon>
-                                      <ListItemText 
-                                        primary={tutorial.judul}
-                                        secondary={`Kategori: ${tutorial.kategori} • Dilihat ${tutorial.dilihat}x`}
-                                      />
-                                    </ListItem>
-                                    {index < activityDummyData.tutorial_favorit.length - 1 && (
-                                      <Divider component="li" />
-                                    )}
-                                  </React.Fragment>
-                                ))}
-                              </List>
+                          <Button 
+                            variant="contained" 
+                            color="primary" 
+                            sx={{ mt: 2, borderRadius: 2 }}
+                            startIcon={<LockIcon />}
+                            type="submit"
+                            disabled={isPasswordLoading}
+                          >
+                            {isPasswordLoading ? (
+                              <CircularProgress size={24} color="inherit" />
                             ) : (
-                              <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 3 }}>
-                                Anda belum memiliki tutorial favorit
-                              </Typography>
+                              'Ubah Password'
                             )}
-                          </CardContent>
-                        </Card>
-                      </Grid>
-                      <Grid item xs={12} md={6}>
-                        <Card sx={{ borderRadius: 2 }}>
-                          <CardHeader 
-                            title="Sampah Favorit" 
-                            titleTypographyProps={{ variant: 'subtitle1', fontWeight: 600 }}
-                            avatar={<RecyclingIcon color="primary" />}
-                          />
-                          <CardContent>
-                            {activityDummyData.sampah_favorit.length > 0 ? (
-                              <List disablePadding>
-                                {activityDummyData.sampah_favorit.map((sampah, index) => (
-                                  <React.Fragment key={sampah.id}>
-                                    <ListItem disablePadding sx={{ py: 1.5 }}>
-                                      <ListItemIcon sx={{ minWidth: 40 }}>
-                                        <RecyclingIcon color="primary" fontSize="small" />
-                                      </ListItemIcon>
-                                      <ListItemText 
-                                        primary={sampah.nama}
-                                        secondary={`Kategori: ${sampah.kategori}`}
-                                      />
-                                      <Typography variant="subtitle2" color="primary" fontWeight={600}>
-                                        Rp {sampah.nilai.toLocaleString('id-ID')}
-                                      </Typography>
-                                    </ListItem>
-                                    {index < activityDummyData.sampah_favorit.length - 1 && (
-                                      <Divider component="li" />
-                                    )}
-                                  </React.Fragment>
-                                ))}
-                              </List>
-                            ) : (
-                              <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 3 }}>
-                                Anda belum memiliki sampah favorit
-                              </Typography>
-                            )}
-                          </CardContent>
-                        </Card>
-                      </Grid>
-                    </Grid>
-                  </Box>
-                )}
-              </Box>
-
-              <Box role="tabpanel" hidden={tabValue !== 3}>
-                {tabValue === 3 && (
-                  <Box>
-                    <Typography variant="h6" fontWeight={600} gutterBottom>Pengaturan Notifikasi</Typography>
-                    
-                    {/* App Notifications */}
-                    <Card sx={{ mb: 3, borderRadius: 2 }}>
-                      <CardHeader 
-                        title="Notifikasi Aplikasi" 
-                        titleTypographyProps={{ variant: 'subtitle1', fontWeight: 600 }}
-                        avatar={<NotificationsIcon color="primary" />}
-                      />
-                      <CardContent>
-                        <List disablePadding>
-                          <ListItem disablePadding>
-                            <ListItemText 
-                              primary="Pemberitahuan Forum" 
-                              secondary="Notifikasi saat ada tanggapan baru pada thread atau komentar Anda" 
-                            />
-                            <Switch defaultChecked color="primary" />
-                          </ListItem>
-                          <Divider component="li" />
-                          <ListItem disablePadding>
-                            <ListItemText 
-                              primary="Tutorial dan Konten Baru" 
-                              secondary="Notifikasi saat ada tutorial atau panduan baru tentang sampah" 
-                            />
-                            <Switch defaultChecked color="primary" />
-                          </ListItem>
-                          <Divider component="li" />
-                          <ListItem disablePadding>
-                            <ListItemText 
-                              primary="Pengingat Pengumpulan Sampah" 
-                              secondary="Notifikasi pengingat jadwal pengumpulan sampah di daerah Anda" 
-                            />
-                            <Switch color="primary" />
-                          </ListItem>
-                          <Divider component="li" />
-                          <ListItem disablePadding>
-                            <ListItemText 
-                              primary="Peluang Usaha Baru" 
-                              secondary="Notifikasi saat ada peluang usaha baru terkait pengolahan sampah" 
-                            />
-                            <Switch defaultChecked color="primary" />
-                          </ListItem>
-                        </List>
-                      </CardContent>
-                    </Card>
-
-                    {/* Email Notifications */}
-                    <Card sx={{ borderRadius: 2 }}>
-                      <CardHeader 
-                        title="Notifikasi Email" 
-                        titleTypographyProps={{ variant: 'subtitle1', fontWeight: 600 }}
-                        avatar={<EmailIcon color="action" />}
-                      />
-                      <CardContent>
-                        <List disablePadding>
-                          <ListItem disablePadding>
-                            <ListItemText 
-                              primary="Berita dan Update Bulanan" 
-                              secondary="Terima email tentang berita dan update platform secara bulanan" 
-                            />
-                            <Switch color="primary" />
-                          </ListItem>
-                          <Divider component="li" />
-                          <ListItem disablePadding>
-                            <ListItemText 
-                              primary="Laporan Aktivitas" 
-                              secondary="Laporan mingguan tentang aktivitas pengelolaan sampah Anda" 
-                            />
-                            <Switch defaultChecked color="primary" />
-                          </ListItem>
-                        </List>
-                        <Button 
-                          variant="contained" 
-                          color="primary" 
-                          sx={{ mt: 2, borderRadius: 2 }}
-                          startIcon={<SaveIcon />}
-                        >
-                          Simpan Pengaturan
-                        </Button>
+                          </Button>
+                        </form>
                       </CardContent>
                     </Card>
                   </Box>

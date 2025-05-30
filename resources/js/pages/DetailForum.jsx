@@ -90,10 +90,14 @@ const getUserAvatarUrl = (user) => {
     return avatarUrl;
   }
   
-  // If it's a relative path, check if it includes storage/app/public
-  // but only attach domain if the path is non-empty
+  // Jika path dimulai dengan /storage, gunakan langsung
+  if (avatarUrl.startsWith('/storage/')) {
+    return avatarUrl;
+  }
+  
+  // Jika ada path tapi tidak dimulai dengan /, tambahkan /storage/
   if (avatarUrl && !avatarUrl.startsWith('/')) {
-    avatarUrl = `/${avatarUrl}`; // Ensure it starts with a slash
+    return `/storage/${avatarUrl}`;
   }
   
   return avatarUrl;
@@ -104,6 +108,21 @@ const categoryNames = {
   'general': 'Umum',
   'tips': 'Tips & Trik',
   'recycling': 'Daur ulang'
+};
+
+// Helper function untuk mendapatkan inisial pengguna untuk avatar fallback
+const getUserInitials = (user) => {
+  if (!user) return '?';
+  
+  const name = getUserDisplayName(user);
+  if (!name || name === 'Pengguna') return '?';
+  
+  const nameParts = name.split(' ');
+  if (nameParts.length === 1) {
+    return nameParts[0].charAt(0).toUpperCase();
+  } else {
+    return (nameParts[0].charAt(0) + nameParts[1].charAt(0)).toUpperCase();
+  }
 };
 
 const DetailForum = () => {
@@ -1445,7 +1464,8 @@ const DetailForum = () => {
                   <Avatar 
                     alt={thread.author || 'Pengguna'}
                     src={thread.authorAvatar || ''}
-                    sx={{ width: 40, height: 40 }}
+                    sx={{ width: 40, height: 40, bgcolor: 'primary.main' }}
+                    onError={(e) => { e.target.src = ''; }}
                   >
                     {thread.author ? thread.author.charAt(0).toUpperCase() : '?'}
                   </Avatar>
@@ -1612,7 +1632,14 @@ const DetailForum = () => {
                     }}
                   >
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mr: 1, flexShrink: 0 }}>
-                      <Avatar src={comment.user.avatar} alt={comment.user.name} />
+                      <Avatar 
+                        src={comment.user.avatar} 
+                        alt={comment.user.name}
+                        onError={(e) => { e.target.src = ''; }}
+                        sx={{ bgcolor: 'primary.main' }}
+                      >
+                        {getUserInitials(comment.user)}
+                      </Avatar>
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 0 }}> {/* minWidth: 0 penting untuk text overflow handling */}
                       <Box sx={{ 
@@ -1864,7 +1891,14 @@ const DetailForum = () => {
                           }}
                         >
                           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mr: 1 }}>
-                            <Avatar src={reply.user.avatar} alt={reply.user.name} />
+                            <Avatar 
+                              src={reply.user.avatar} 
+                              alt={reply.user.name}
+                              onError={(e) => { e.target.src = ''; }}
+                              sx={{ bgcolor: 'primary.main' }}
+                            >
+                              {getUserInitials(reply.user)}
+                            </Avatar>
                           </Box>
                           <Box sx={{ flex: 1, minWidth: 0 }}>
                             <Box sx={{ 

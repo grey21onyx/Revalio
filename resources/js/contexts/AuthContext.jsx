@@ -67,6 +67,45 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Fungsi untuk menyegarkan data user
+  const refreshUser = async () => {
+    console.log('Refreshing user data...');
+    try {
+      const response = await axios.get('/v1/profile');
+      console.log('Profile refresh response:', response.data);
+      
+      if (response.data && response.data.status === 'success') {
+        const userData = response.data.data.user;
+        console.log('User data from profile API:', userData);
+        
+        // Update user state
+        setUser(prevUser => {
+          const updatedUser = {
+            ...prevUser,
+            ...userData
+          };
+          console.log('Updated user state:', updatedUser);
+          return updatedUser;
+        });
+        
+        // Update localStorage
+        const storedUser = JSON.parse(localStorage.getItem('userData') || '{}');
+        const updatedUser = {
+          ...storedUser,
+          ...userData
+        };
+        localStorage.setItem('userData', JSON.stringify(updatedUser));
+        
+        console.log('User data refreshed successfully');
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('Error refreshing user data:', err);
+      return false;
+    }
+  };
+
   const login = async (credentials) => {
     setIsLoading(true);
     setError(null);
@@ -196,7 +235,8 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     clearError,
-    clearSuccess
+    clearSuccess,
+    refreshUser
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

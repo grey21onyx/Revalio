@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import {
@@ -35,7 +35,9 @@ const Header = ({ toggleSidebar }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, user } = useAuth();
+  const [profileImage, setProfileImage] = useState(null);
+  const [imageError, setImageError] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [anchorEl, setAnchorEl] = useState(null);
@@ -43,6 +45,16 @@ const Header = ({ toggleSidebar }) => {
 
   const isMenuOpen = Boolean(anchorEl);
   const isMobileMenuOpen = Boolean(mobileMoreAnchorEl);
+
+  // Effect untuk update foto profil saat user berubah
+  useEffect(() => {
+    console.log('User data changed in Header.jsx:', user);
+    setImageError(false); // Reset error state ketika user berubah
+    
+    if (user) {
+      updateProfileImage();
+    }
+  }, [user]);
 
   // Handle menu open/close
   const handleProfileMenuOpen = (event) => {
@@ -75,6 +87,88 @@ const Header = ({ toggleSidebar }) => {
   const handleLogout = () => {
     logout();
     handleMenuClose();
+  };
+
+  // Handle image load error
+  const handleImageError = () => {
+    console.error('Error loading profile image');
+    setImageError(true);
+  };
+
+  // Update profile image state
+  const updateProfileImage = () => {
+    if (!user) {
+      console.log('No user data available');
+      setProfileImage(null);
+      return;
+    }
+    
+    console.log('Updating profile image from user data:', user);
+    console.log('Profile image field:', user.foto_profil);
+    
+    if (!user.foto_profil) {
+      console.log('No profile image in user data');
+      setProfileImage(null);
+      return;
+    }
+    
+    let imageUrl;
+    
+    // Cek apakah foto_profil sudah berupa URL lengkap atau relatif
+    if (user.foto_profil.startsWith('http')) {
+      imageUrl = user.foto_profil;
+    } else if (user.foto_profil.startsWith('/storage/')) {
+      // Jika sudah berformat /storage/...
+      imageUrl = user.foto_profil;
+    } else {
+      // Jika hanya nama file, tambahkan path
+      imageUrl = `/storage/${user.foto_profil}`;
+    }
+    
+    console.log('Final profile image URL:', imageUrl);
+    setProfileImage(imageUrl);
+  };
+
+  // Get profile image URL from user data
+  const getProfileImageUrl = () => {
+    if (imageError) {
+      console.log('Image error occurred, returning null');
+      return null;
+    }
+    
+    if (profileImage) {
+      console.log('Using cached profile image URL:', profileImage);
+      return profileImage;
+    }
+    
+    if (user && user.foto_profil) {
+      console.log('Generating profile image URL from user data:', user.foto_profil);
+      // Cek apakah foto_profil sudah berupa URL lengkap atau relatif
+      if (user.foto_profil.startsWith('http')) {
+        return user.foto_profil;
+      } else if (user.foto_profil.startsWith('/storage/')) {
+        // Jika sudah berformat /storage/...
+        return user.foto_profil;
+      } else {
+        // Jika hanya nama file, tambahkan path
+        return `/storage/${user.foto_profil}`;
+      }
+    }
+    
+    console.log('No profile image available, returning null');
+    return null; // Return null jika tidak ada foto profil
+  };
+  
+  // Get user initials for avatar fallback
+  const getUserInitials = () => {
+    if (!user || !user.nama_lengkap) return null;
+    
+    const nameParts = user.nama_lengkap.split(' ');
+    if (nameParts.length === 1) {
+      return nameParts[0].charAt(0).toUpperCase();
+    } else {
+      return (nameParts[0].charAt(0) + nameParts[1].charAt(0)).toUpperCase();
+    }
   };
 
   // Profile menu
@@ -134,7 +228,18 @@ const Header = ({ toggleSidebar }) => {
               aria-haspopup="true"
               color="inherit"
             >
-              <AccountCircle />
+              <Avatar 
+                sx={{ 
+                  width: 32, 
+                  height: 32,
+                  bgcolor: theme.palette.primary.main
+                }}
+                src={getProfileImageUrl()}
+                alt={user?.nama_lengkap || "User Profile"}
+                onError={handleImageError}
+              >
+                {getUserInitials()}
+              </Avatar>
             </IconButton>
             <p>Profil</p>
           </MenuItem>
@@ -250,7 +355,19 @@ const Header = ({ toggleSidebar }) => {
                   onClick={handleProfileMenuOpen}
                   color="inherit"
                 >
-                  <Avatar sx={{ width: 32, height: 32 }} />
+                  <Avatar 
+                    sx={{ 
+                      width: 32, 
+                      height: 32,
+                      bgcolor: theme.palette.primary.main 
+                    }}
+                    src={getProfileImageUrl()}
+                    alt={user?.nama_lengkap || "User Profile"}
+                    onError={handleImageError}
+                  >
+                    {/* Improved initials display */}
+                    {getUserInitials()}
+                  </Avatar>
                 </IconButton>
               </Tooltip>
             </Box>

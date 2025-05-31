@@ -147,28 +147,67 @@ class TutorialController extends Controller
      */
     public function show(Request $request, $id)
     {
-        $tutorial = Tutorial::with([
-            'wasteType',
-            'comments.user',
-            'ratings'
-        ])->findOrFail($id);
-        
-        // Increment view count
-        $tutorial->incrementViewCount();
-        
-        // Add user specific data
-        if (Auth::check()) {
-            $userId = Auth::id();
-            $tutorial->is_completed = $tutorial->completedByUsers()->where('user_id', $userId)->exists();
-            $tutorial->is_saved = $tutorial->savedByUsers()->where('user_id', $userId)->exists();
-            $tutorial->user_rating = $tutorial->ratings()->where('user_id', $userId)->value('rating');
-        } else {
-            $tutorial->is_completed = false;
-            $tutorial->is_saved = false;
-            $tutorial->user_rating = null;
+        try {
+            // Cari tutorial dengan relasi yang dibutuhkan
+            $tutorial = Tutorial::with([
+                'wasteType',
+                'user', // Tambahkan relasi user/kontributor
+                'comments.user', // Load comments dengan user untuk tampilan komentar
+                'ratings'        // Load ratings untuk perhitungan rata-rata
+            ])->findOrFail($id);
+            
+            // Increment view count
+            $tutorial->incrementViewCount();
+            
+            // Add user specific data jika user login
+            if (Auth::check()) {
+                $userId = Auth::id();
+                
+                // Cek status tutorial untuk user yang login (completed, saved, rated)
+                $tutorial->is_completed = $tutorial->completedByUsers()->where('user_id', $userId)->exists();
+                $tutorial->is_saved = $tutorial->savedByUsers()->where('user_id', $userId)->exists();
+                $tutorial->user_rating = $tutorial->ratings()->where('user_id', $userId)->value('rating');
+                
+                // Tambahkan status sudah mengakses tutorial jika belum
+                $this->recordTutorialView($userId, $id);
+            } else {
+                // Default values jika tidak login
+                $tutorial->is_completed = false;
+                $tutorial->is_saved = false;
+                $tutorial->user_rating = null;
+            }
+            
+            // Hitung jumlah rating
+            $tutorial->ratings_count = $tutorial->ratings()->count();
+            
+            return new TutorialResource($tutorial);
+        } catch (\Exception $e) {
+            // Log error untuk debugging
+            \Log::error('Error in TutorialController@show: ' . $e->getMessage(), [
+                'tutorial_id' => $id,
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            
+            return response()->json([
+                'message' => 'Terjadi kesalahan saat memuat tutorial',
+                'error' => $e->getMessage()
+            ], 500);
         }
-        
-        return new TutorialResource($tutorial);
+    }
+
+    /**
+     * Record tutorial view for logged in users
+     * This can be used for history, recommendations, etc.
+     *
+     * @param int $userId
+     * @param int $tutorialId
+     * @return void
+     */
+    private function recordTutorialView($userId, $tutorialId)
+    {
+        // This can be expanded to record detailed view history if needed
+        // For now, just a placeholder for future enhancement
     }
 
     /**

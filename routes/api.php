@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\v1\AuthController;
 use App\Http\Controllers\API\v1\ArticleController;
 use App\Http\Controllers\API\v1\WasteTypeController;
+use App\Http\Controllers\API\v1\TutorialController;
 use App\Http\Controllers\API\v1\RecyclingGuideController;
 use App\Http\Controllers\API\v1\UserController;
 use App\Http\Controllers\API\v1\WasteTrackingController;
@@ -37,6 +38,13 @@ Route::prefix('v1')->group(function () {
     Route::get('/recycling-guides', [RecyclingGuideController::class, 'index']);
     Route::get('/recycling-guides/{id}', [RecyclingGuideController::class, 'show']);
     
+    // Tutorial routes - public
+    Route::get('/tutorials', [TutorialController::class, 'index']);
+    Route::get('/tutorials/{id}', [TutorialController::class, 'show']);
+    Route::get('/tutorials/{id}/comments', [TutorialController::class, 'getComments']);
+    Route::get('/public/tutorials', [TutorialController::class, 'public']);
+    Route::get('/waste-types/{wasteTypeId}/tutorials', [TutorialController::class, 'getByWasteType']);
+    
     Route::get('/public/articles', [ArticleController::class, 'publicIndex']);
     Route::get('/public/articles/{id}', [ArticleController::class, 'publicShow']);
     
@@ -63,6 +71,15 @@ Route::prefix('v1')->group(function () {
         Route::post('/waste-types', [WasteTypeController::class, 'store']);
         Route::put('/waste-types/{id}', [WasteTypeController::class, 'update']);
         Route::delete('/waste-types/{id}', [WasteTypeController::class, 'destroy']);
+        
+        // Tutorial routes - auth required
+        Route::post('/tutorials', [TutorialController::class, 'store']);
+        Route::put('/tutorials/{id}', [TutorialController::class, 'update']);
+        Route::delete('/tutorials/{id}', [TutorialController::class, 'destroy']);
+        Route::post('/tutorials/{id}/rate', [TutorialController::class, 'rate']);
+        Route::post('/tutorials/{id}/toggle-completed', [TutorialController::class, 'toggleCompleted']);
+        Route::post('/tutorials/{id}/toggle-saved', [TutorialController::class, 'toggleSaved']);
+        Route::post('/tutorials/{id}/comments', [TutorialController::class, 'addComment']);
         
         // Recycling guides
         Route::post('/recycling-guides', [RecyclingGuideController::class, 'store']);

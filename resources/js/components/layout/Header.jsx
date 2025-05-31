@@ -92,6 +92,29 @@ const Header = ({ toggleSidebar }) => {
   // Handle image load error
   const handleImageError = () => {
     console.error('Error loading profile image');
+    
+    // Coba cari sumber gambar alternatif
+    if (user) {
+      // Jika foto_profil gagal, coba gunakan avatar jika ada
+      if (user.avatar && user.avatar !== user.foto_profil) {
+        console.log('Trying alternative image source (avatar):', user.avatar);
+        const avatarUrl = user.avatar.startsWith('/') 
+          ? user.avatar 
+          : `/storage/${user.avatar}`;
+        setProfileImage(avatarUrl);
+        return;
+      }
+      
+      // Jika masih gagal, coba gunakan default image
+      const defaultImagePath = '/storage/profiles/default.jpg';
+      if (!profileImage || profileImage !== defaultImagePath) {
+        console.log('Trying default profile image:', defaultImagePath);
+        setProfileImage(defaultImagePath);
+        return;
+      }
+    }
+    
+    // Jika semua upaya gagal, tandai sebagai error
     setImageError(true);
     // Reset profileImage agar tidak mencoba load gambar yang sama lagi
     setProfileImage(null);

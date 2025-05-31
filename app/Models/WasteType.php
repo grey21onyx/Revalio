@@ -145,19 +145,4 @@ class WasteType extends Model
         return $this->belongsToMany(User::class, 'user_favorite_waste_types', 'waste_id', 'user_id')
                     ->withTimestamps();
     }
-    
-    /**
-     * Relasi ke model BusinessOpportunity (peluang bisnis).
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
-     */
-    public function businessOpportunities(): BelongsToMany
-    {
-        return $this->belongsToMany(
-            BusinessOpportunity::class,
-            'business_opportunity_waste_types',
-            'waste_id',
-            'peluang_id'
-        )->withTimestamps();
-    }
 }

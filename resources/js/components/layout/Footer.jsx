@@ -30,9 +30,9 @@ const menuItems = [
   { title: 'Tips Monetisasi', path: '/monetisasi' },
 ];
 
+// Resource menu items
 const resourceItems = [
   { title: 'Forum Diskusi', path: '/forum' },
-  { title: 'Peluang Usaha', path: '/peluang-usaha' },
   { title: 'Tentang Kami', path: '/tentang' },
   { title: 'Kebijakan Privasi', path: '/kebijakan-privasi' },
   { title: 'Syarat dan Ketentuan', path: '/syarat-ketentuan' },

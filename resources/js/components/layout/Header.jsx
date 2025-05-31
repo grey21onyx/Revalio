@@ -93,6 +93,8 @@ const Header = ({ toggleSidebar }) => {
   const handleImageError = () => {
     console.error('Error loading profile image');
     setImageError(true);
+    // Reset profileImage agar tidak mencoba load gambar yang sama lagi
+    setProfileImage(null);
   };
 
   // Update profile image state
@@ -133,6 +135,7 @@ const Header = ({ toggleSidebar }) => {
   const getProfileImageUrl = () => {
     if (imageError) {
       console.log('Image error occurred, returning null');
+      // Gunakan avatar default dari sistem jika gambar error
       return null;
     }
     
@@ -161,13 +164,20 @@ const Header = ({ toggleSidebar }) => {
   
   // Get user initials for avatar fallback
   const getUserInitials = () => {
-    if (!user || !user.nama_lengkap) return null;
+    if (!user) return null;
     
-    const nameParts = user.nama_lengkap.split(' ');
+    // Coba dapatkan nama dari berbagai kemungkinan properti
+    const name = user.nama_lengkap || user.nama || user.name;
+    if (!name) return null;
+    
+    // Split nama dan ambil inisial
+    const nameParts = name.split(' ').filter(part => part.trim().length > 0);
+    if (nameParts.length === 0) return null;
+    
     if (nameParts.length === 1) {
       return nameParts[0].charAt(0).toUpperCase();
     } else {
-      return (nameParts[0].charAt(0) + nameParts[1].charAt(0)).toUpperCase();
+      return (nameParts[0].charAt(0) + nameParts[nameParts.length > 1 ? 1 : 0].charAt(0)).toUpperCase();
     }
   };
 
@@ -238,7 +248,7 @@ const Header = ({ toggleSidebar }) => {
                 alt={user?.nama_lengkap || "User Profile"}
                 onError={handleImageError}
               >
-                {getUserInitials()}
+                {getUserInitials() || (user?.nama_lengkap?.charAt(0) || 'U').toUpperCase()}
               </Avatar>
             </IconButton>
             <p>Profil</p>
@@ -366,7 +376,7 @@ const Header = ({ toggleSidebar }) => {
                     onError={handleImageError}
                   >
                     {/* Improved initials display */}
-                    {getUserInitials()}
+                    {getUserInitials() || (user?.nama_lengkap?.charAt(0) || 'U').toUpperCase()}
                   </Avatar>
                 </IconButton>
               </Tooltip>

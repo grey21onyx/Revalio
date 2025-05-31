@@ -21,7 +21,6 @@ return new class extends Migration
             $table->unsignedBigInteger('parent_komentar_id')->nullable();
             $table->enum('status', ['AKTIF', 'TIDAK_AKTIF', 'DILAPORKAN'])->default('AKTIF');
             $table->timestamp('updated_at')->nullable();
-            $table->softDeletes();
             
             $table->index('thread_id', 'idx_thread_id');
             $table->index('user_id', 'idx_user_id');

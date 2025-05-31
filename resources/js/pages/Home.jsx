@@ -210,6 +210,8 @@ const Home = () => {
   const [articles, setArticles] = useState([]);
   const [communityThreads, setCommunityThreads] = useState([]);
   const [userStats, setUserStats] = useState(null);
+  // Tambahkan state untuk userName
+  const [userName, setUserName] = useState('');
   
   // State untuk loading dan error
   const [loading, setLoading] = useState({
@@ -410,7 +412,12 @@ const Home = () => {
           sampahTerakhir: '2023-05-16',
           kategoriTerbanyak: 'Plastik'
         });
-        setUserName("Siti Aminah"); // Contoh nama pengguna
+        // Gunakan data nama dari context user jika tersedia, atau set nilai default
+        if (user) {
+          setUserName(user.nama_lengkap || user.nama || user.name || 'Pengguna Revalio');
+        } else {
+          setUserName("Pengguna Revalio");
+        }
         setLoading(prev => ({ ...prev, stats: false }));
       }, 900);
 
@@ -636,6 +643,13 @@ const Home = () => {
       fetchArticles();
       fetchCommunityThreads();
       
+      // Set nama pengguna jika user tersedia
+      if (user) {
+        setUserName(user.nama_lengkap || user.nama || user.name || 'Pengguna Revalio');
+      } else {
+        setUserName('Pengguna Revalio');
+      }
+      
       // Return cleanup function
       return () => {
         ScrollTrigger.getAll().forEach(st => st.kill());
@@ -651,9 +665,16 @@ const Home = () => {
       fetchArticles();
       fetchCommunityThreads();
       
+      // Set nama pengguna jika user tersedia
+      if (user) {
+        setUserName(user.nama_lengkap || user.nama || user.name || 'Pengguna Revalio');
+      } else {
+        setUserName('Pengguna Revalio');
+      }
+      
       return () => {};
     }
-  }, []);
+  }, [user]);
 
 
   return (

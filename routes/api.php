@@ -9,7 +9,7 @@ use App\Http\Controllers\API\v1\TutorialController;
 use App\Http\Controllers\API\v1\RecyclingGuideController;
 use App\Http\Controllers\API\v1\UserController;
 use App\Http\Controllers\API\v1\WasteTrackingController;
-use App\Http\Controllers\API\v1\ForumTopicController;
+use App\Http\Controllers\API\v1\ForumThreadController;
 use App\Http\Controllers\API\v1\ForumCommentController;
 use App\Http\Controllers\API\v1\WasteBuyerController;
 use App\Http\Controllers\API\v1\WasteCategoryController;
@@ -55,9 +55,10 @@ Route::prefix('v1')->group(function () {
     Route::get('/public/articles', [ArticleController::class, 'publicIndex']);
     Route::get('/public/articles/{id}', [ArticleController::class, 'publicShow']);
     
-    Route::get('/public/forum-topics', [ForumTopicController::class, 'publicIndex']);
-    Route::get('/public/forum-topics/{id}', [ForumTopicController::class, 'publicShow']);
-    Route::get('/public/forum-topics/{id}/comments', [ForumCommentController::class, 'publicIndex']);
+    Route::get('/public/forum-threads', [ForumThreadController::class, 'public']);
+    Route::get('/public/forum-threads/popular', [ForumThreadController::class, 'popular']);
+    Route::get('/public/forum-threads/{id}', [ForumThreadController::class, 'show']);
+    Route::get('/public/forum-threads/{threadId}/comments', [ForumCommentController::class, 'publicIndex']);
     
     Route::get('/public/waste-buyers', [WasteBuyerController::class, 'publicIndex']);
     Route::get('/public/waste-buyers/{id}', [WasteBuyerController::class, 'publicShow']);
@@ -102,11 +103,22 @@ Route::prefix('v1')->group(function () {
         Route::get('/waste-tracking/stats/monthly', [WasteTrackingController::class, 'monthlyStats']);
         Route::get('/waste-tracking/stats/yearly', [WasteTrackingController::class, 'yearlyStats']);
         
-        // Forum
-        Route::apiResource('forum-topics', ForumTopicController::class);
-        Route::apiResource('forum-topics.comments', ForumCommentController::class)->shallow();
-        Route::post('/forum-topics/{id}/like', [ForumTopicController::class, 'toggleLike']);
-        Route::post('/forum-comments/{id}/like', [ForumCommentController::class, 'toggleLike']);
+        // Forum routes menggunakan ForumThreadController dan ForumCommentController
+        Route::get('/forum-threads/my-threads', [ForumThreadController::class, 'myThreads']);
+        Route::get('/forum-threads/my-comments', [ForumThreadController::class, 'myComments']);
+        Route::post('/forum-threads', [ForumThreadController::class, 'store']);
+        Route::get('/forum-threads/{id}', [ForumThreadController::class, 'show']);
+        Route::put('/forum-threads/{id}', [ForumThreadController::class, 'update']);
+        Route::delete('/forum-threads/{id}', [ForumThreadController::class, 'destroy']);
+        Route::post('/forum-threads/{id}/like', [ForumThreadController::class, 'toggleLike']);
+        
+        // Rute untuk Komentar (menggunakan ForumCommentController)
+        Route::get('/forum-threads/{threadId}/comments', [ForumCommentController::class, 'index'])->name('forum-threads.comments.index');
+        Route::post('/forum-threads/{threadId}/comments', [ForumCommentController::class, 'store'])->name('forum-threads.comments.store');
+        Route::get('/forum-comments/{commentId}', [ForumCommentController::class, 'show'])->name('forum-comments.show');
+        Route::put('/forum-comments/{commentId}', [ForumCommentController::class, 'update'])->name('forum-comments.update');
+        Route::delete('/forum-comments/{commentId}', [ForumCommentController::class, 'destroy'])->name('forum-comments.destroy');
+        Route::post('/forum-comments/{commentId}/like', [ForumCommentController::class, 'toggleLike'])->name('forum-comments.like');
         
         // Waste buyers
         Route::apiResource('waste-buyers', WasteBuyerController::class);

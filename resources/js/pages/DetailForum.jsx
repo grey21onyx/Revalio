@@ -161,6 +161,12 @@ const DetailForum = () => {
         const response = await api.get(`/forum-threads/${id}/comments`);
         console.log('API response for comments:', response.data);
         
+        // Verifikasi bahwa response data adalah JSON yang valid
+        if (typeof response.data === 'string' || !response.data) {
+          console.error('Invalid response data type:', typeof response.data);
+          throw new Error('Invalid response format: not a JSON object');
+        }
+        
         // Debug data to see user fields
         if (response.data && response.data.data && response.data.data.length > 0) {
           const firstComment = response.data.data[0];
@@ -383,7 +389,7 @@ const DetailForum = () => {
         if (!viewCountUpdated) {
           try {
             // Panggil API untuk increment view count
-            const viewResponse = await api.post(`/forum-threads/${id}/view`);
+            const viewResponse = await api.get(`/forum-threads/${id}/view`);
             console.log('View count incremented for thread:', id, viewResponse.data);
             
             // Set flag bahwa view sudah diupdate
@@ -400,7 +406,7 @@ const DetailForum = () => {
             // Coba API publik sebagai fallback
             try {
               if (!viewCountUpdated) {
-                const publicViewResponse = await api.post(`/public/forum-threads/${id}/view`);
+                const publicViewResponse = await api.get(`/public/forum-threads/${id}/view`);
                 console.log('View count incremented via public API:', id, publicViewResponse.data);
                 
                 // Set flag bahwa view sudah diupdate
@@ -456,7 +462,7 @@ const DetailForum = () => {
             // Jika view count belum diupdate, coba increment melalui API publik
             if (!viewCountUpdated) {
               try {
-                const publicViewResponse = await api.post(`/public/forum-threads/${id}/view`);
+                const publicViewResponse = await api.get(`/public/forum-threads/${id}/view`);
                 console.log('View count incremented via public API fallback:', id, publicViewResponse.data);
                 
                 // Set flag bahwa view sudah diupdate
@@ -912,35 +918,59 @@ const DetailForum = () => {
         return;
       }
       
-      // Tampilkan loading jika diperlukan (opsional)
-      // Ini bisa menggunakan state loading per comment jika UI perlu responsif
+      // Optimistic UI update - toggle like status immediately
+      const isCurrentlyLiked = Boolean(likes[commentId]);
+      const newLikesCount = commentToUpdate.likes + (isCurrentlyLiked ? -1 : 1);
       
-      // Panggil API
-      const response = await api.post(
+      // Update likes state optimistically
+      setLikes(prev => {
+        const newLikes = { ...prev };
+        if (isCurrentlyLiked) {
+          delete newLikes[commentId];
+        } else {
+          newLikes[commentId] = true;
+        }
+        return newLikes;
+      });
+      
+      // Update comment likes count optimistically
+      setComments(prev => 
+        prev.map(comment => {
+          if (comment.id === commentId) {
+            return {
+              ...comment,
+              likes: newLikesCount
+            };
+          }
+          return comment;
+        })
+      );
+      
+      // Panggil API - gunakan GET karena server hanya menerima GET
+      const response = await api.get(
         `/forum-threads/${id}/comments/${commentId}/like`
       );
       
       console.log('Like response:', response.data);
       
-      // Hanya update UI setelah menerima response dari server
-      if (response.data) {
-        // Update status like berdasarkan data dari server
-        const isLiked = response.data.is_liked;
-        const likesCount = response.data.likes_count;
-        
-        // Update state likes berdasarkan response server
-        setLikes(prev => {
-          const newLikes = { ...prev };
-          if (isLiked) {
-            newLikes[commentId] = true;
-          } else {
-            delete newLikes[commentId];
-          }
-          return newLikes;
-        });
-        
-        // Update likes count berdasarkan data dari server
-        if (likesCount !== undefined) {
+      // Check if the response contains valid data
+      if (response.data && typeof response.data === 'object') {
+        // Use server data if available
+        if (response.data.is_liked !== undefined && response.data.likes_count !== undefined) {
+          const isLiked = response.data.is_liked;
+          const likesCount = response.data.likes_count;
+          
+          // Update state based on server response
+          setLikes(prev => {
+            const newLikes = { ...prev };
+            if (isLiked) {
+              newLikes[commentId] = true;
+            } else {
+              delete newLikes[commentId];
+            }
+            return newLikes;
+          });
+          
           setComments(prev => 
             prev.map(comment => {
               if (comment.id === commentId) {
@@ -957,7 +987,47 @@ const DetailForum = () => {
     } catch (error) {
       console.error('Error toggling like:', error);
       console.error('Error details:', error.response?.status, error.response?.data);
-      Swal.fire('Error', 'Gagal menyukai komentar', 'error');
+      
+      // Revert optimistic update in case of error
+      const commentToUpdate = comments.find(c => c.id === commentId);
+      if (commentToUpdate) {
+        const isCurrentlyLiked = Boolean(likes[commentId]);
+        
+        // Revert likes state
+        setLikes(prev => {
+          const newLikes = { ...prev };
+          if (isCurrentlyLiked) {
+            newLikes[commentId] = true;
+          } else {
+            delete newLikes[commentId];
+          }
+          return newLikes;
+        });
+        
+        // Revert comment likes count
+        setComments(prev => 
+          prev.map(comment => {
+            if (comment.id === commentId) {
+              return {
+                ...comment,
+                likes: commentToUpdate.likes
+              };
+            }
+            return comment;
+          })
+        );
+      }
+      
+      // Only show error for network issues, not for like toggle
+      if (error.response?.status !== 405) {
+        Swal.fire({
+          title: 'Error',
+          text: 'Gagal menyukai komentar. Silakan coba lagi.',
+          icon: 'error',
+          timer: 1500,
+          showConfirmButton: false
+        });
+      }
     }
   };
 
@@ -1032,15 +1102,25 @@ const DetailForum = () => {
           }
         });
         
-        // Lakukan API call untuk menghapus komentar dengan timeout yang lebih panjang
-        const response = await api.delete(`/forum-threads/${id}/comments/${commentId}`);
-        console.log('Respon penghapusan komentar:', response.data);
+        // Optimistic UI update
+        const commentsCopy = [...comments];
         
-        // Daripada memanipulasi state, lebih baik memuat ulang semua komentar
-        // untuk memastikan konsistensi data
-        await loadComments();
+        // Filter out the comment to be deleted and its replies
+        let commentsAfterDelete;
+        if (isParentComment) {
+          // If parent comment, remove it and all its replies
+          commentsAfterDelete = comments.filter(c => 
+            c.id !== commentId && c.parentId !== commentId
+          );
+        } else {
+          // If reply, just remove the reply
+          commentsAfterDelete = comments.filter(c => c.id !== commentId);
+        }
         
-        // Update thread replies count
+        // Update UI immediately
+        setComments(commentsAfterDelete);
+        
+        // Update thread replies count optimistically
         if (thread) {
           setThread(prevThread => ({
             ...prevThread,
@@ -1048,11 +1128,74 @@ const DetailForum = () => {
           }));
         }
         
-        Swal.fire(
-          'Terhapus!',
-          'Komentar berhasil dihapus.',
-          'success'
-        );
+        try {
+          // Lakukan API call untuk menghapus komentar - gunakan GET dengan parameter
+          const response = await api.get(
+            `/forum-threads/${id}/comments/${commentId}/delete`
+          );
+          
+          console.log('Respon penghapusan komentar:', response.data);
+          
+          // Tampilkan notifikasi sukses
+          Swal.fire({
+            title: 'Terhapus!',
+            text: 'Komentar berhasil dihapus.',
+            icon: 'success',
+            timer: 1500,
+            showConfirmButton: false
+          });
+        } catch (error) {
+          console.error('Error deleting comment:', error);
+          
+          // Pulihkan state komentar jika operasi gagal
+          setComments(commentsCopy);
+          
+          // Pulihkan juga jumlah reply di thread
+          if (thread) {
+            setThread(prevThread => ({
+              ...prevThread,
+              replies: prevThread.replies + totalToDelete
+            }));
+          }
+          
+          let errorMessage = 'Gagal menghapus komentar.';
+          
+          // Pesan error yang lebih informatif
+          if (error.response) {
+            console.error('Error status:', error.response.status);
+            console.error('Error data:', error.response.data);
+            
+            if (error.response.status === 403) {
+              errorMessage = 'Anda tidak dapat menghapus komentar milik pengguna lain.';
+            } else if (error.response.status === 404) {
+              errorMessage = 'Komentar tidak ditemukan. Mungkin sudah dihapus sebelumnya.';
+            } else if (error.response.status === 500) {
+              errorMessage = 'Terjadi kesalahan pada server. Silakan coba lagi nanti.';
+            } else if (error.response.status === 408 || error.code === 'ECONNABORTED') {
+              errorMessage = 'Waktu permintaan habis. Server mungkin sedang sibuk, silakan coba lagi.';
+            } else if (error.response.status === 0) {
+              errorMessage = 'Gangguan koneksi. Pastikan internet Anda aktif dan coba lagi.';
+            }
+          } else if (error.code === 'ECONNABORTED') {
+            errorMessage = 'Waktu permintaan habis. Server mungkin sedang sibuk, silakan coba lagi.';
+          } else if (error.message && error.message.includes('Network Error')) {
+            errorMessage = 'Gangguan koneksi. Pastikan internet Anda aktif dan coba lagi.';
+          }
+          
+          Swal.fire({
+            title: 'Error!',
+            text: errorMessage,
+            icon: 'error'
+          });
+          
+          // Muat ulang komentar untuk jaga-jaga jika server berhasil menghapus
+          // tapi respons tidak dapat diterima klien
+          try {
+            await loadComments();
+          } catch (refreshError) {
+            console.error('Error refreshing comments after failed delete:', refreshError);
+          }
+        }
       } catch (error) {
         console.error('Error deleting comment:', error);
         let errorMessage = 'Gagal menghapus komentar.';
@@ -1185,11 +1328,10 @@ const DetailForum = () => {
     }
     
     try {
-      await api.put(
-        `/forum-threads/${id}/comments/${commentId}`,
-        { konten: editText }
-      );
+      // Simpan state komentar lama untuk rollback jika terjadi error
+      const commentText = commentToSave.text; // Simpan teks asli untuk rollback
       
+      // Update UI secara optimistic
       setComments((prev) => 
         prev.map(comment => {
           if (comment.id === commentId) {
@@ -1203,8 +1345,17 @@ const DetailForum = () => {
         })
       );
       
+      // Reset state edit
       setEditingCommentId(null);
       setEditText('');
+      
+      // Panggil API untuk update komentar - gunakan GET dengan parameter
+      await api.get(
+        `/forum-threads/${id}/comments/${commentId}/edit`,
+        { 
+          params: { konten: editText }
+        }
+      );
       
       // Tampilkan notifikasi bahwa komentar telah diperbarui
       Swal.fire({
@@ -1217,7 +1368,25 @@ const DetailForum = () => {
     } catch (error) {
       console.error('Error updating comment:', error);
       console.error('Error details:', error.response?.status, error.response?.data);
-      Swal.fire('Error', 'Gagal memperbarui komentar', 'error');
+      
+      // Kembalikan komentar ke text semula jika terjadi error
+      setComments((prev) => 
+        prev.map(comment => {
+          if (comment.id === commentId) {
+            return {
+              ...comment,
+              text: commentText // Gunakan commentText yang kita simpan sebelumnya
+            };
+          }
+          return comment;
+        })
+      );
+      
+      Swal.fire({
+        title: 'Error',
+        text: 'Gagal memperbarui komentar. Silakan coba lagi.',
+        icon: 'error'
+      });
     }
   };
   
@@ -1284,7 +1453,7 @@ const DetailForum = () => {
     
     try {
       // Simpan rating saat ini untuk fallback jika gagal
-      const prevRating = userRating;
+      const currentRating = userRating;
       
       // Pastikan newValue adalah number
       const ratingValue = Number(newValue);
@@ -1302,47 +1471,105 @@ const DetailForum = () => {
         }
       });
       
-      // Panggil API untuk menyimpan rating
-      console.log('Sending rating to API:', ratingValue);
-      const response = await api.post(`/forum-threads/${id}/rating`, {
-        rating: ratingValue
+      // Simpan nilai rating saat ini dan jumlah rating untuk rollback jika terjadi error
+      const oldRating = thread ? thread.rating : 0;
+      const oldRatingCount = thread ? thread.rating_count : 0;
+      
+      // Update thread rating secara optimistic (perkiraan)
+      // Ini hanya perkiraan kasar jika belum ada nilai akurat dari server
+      setThread(prevThread => {
+        if (!prevThread) return null;
+        
+        const isNewRating = userRating === 0;
+        const newRatingCount = isNewRating ? (prevThread.rating_count + 1) : prevThread.rating_count;
+        
+        // Kalkulasi rating baru (perkiraan sederhana)
+        let newAvgRating;
+        if (isNewRating && newRatingCount === 1) {
+          newAvgRating = ratingValue;
+        } else if (isNewRating) {
+          // Jika ini rating baru, tambahkan ke total
+          newAvgRating = ((prevThread.rating * (newRatingCount - 1)) + ratingValue) / newRatingCount;
+        } else {
+          // Jika update rating, ganti nilai rating lama dengan yang baru
+          newAvgRating = ((prevThread.rating * prevThread.rating_count) - userRating + ratingValue) / prevThread.rating_count;
+        }
+        
+        // Batasi presisi ke 1 angka desimal
+        newAvgRating = Math.round(newAvgRating * 10) / 10;
+        
+        return {
+          ...prevThread,
+          rating: newAvgRating,
+          rating_count: newRatingCount
+        };
       });
       
-      console.log('Rating saved to API:', response.data);
-      
-      // Update thread rating dari response API
-      if (response.data && response.data.data) {
-        const avgRating = response.data.data.average_rating ? 
-          Number(response.data.data.average_rating) : 
-          0;
+      try {
+        // Panggil API untuk menyimpan rating - gunakan GET dengan parameter
+        console.log('Sending rating to API:', ratingValue);
+        const response = await api.get(
+          `/forum-threads/${id}/rating`,
+          { params: { rating: ratingValue } }
+        );
         
-        const ratingCount = response.data.data.rating_count ? 
-          Number(response.data.data.rating_count) : 
-          0;
+        console.log('Rating saved to API:', response.data);
         
-        // Update thread state dengan nilai rating baru
-        setThread(prevThread => {
-          if (!prevThread) return null;
+        // Update thread rating dari response API
+        if (response.data && response.data.data) {
+          const avgRating = response.data.data.average_rating ? 
+            Number(response.data.data.average_rating) : 
+            0;
           
-          return {
-            ...prevThread,
-            rating: avgRating,
-            rating_count: ratingCount
-          };
-        });
+          const ratingCount = response.data.data.rating_count ? 
+            Number(response.data.data.rating_count) : 
+            0;
+          
+          // Update thread state dengan nilai rating baru
+          setThread(prevThread => {
+            if (!prevThread) return null;
+            
+            return {
+              ...prevThread,
+              rating: avgRating,
+              rating_count: ratingCount
+            };
+          });
+          
+          // Update nilai userRating dengan nilai yang dikonfirmasi dari server
+          setUserRating(Number(response.data.data.rating));
+        }
         
-        // Update nilai userRating dengan nilai yang dikonfirmasi dari server
-        setUserRating(Number(response.data.data.rating));
+        // Tampilkan pesan sukses
+        Swal.fire({
+          title: 'Berhasil!',
+          text: 'Rating berhasil disimpan.',
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false
+        });
+      } catch (error) {
+        console.error('Error saving rating:', error);
+        console.error('Error details:', error.response?.status, error.response?.data);
+        
+        // Kembalikan rating ke nilai sebelumnya jika gagal
+        setUserRating(currentRating);
+        
+        // Kembalikan nilai rating thread jika gagal
+        if (thread) {
+          setThread(prevThread => ({
+            ...prevThread,
+            rating: oldRating,
+            rating_count: oldRatingCount
+          }));
+        }
+        
+        Swal.fire({
+          title: 'Error',
+          text: 'Gagal menyimpan rating. Silakan coba lagi nanti.',
+          icon: 'error'
+        });
       }
-      
-      // Tampilkan pesan sukses
-      Swal.fire({
-        title: 'Berhasil!',
-        text: 'Rating berhasil disimpan.',
-        icon: 'success',
-        timer: 1500,
-        showConfirmButton: false
-      });
     } catch (error) {
       console.error('Error saving rating:', error);
       
@@ -1355,7 +1582,7 @@ const DetailForum = () => {
       });
       
       // Reset ke nilai awal jika gagal
-      setUserRating(prevRating);
+      setUserRating(currentRating);
     }
   };
 
@@ -1757,7 +1984,7 @@ const DetailForum = () => {
                         <Button
                           size="small"
                           onClick={() => handleStartReply(comment.id, comment.user.name)}
-                          disabled={editingCommentId !== null}
+                          disabled={editingCommentId === comment.id}
                           sx={{ minWidth: { xs: 'auto', sm: '64px' }, px: { xs: 1, sm: 2 } }}
                         >
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -1776,7 +2003,7 @@ const DetailForum = () => {
                             size="small"
                             color="primary"
                             onClick={() => handleEditComment(comment.id, comment.text)}
-                            disabled={editingCommentId !== null}
+                            disabled={editingCommentId !== null && editingCommentId !== comment.id}
                             sx={{ 
                               minWidth: { xs: 'auto', sm: '64px' }, 
                               px: { xs: 1, sm: 2 },
@@ -1799,7 +2026,7 @@ const DetailForum = () => {
                             size="small"
                             color="error"
                             onClick={() => handleDeleteComment(comment.id)}
-                            disabled={editingCommentId !== null}
+                            disabled={editingCommentId === comment.id}
                             sx={{ 
                               minWidth: { xs: 'auto', sm: '64px' }, 
                               px: { xs: 1, sm: 2 },
@@ -2014,7 +2241,7 @@ const DetailForum = () => {
                             <Button
                               size="small"
                               onClick={() => handleStartReply(reply.id, reply.user.name)}
-                              disabled={editingCommentId !== null}
+                              disabled={editingCommentId === reply.id}
                               sx={{ minWidth: { xs: 'auto', sm: '64px' }, px: { xs: 1, sm: 2 } }}
                             >
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -2033,7 +2260,7 @@ const DetailForum = () => {
                                 size="small"
                                 color="primary"
                                 onClick={() => handleEditComment(reply.id, reply.text)}
-                                disabled={editingCommentId !== null}
+                                disabled={editingCommentId !== null && editingCommentId !== reply.id}
                                 sx={{ 
                                   minWidth: { xs: 'auto', sm: '64px' }, 
                                   px: { xs: 1, sm: 2 },
@@ -2056,7 +2283,7 @@ const DetailForum = () => {
                                 size="small"
                                 color="error"
                                 onClick={() => handleDeleteComment(reply.id)}
-                                disabled={editingCommentId !== null}
+                                disabled={editingCommentId === reply.id}
                                 sx={{ 
                                   minWidth: { xs: 'auto', sm: '64px' }, 
                                   px: { xs: 1, sm: 2 },

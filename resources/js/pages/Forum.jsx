@@ -111,125 +111,138 @@ const Forum = () => {
   const [activeTab, setActiveTab] = useState('all'); // 'all', 'myThreads', 'myComments'
   const [loadingMyData, setLoadingMyData] = useState(false);
 
+  // Helper function untuk memformat data thread dari API
+  const formatThreadData = (thread) => {
+    // Validasi data dan pastikan tipe data numerik dengan fallback
+    const commentsCount = parseInt(thread.comments_count) || 0;
+    const likesCount = parseInt(thread.likes_count) || 0;
+    const viewCount = parseInt(thread.view_count) || 0;
+
+    // Penanganan khusus untuk average_rating dengan validasi yang lebih ketat
+    let avgRating = 0;
+    if (thread.average_rating !== undefined && thread.average_rating !== null) {
+      if (typeof thread.average_rating === 'string') {
+        avgRating = parseFloat(thread.average_rating.replace(/[^\d.-]/g, '')) || 0;
+      } else {
+        avgRating = parseFloat(thread.average_rating) || 0;
+      }
+    }
+
+    const validRating = avgRating > 0 && avgRating <= 5 ? avgRating : 0;
+
+    const ratingCount = thread.rating_count !== undefined && thread.rating_count !== null
+      ? parseInt(thread.rating_count)
+      : 0;
+
+    // Calculate popularity score dengan validasi
+    const commentScore = commentsCount * 2;
+    const likeScore = likesCount * 3;
+    const viewScore = viewCount * 0.5;
+    const ratingScore = validRating * 5;
+    const popularityScore = commentScore + likeScore + viewScore + ratingScore;
+
+    console.log(`Thread ${thread.id || thread.thread_id} processed rating:`, {
+      originalRating: thread.average_rating,
+      parsedRating: avgRating,
+      finalRating: validRating,
+      ratingCount: ratingCount,
+      popularityScore: popularityScore
+    });
+
+    return {
+      id: thread.id || thread.thread_id,
+      title: thread.judul || 'Tanpa Judul',
+      author: thread.user ? (thread.user.nama || thread.user.name || 'Pengguna') : 'Pengguna',
+      replies: commentsCount,
+      likes: likesCount,
+      views: viewCount,
+      rating: validRating,
+      rating_count: ratingCount,
+      lastPost: thread.tanggal_posting || new Date().toISOString(),
+      category: getCategoryFromTags(thread.tags),
+      tags: thread.tags ? thread.tags.split(',').filter(tag => tag.trim()) : [],
+      avatar: thread.user ? thread.user.foto_profil || thread.user.avatar : null,
+      popularityScore: popularityScore
+    };
+  };
+
   // Fetch threads from API
   useEffect(() => {
-    const fetchThreads = async () => {
+    const fetchThreadsBasedOnState = async (currentSelectedCategory, currentSortOption, currentSearchQuery) => {
       try {
         setLoading(true);
-        // Pilih endpoint yang sesuai berdasarkan sortOption
-        const endpoint = sortOption === 'popular' 
-          ? '/public/forum-threads'  // Changed to fetch all threads for manual sorting
-          : '/public/forum-threads';
+        // Tentukan endpoint berdasarkan sortOption
+        const endpoint = currentSortOption === 'popular' 
+          ? '/public/forum-threads/popular' // Endpoint baru untuk populer
+          : '/public/forum-threads';       // Endpoint standar
         
-        // Siapkan parameter untuk filter category dan search
         let params = {};
-        if (searchQuery) {
-          params.search = searchQuery;
-        }
-        
-        if (selectedCategory) {
-          params.tags = selectedCategory;
+        // Parameter search dan tags hanya berlaku jika tidak mengambil dari endpoint popular khusus
+        // atau jika endpoint popular tersebut mendukung filter ini.
+        // Untuk contoh ini, kita asumsikan endpoint /popular tidak memerlukan search/tags dari client.
+        if (currentSortOption !== 'popular') {
+          if (currentSearchQuery) {
+            params.search = currentSearchQuery;
+          }
+          if (currentSelectedCategory) {
+            params.tags = currentSelectedCategory;
+          }
+        } else {
+          // Jika backend endpoint '/popular' mendukung filter 'tags' atau 'limit', bisa ditambahkan di sini
+          // Contoh: if (currentSelectedCategory) params.tags = currentSelectedCategory;
+          // Contoh: params.limit = 10; // Ambil 10 terpopuler
         }
         
         console.log('Fetching forum threads from:', endpoint, 'with params:', params);
         const response = await api.get(endpoint, { params });
         console.log('Forum threads response:', response.data);
         
-        // Validasi format response
-        if (!response.data || !Array.isArray(response.data.data)) {
-          console.error('Invalid response format:', response.data);
-          setError('Format data tidak valid. Silakan coba lagi.');
-          return;
+        // Menangani berbagai kemungkinan struktur data balikan
+        const dataToFormat = response.data && Array.isArray(response.data.data) 
+                           ? response.data.data
+                           : (response.data && Array.isArray(response.data)) // Jika endpoint /popular mengembalikan array langsung
+                           ? response.data 
+                           : [];
+
+        if (dataToFormat.length === 0 && (!response.data || (!Array.isArray(response.data.data) && !Array.isArray(response.data)))) {
+          console.warn('Invalid response format or empty data:', response.data);
+          // Tetap set ke array kosong jika tidak ada data valid, jangan langsung error
+          setThreads([]);
+          setFilteredThreads([]);
+          // setError('Format data tidak valid atau data kosong.'); // Opsional: tampilkan pesan jika benar-benar error format
         }
         
-        // Format data dari API ke format yang digunakan di frontend
-        const formattedThreads = response.data.data.map(thread => {
-          // Debug data yang diterima untuk memastikan format average_rating
-          console.log(`Thread ${thread.id || thread.thread_id} raw rating data:`, {
-            rating: thread.average_rating,
-            rating_type: typeof thread.average_rating,
-            rating_count: thread.rating_count
-          });
-          
-          // Validasi data dan pastikan tipe data numerik dengan fallback
-          const commentsCount = parseInt(thread.comments_count) || 0;
-          const likesCount = parseInt(thread.likes_count) || 0;
-          const viewCount = parseInt(thread.view_count) || 0;
-          
-          // Penanganan khusus untuk average_rating dengan validasi yang lebih ketat
-          let avgRating = 0;
-          if (thread.average_rating !== undefined && thread.average_rating !== null) {
-            // Coba konversi ke float dengan sanitasi
-            if (typeof thread.average_rating === 'string') {
-              avgRating = parseFloat(thread.average_rating.replace(/[^\d.-]/g, '')) || 0;
-            } else {
-              avgRating = parseFloat(thread.average_rating) || 0;
-            }
-          }
-          
-          // Validasi kisaran rating (1-5)
-          const validRating = avgRating > 0 && avgRating <= 5 ? avgRating : 0;
-          
-          // Penanganan khusus untuk rating_count
-          const ratingCount = thread.rating_count !== undefined && thread.rating_count !== null
-            ? parseInt(thread.rating_count)
-            : 0;
-          
-          // Calculate popularity score dengan validasi
-          const commentScore = commentsCount * 2;
-          const likeScore = likesCount * 3;
-          const viewScore = viewCount * 0.5;
-          const ratingScore = validRating * 5;
-          const popularityScore = commentScore + likeScore + viewScore + ratingScore;
-          
-          // Log untuk debugging hasil processing
-          console.log(`Thread ${thread.id || thread.thread_id} processed rating:`, { 
-            originalRating: thread.average_rating,
-            parsedRating: avgRating,
-            finalRating: validRating,
-            ratingCount: ratingCount
-          });
-          
-          return {
-            id: thread.id || thread.thread_id,
-            title: thread.judul || 'Tanpa Judul',
-            author: thread.user ? (thread.user.nama || thread.user.name || 'Pengguna') : 'Pengguna',
-            replies: commentsCount,
-            likes: likesCount,
-            views: viewCount,
-            rating: validRating,
-            rating_count: ratingCount,
-            lastPost: thread.tanggal_posting || new Date().toISOString(),
-            category: getCategoryFromTags(thread.tags),
-            tags: thread.tags ? thread.tags.split(',').filter(tag => tag.trim()) : [],
-            avatar: thread.user ? thread.user.foto_profil || thread.user.avatar : null,
-            popularityScore: popularityScore
-          };
-        });
+        const formattedThreadsResult = dataToFormat.map(formatThreadData);
         
-        console.log('Formatted threads with popularity scores:', formattedThreads.map(t => ({ 
+        console.log('Formatted threads with popularity scores:', formattedThreadsResult.map(t => ({ 
           id: t.id, 
           title: t.title, 
           popularityScore: t.popularityScore 
         })));
         
-        // Sort by popularity if needed
-        if (sortOption === 'popular') {
-          formattedThreads.sort((a, b) => b.popularityScore - a.popularityScore);
+        // Data dari endpoint '/popular' diasumsikan sudah terurut oleh backend.
+        // Sorting sisi klien hanya sebagai fallback atau jika tidak menggunakan endpoint khusus popular.
+        if (currentSortOption === 'popular' && endpoint !== '/public/forum-threads/popular') {
+          formattedThreadsResult.sort((a, b) => b.popularityScore - a.popularityScore);
+        } else if (currentSortOption !== 'popular') { 
+           formattedThreadsResult.sort((a, b) => new Date(b.lastPost) - new Date(a.lastPost));
         }
         
-        setThreads(formattedThreads);
-        setFilteredThreads(formattedThreads);
+        setThreads(formattedThreadsResult);
+        setFilteredThreads(formattedThreadsResult);
+        setError(null); // Clear previous errors
       } catch (err) {
         console.error('Error fetching threads:', err);
         console.error('Error details:', err.response?.status, err.response?.data);
         setError('Gagal mengambil data forum. Silakan coba lagi nanti.');
+        setThreads([]); // Clear data on error
+        setFilteredThreads([]); // Clear data on error
       } finally {
         setLoading(false);
       }
     };
     
-    fetchThreads();
+    fetchThreadsBasedOnState(selectedCategory, sortOption, searchQuery);
   }, [sortOption, selectedCategory, searchQuery]);
 
   // Helper function untuk mendapatkan kategori dari tags
@@ -409,44 +422,54 @@ const Forum = () => {
       // Reset search and filter params when coming from other tabs
       if (isTabChange) {
         setSelectedCategory('');
-        setSortOption('latest');
+        setSortOption('latest'); // Default ke 'latest' saat pindah tab
         setSearchQuery('');
+        // Trigger fetch for all discussions when switching to 'all' tab with default params
+        fetchThreadsBasedOnState('', 'latest', ''); 
       } else {
         // Jika tab yang sama diklik lagi, trigger refresh dengan parameter yang sama
-        const endpoint = sortOption === 'popular' 
-          ? '/public/forum-threads'
+        const currentEndpoint = sortOption === 'popular' 
+          ? '/public/forum-threads/popular' 
           : '/public/forum-threads';
         
         setLoading(true);
         
-        // Panggil API dengan parameter yang ada
         let params = {};
-        if (searchQuery) {
-          params.search = searchQuery;
-        }
-        if (selectedCategory) {
-          params.tags = selectedCategory;
+        if (sortOption !== 'popular') { // Hanya tambahkan search/tags jika bukan endpoint popular
+          if (searchQuery) {
+            params.search = searchQuery;
+          }
+          if (selectedCategory) {
+            params.tags = selectedCategory;
+          }
+        } else {
+          // Jika backend endpoint '/popular' mendukung filter 'tags' atau 'limit', bisa ditambahkan di sini
+          // Contoh: if (selectedCategory) params.tags = selectedCategory;
         }
         
-        api.get(endpoint, { params })
+        api.get(currentEndpoint, { params })
           .then(response => {
-            if (response.data && Array.isArray(response.data.data)) {
-              const formattedThreads = response.data.data.map(thread => ({
-                id: thread.id,
-                title: thread.judul || 'Tanpa Judul',
-                author: thread.user ? (thread.user.nama || thread.user.name || 'Pengguna') : 'Pengguna',
-                replies: thread.comments_count || 0,
-                likes: thread.likes_count || 0,
-                views: thread.view_count || 0,
-                rating: thread.average_rating || 0,
-                lastPost: thread.tanggal_posting || new Date().toISOString(),
-                category: getCategoryFromTags(thread.tags),
-                tags: thread.tags ? thread.tags.split(',').filter(tag => tag.trim()) : [],
-                avatar: thread.user ? thread.user.foto_profil || thread.user.avatar : null,
-                popularityScore: thread.popularityScore
-              }));
-              setThreads(formattedThreads);
-              setFilteredThreads(formattedThreads);
+            const dataToFormat = response.data && Array.isArray(response.data.data) 
+                               ? response.data.data
+                               : (response.data && Array.isArray(response.data))
+                               ? response.data
+                               : [];
+
+            if (dataToFormat.length === 0 && (!response.data || (!Array.isArray(response.data.data) && !Array.isArray(response.data)))) {
+              setThreads([]);
+              setFilteredThreads([]);
+            } else {
+                const refreshedFormattedThreads = dataToFormat.map(formatThreadData);
+              
+                // Data dari /popular diasumsikan sudah terurut.
+                // Sort hanya jika tidak dari /popular atau sebagai fallback.
+                if (sortOption === 'popular' && currentEndpoint !== '/public/forum-threads/popular') {
+                  refreshedFormattedThreads.sort((a, b) => b.popularityScore - a.popularityScore);
+                } else if (sortOption !== 'popular') {
+                  refreshedFormattedThreads.sort((a, b) => new Date(b.lastPost) - new Date(a.lastPost));
+                }
+                setThreads(refreshedFormattedThreads);
+                setFilteredThreads(refreshedFormattedThreads);
             }
           })
           .catch(err => {
@@ -469,20 +492,7 @@ const Forum = () => {
       const response = await api.get('/forum-threads/my-threads');
       
       if (response.data && Array.isArray(response.data.data)) {
-        const formattedThreads = response.data.data.map(thread => ({
-          id: thread.id,
-          title: thread.judul || 'Tanpa Judul',
-          author: thread.user ? (thread.user.nama || thread.user.nama_lengkap || thread.user.name || 'Pengguna') : 'Pengguna',
-          replies: thread.comments_count || 0,
-          likes: thread.likes_count || 0,
-          views: thread.view_count || 0,
-          rating: thread.average_rating || 0,
-          lastPost: thread.tanggal_posting || new Date().toISOString(),
-          category: getCategoryFromTags(thread.tags),
-          tags: thread.tags ? thread.tags.split(',').filter(tag => tag.trim()) : [],
-          avatar: thread.user ? thread.user.foto_profil || thread.user.avatar : null,
-          popularityScore: thread.popularityScore
-        }));
+        const formattedThreads = response.data.data.map(formatThreadData);
         
         setMyThreads(formattedThreads);
         // Apply current filter ke data baru
@@ -1140,7 +1150,7 @@ const Forum = () => {
                             boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
                             position: 'relative' // Add position relative for absolute positioning of delete button
                           }}
-                          onClick={() => handleThreadClick(thread.id)}
+                          onClick={() => handleDeleteThread(e, thread.id)}
                         >
                           {/* Delete button */}
                           <IconButton 

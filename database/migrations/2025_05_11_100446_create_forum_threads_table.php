@@ -19,6 +19,10 @@ return new class extends Migration
             $table->dateTime('tanggal_posting')->default(now());
             $table->enum('status', ['AKTIF', 'NONAKTIF'])->default('AKTIF');
             $table->text('tags')->nullable();
+            $table->integer('view_count')->default(0);
+            $table->integer('engagements')->default(0)->comment('Total interaksi (view, like, comment)');
+            $table->decimal('average_rating', 3, 2)->nullable();
+            $table->unsignedInteger('rating_count')->default(0);
             $table->timestamp('updated_at')->nullable();
             $table->softDeletes();
             

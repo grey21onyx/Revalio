@@ -39,7 +39,6 @@ class DbStatus extends Command
             'user_waste_tracking',
             'forum_threads',
             'forum_comments',
-            'business_opportunities',
             'deleted_records',
         ];
 

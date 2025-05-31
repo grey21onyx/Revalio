@@ -7,8 +7,6 @@ export { default as DetailPanduan } from './DetailPanduan';
 export { default as TambahPanduan } from './TambahPanduan';
 export { default as Forum } from './Forum';
 export { default as DetailForum } from './DetailForum';
-export { default as PeluangUsaha } from './PeluangUsaha';
-export { default as DetailPeluangUsaha } from './DetailPeluangUsaha';
 export { default as Monetisasi } from './Monetisasi';
 export { default as Profile } from './profile';
 export { default as Login } from './Login';

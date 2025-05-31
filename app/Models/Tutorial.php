@@ -102,6 +102,16 @@ class Tutorial extends Model
     }
     
     /**
+     * Relasi ke model User (kontributor tutorial).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'kontributor_id', 'user_id');
+    }
+    
+    /**
      * Relasi dengan pengguna yang telah menyelesaikan tutorial
      */
     public function completedByUsers(): BelongsToMany

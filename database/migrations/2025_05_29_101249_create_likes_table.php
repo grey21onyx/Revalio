@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users', 'user_id')->cascadeOnDelete();
             $table->morphs('likeable');
+            $table->string('type')->default('like');
             $table->timestamps();
             
             // Add unique constraint to prevent duplicate likes

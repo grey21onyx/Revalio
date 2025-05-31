@@ -18,8 +18,6 @@ import Monetisasi from '../pages/Monetisasi';
 import Forum from '../pages/Forum';
 import ThreadDetail from '../pages/ThreadDetail';
 import DetailForum from '../pages/DetailForum';
-import PeluangUsaha from '../pages/PeluangUsaha';
-import DetailPeluangUsaha from '../pages/DetailPeluangUsaha';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
 import ForgotPassword from '../pages/ForgotPassword';
@@ -61,6 +59,12 @@ const AppRoutes = () => {
       <Route path="/edukasi/kategori/sampah-kertas" element={<SampahKertas />} />
       <Route path="/edukasi/kategori/sampah-logam" element={<SampahLogam />} />
       
+      {/* Public Katalog Routes */}
+      <Route element={<MainLayout />}>
+        <Route path="/katalog" element={<Katalog />} />
+        <Route path="/katalog/detail-sampah/:id" element={<DetailSampah />} />
+      </Route>
+      
       {/* Auth Routes - untuk user yang BELUM login */}
       <Route element={<PublicRoute />}>
         <Route element={<AuthLayout />}>
@@ -75,10 +79,6 @@ const AppRoutes = () => {
         <Route element={<MainLayout />}>
           {/* Dashboard/Home */}
           <Route path="/home" element={<Home />} />
-          
-          {/* Katalog Sampah */}
-          <Route path="/katalog" element={<Katalog />} />
-          <Route path="/katalog/detail-sampah/:id" element={<DetailSampah />} />
           
           {/* Panduan Daur Ulang */}
           <Route path="/daur-ulang" element={<DaurUlang />} />
@@ -95,10 +95,6 @@ const AppRoutes = () => {
           <Route path="/forum" element={<Forum />} />
           <Route path="/forum/new-topic" element={<FormNewTopic />} />
           <Route path="/detail-forum/:id" element={<DetailForum />} />
-          
-          {/* Peluang Usaha */}
-          <Route path="/peluang-usaha" element={<PeluangUsaha />} />
-          <Route path="/peluang-usaha/:id" element={<DetailPeluangUsaha />} />
           
           {/* Profile */}
           <Route path="/profile" element={<Profile />} />

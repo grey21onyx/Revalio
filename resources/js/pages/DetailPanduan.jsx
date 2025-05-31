@@ -48,12 +48,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import TutorialService from '../services/tutorialService';
 import { useAuth } from '../contexts/AuthContext';
 
-// Data jenis sampah
-const wasteTypes = [
-  { waste_id: 1, nama: 'Plastik', kategori_id: 1 },
-  { waste_id: 2, nama: 'Tekstil', kategori_id: 2 }
-];
-
 // Tingkat kesulitan
 const difficultyLevels = {
   VERY_EASY: 'Sangat Mudah',
@@ -101,30 +95,14 @@ const DetailPanduan = () => {
           return;
         }
         
-        // Periksa apakah ada tutorial dummy tersimpan di localStorage
-        const storedDummyData = localStorage.getItem(`dummy_tutorial_${id}`);
-        if (storedDummyData) {
-          console.log('Menggunakan data dummy tutorial dari localStorage');
-          const dummyData = JSON.parse(storedDummyData);
-          
-          // Update dummy data dengan status login user jika ada
-          if (isAuthenticated && user) {
-            dummyData.is_saved = false;
-            dummyData.is_completed = false;
-            dummyData.user_rating = 0;
-          }
-          
-          setTutorial(dummyData);
-          setIsLoading(false);
-          return;
-        }
-        
         try {
-          // Coba fetch dari API dulu
+          // Fetch data dari API
           console.log('Fetching tutorial data from API with ID:', id);
           const response = await TutorialService.getTutorialById(id);
-          console.log('Tutorial data received:', response.data);
-          const tutorialData = response.data;
+          console.log('Tutorial data received from API:', JSON.stringify(response, null, 2));
+          
+          // API TutorialResource menempatkan data di root, bukan dalam property data
+          const tutorialData = response;
           setTutorial(tutorialData);
           
           // Set user interaksi jika sudah login
@@ -138,106 +116,19 @@ const DetailPanduan = () => {
         } catch (err) {
           console.error('Error fetching tutorial:', err);
           
-          // Jika error 500 atau 401, gunakan data dummy sementara
-          if (err.response && (err.response.status === 500 || err.response.status === 401 || err.response.status === 404)) {
-            console.warn(`Menggunakan data dummy karena API error: ${err.response.status}`);
-            
-            // Data dummy untuk pengujian UI
-            const dummyTutorial = {
-              id: parseInt(id),
-              judul: `Tutorial Daur Ulang ${id}`,
-              deskripsi: 'Ini adalah tutorial daur ulang sementara. Data ini ditampilkan karena API mengalami error.',
-              tingkat_kesulitan: 'EASY',
-              estimasi_waktu: 30,
-              jenis_sampah: { nama: 'Plastik', kategori_id: 1 },
-              is_completed: false,
-              is_saved: false,
-              user_rating: 0,
-              average_rating: 4.5,
-              rating_count: 10,
-              comments: [],
-              kontributor: {
-                nama: 'Demo User',
-                avatar: '/assets/images/avatars/default.png'
-              },
-              konten: JSON.stringify({
-                bahan_dan_alat: [
-                  { nama: 'Botol Plastik', gambar: '/assets/images/materials/default.jpg' },
-                  { nama: 'Gunting', gambar: '/assets/images/materials/default.jpg' },
-                  { nama: 'Cat', gambar: '/assets/images/materials/default.jpg' }
-                ],
-                langkah_langkah: [
-                  { 
-                    langkah: 1, 
-                    judul: 'Persiapan Bahan', 
-                    deskripsi: 'Siapkan semua bahan yang diperlukan',
-                    media: '/assets/images/tutorials/default.jpg'
-                  },
-                  { 
-                    langkah: 2, 
-                    judul: 'Potong Botol', 
-                    deskripsi: 'Potong botol plastik sesuai ukuran yang diinginkan',
-                    media: '/assets/images/tutorials/default.jpg'
-                  },
-                  { 
-                    langkah: 3, 
-                    judul: 'Finalisasi', 
-                    deskripsi: 'Hias botol sesuai keinginan',
-                    media: '/assets/images/tutorials/default.jpg'
-                  }
-                ],
-                tips: 'Pastikan botol plastik bersih sebelum digunakan. Gunakan cat non-toxic agar aman untuk penggunaan sehari-hari.'
-              })
-            };
-            
-            // Simpan data dummy di localStorage untuk digunakan nanti
-            localStorage.setItem(`dummy_tutorial_${id}`, JSON.stringify(dummyTutorial));
-            
-            setTutorial(dummyTutorial);
-            setError(null);
-            
-            // Tampilkan pesan error yang lebih user friendly berdasarkan status kode
-            let errorMessage = 'Menampilkan data sementara karena terjadi masalah pada server';
-            let severity = 'warning';
-            
-            if (err.response.status === 401) {
-              errorMessage = 'Menampilkan data sementara. Silakan login untuk melihat data sebenarnya';
-              severity = 'info';
-            } else if (err.response.status === 404) {
-              errorMessage = 'Tutorial tidak ditemukan. Menampilkan data contoh';
-              severity = 'warning';
-            }
-            
-            setSnackbar({
-              open: true,
-              message: errorMessage,
-              severity: severity
-            });
+          // Pesan error yang lebih spesifik berdasarkan jenis error
+          if (err.message === 'Tutorial ID tidak valid atau undefined') {
+            setError('ID tutorial tidak valid, mohon kembali ke halaman panduan');
+          } else if (err.response && err.response.status === 404) {
+            setError('Tutorial tidak ditemukan, mohon kembali ke halaman panduan');
+            // Redirect setelah 3 detik ke halaman daftar tutorial
+            setTimeout(() => navigate('/daur-ulang', { replace: true }), 3000);
+          } else if (err.response && err.response.status === 401) {
+            setError('Anda perlu login untuk melihat tutorial ini');
+            // Redirect ke halaman login jika perlu
           } else {
-            // Pesan error yang lebih spesifik berdasarkan jenis error
-            if (err.message === 'Tutorial ID tidak valid atau undefined') {
-              setError('ID tutorial tidak valid, mohon kembali ke halaman panduan');
-            } else if (err.response && err.response.status === 404) {
-              setError('Tutorial tidak ditemukan, mohon kembali ke halaman panduan');
-              // Redirect setelah 3 detik ke halaman daftar tutorial
-              setTimeout(() => navigate('/daur-ulang', { replace: true }), 3000);
-            } else {
-              setError('Terjadi kesalahan saat memuat panduan. Silakan coba lagi nanti.');
-            }
+            setError('Terjadi kesalahan saat memuat panduan. Silakan coba lagi nanti.');
           }
-        }
-      } catch (err) {
-        console.error('Error fetching tutorial:', err);
-        
-        // Pesan error yang lebih spesifik berdasarkan jenis error
-        if (err.message === 'Tutorial ID tidak valid atau undefined') {
-          setError('ID tutorial tidak valid, mohon kembali ke halaman panduan');
-        } else if (err.response && err.response.status === 404) {
-          setError('Tutorial tidak ditemukan, mohon kembali ke halaman panduan');
-          // Redirect setelah 3 detik ke halaman daftar tutorial
-          setTimeout(() => navigate('/daur-ulang', { replace: true }), 3000);
-        } else {
-          setError('Terjadi kesalahan saat memuat panduan. Silakan coba lagi nanti.');
         }
       } finally {
         setIsLoading(false);
@@ -283,16 +174,28 @@ const DetailPanduan = () => {
       return;
     }
     
+    if (!comment.trim()) {
+      setSnackbar({
+        open: true,
+        message: 'Komentar tidak boleh kosong',
+        severity: 'warning'
+      });
+      return;
+    }
+    
     try {
+      // Kirim komentar dan rating ke API
       await TutorialService.addComment(id, comment, userRating);
       
       // Refresh data tutorial untuk menampilkan komentar baru
       const response = await TutorialService.getTutorialById(id);
-      setTutorial(response.data);
+      setTutorial(response);
       
+      // Reset form
       setComment('');
       setUserRating(0);
       
+      // Tampilkan notifikasi sukses
       setSnackbar({
         open: true,
         message: 'Ulasan berhasil dikirim',
@@ -300,9 +203,16 @@ const DetailPanduan = () => {
       });
     } catch (err) {
       console.error('Error submitting comment:', err);
+      
+      // Tampilkan pesan error yang sesuai
+      let errorMessage = 'Terjadi kesalahan saat mengirim ulasan';
+      if (err.response && err.response.data && err.response.data.message) {
+        errorMessage = err.response.data.message;
+      }
+      
       setSnackbar({
         open: true,
-        message: 'Terjadi kesalahan saat mengirim ulasan',
+        message: errorMessage,
         severity: 'error'
       });
     }
@@ -319,19 +229,28 @@ const DetailPanduan = () => {
     }
     
     try {
+      // Toggle status disimpan melalui API
       const response = await TutorialService.toggleSaved(id);
-      setIsBookmarked(response.data.is_saved);
+      setIsBookmarked(response.is_saved);
       
+      // Tampilkan notifikasi sukses
       setSnackbar({
         open: true,
-        message: response.data.message,
+        message: response.message || (isBookmarked ? 'Tutorial dihapus dari daftar simpan' : 'Tutorial disimpan'),
         severity: 'success'
       });
     } catch (err) {
       console.error('Error toggling bookmark:', err);
+      
+      // Tampilkan pesan error yang sesuai
+      let errorMessage = 'Terjadi kesalahan saat menyimpan tutorial';
+      if (err.response && err.response.data && err.response.data.message) {
+        errorMessage = err.response.data.message;
+      }
+      
       setSnackbar({
         open: true,
-        message: 'Terjadi kesalahan saat menyimpan tutorial',
+        message: errorMessage,
         severity: 'error'
       });
     }
@@ -348,26 +267,81 @@ const DetailPanduan = () => {
     }
     
     try {
+      // Toggle status selesai melalui API
       const response = await TutorialService.toggleCompleted(id);
-      setIsCompleted(response.data.is_completed);
+      setIsCompleted(response.is_completed);
       
+      // Tampilkan notifikasi sukses
       setSnackbar({
         open: true,
-        message: response.data.message,
+        message: response.message || (isCompleted ? 'Tutorial dihapus dari daftar selesai' : 'Tutorial ditandai sebagai selesai'),
         severity: 'success'
       });
     } catch (err) {
       console.error('Error toggling completed status:', err);
+      
+      // Tampilkan pesan error yang sesuai
+      let errorMessage = 'Terjadi kesalahan saat menandai tutorial sebagai selesai';
+      if (err.response && err.response.data && err.response.data.message) {
+        errorMessage = err.response.data.message;
+      }
+      
       setSnackbar({
         open: true,
-        message: 'Terjadi kesalahan saat menandai tutorial sebagai selesai',
+        message: errorMessage,
+        severity: 'error'
+      });
+    }
+  };
+  
+  const handleRatingChange = async (event, newValue) => {
+    if (!isAuthenticated) {
+      setSnackbar({
+        open: true,
+        message: 'Anda harus login untuk memberikan rating',
+        severity: 'warning'
+      });
+      return;
+    }
+    
+    try {
+      setUserRating(newValue);
+      
+      // Jika user hanya ingin memberi rating tanpa komentar
+      if (!comment.trim()) {
+        // Kirim rating ke API
+        await TutorialService.rateTutorial(id, newValue);
+        
+        // Refresh tutorial data
+        const response = await TutorialService.getTutorialById(id);
+        setTutorial(response);
+        
+        // Tampilkan notifikasi sukses
+        setSnackbar({
+          open: true,
+          message: 'Rating berhasil disimpan',
+          severity: 'success'
+        });
+      }
+    } catch (err) {
+      console.error('Error submitting rating:', err);
+      
+      // Tampilkan pesan error yang sesuai
+      let errorMessage = 'Terjadi kesalahan saat menyimpan rating';
+      if (err.response && err.response.data && err.response.data.message) {
+        errorMessage = err.response.data.message;
+      }
+      
+      setSnackbar({
+        open: true,
+        message: errorMessage,
         severity: 'error'
       });
     }
   };
   
   const handleShare = () => {
-    // Implementasi berbagi tutorial, bisa diperluas nanti
+    // Implementasi berbagi tutorial
     navigator.clipboard.writeText(window.location.href).then(() => {
       setSnackbar({
         open: true,
@@ -378,7 +352,7 @@ const DetailPanduan = () => {
   };
   
   const handleDownloadPDF = () => {
-    // Implementasi download PDF, bisa diperluas nanti
+    // Implementasi download PDF
     setSnackbar({
       open: true,
       message: 'Fitur download PDF belum tersedia',
@@ -418,12 +392,29 @@ const DetailPanduan = () => {
     );
   }
   
+  // Tampilkan data kontributor jika tersedia
+  const kontributor = tutorial.kontributor || null;
+
+  // Tampilkan data jenis sampah jika tersedia
+  const jenisSampah = tutorial.jenis_sampah || tutorial.waste_type || null;
+
   // Parsing konten tutorial dari format JSON jika diperlukan
-  const tutorialContent = typeof tutorial.konten === 'string' ? JSON.parse(tutorial.konten) : tutorial.konten;
-  const steps = tutorialContent.langkah_langkah || [];
+  const tutorialContent = (() => {
+    try {
+      if (typeof tutorial.konten === 'string') {
+        return JSON.parse(tutorial.konten);
+      }
+      return tutorial.konten || {};
+    } catch (error) {
+      console.error('Error parsing tutorial content:', error);
+      return {}; // Default empty object if parsing fails
+    }
+  })();
+  
+  const steps = tutorialContent && tutorialContent.langkah_langkah ? tutorialContent.langkah_langkah : [];
   const maxSteps = steps.length;
-  const bahanDanAlat = tutorialContent.bahan_dan_alat || [];
-  const tips = tutorialContent.tips;
+  const bahanDanAlat = tutorialContent && tutorialContent.bahan_dan_alat ? tutorialContent.bahan_dan_alat : [];
+  const tips = tutorialContent && tutorialContent.tips ? tutorialContent.tips : null;
 
   return (
     <Box sx={{ backgroundColor: '#f9f9f9', py: { xs: 3, md: 5 } }}>
@@ -448,14 +439,14 @@ const DetailPanduan = () => {
         
         {/* Meta Information */}
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
-          {tutorial.kontributor && (
+          {kontributor && (
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <Avatar 
-                src={tutorial.kontributor.avatar || '/assets/images/avatars/default.png'} 
-                alt={tutorial.kontributor.nama || 'Kontributor'}
+                src={kontributor.avatar || '/assets/images/avatars/default.png'} 
+                alt={kontributor.nama || 'Kontributor'}
                 sx={{ width: 32, height: 32, mr: 1 }}
               />
-              <Typography variant="body2">{tutorial.kontributor.nama || 'Kontributor'}</Typography>
+              <Typography variant="body2">{kontributor.nama || 'Kontributor'}</Typography>
             </Box>
           )}
           
@@ -486,9 +477,9 @@ const DetailPanduan = () => {
             {tutorial.estimasi_waktu} menit
           </Typography>
           
-          {tutorial.jenis_sampah && (
+          {jenisSampah && (
             <Chip 
-              label={tutorial.jenis_sampah.nama || 'Sampah'} 
+              label={jenisSampah.nama || 'Sampah'} 
               size="small" 
               sx={{ 
                 backgroundColor: theme.palette.primary.main,
@@ -757,9 +748,7 @@ const DetailPanduan = () => {
             <Typography variant="body2" sx={{ mr: 1 }}>Rating:</Typography>
             <Rating
               value={userRating}
-              onChange={(event, newValue) => {
-                setUserRating(newValue);
-              }}
+              onChange={handleRatingChange}
               precision={0.5}
             />
           </Box>
@@ -779,7 +768,7 @@ const DetailPanduan = () => {
             <Button 
               type="submit" 
               variant="contained" 
-              disabled={!comment}
+              disabled={!comment.trim()}
               sx={{ borderRadius: 8 }}
             >
               Kirim Ulasan
@@ -809,7 +798,7 @@ const DetailPanduan = () => {
                       <Typography variant="subtitle2" fontWeight={600} sx={{ mr: 1 }}>
                         {item.user?.nama_lengkap || 'Pengguna'}
                       </Typography>
-                      {item.rating && (
+                      {item.rating > 0 && (
                         <Rating 
                           value={item.rating} 
                           size="small" 
@@ -828,7 +817,7 @@ const DetailPanduan = () => {
                   }
                   secondary={
                     <Typography variant="body2" color="text.primary">
-                      {item.content || item.comment}
+                      {item.content}
                     </Typography>
                   }
                 />

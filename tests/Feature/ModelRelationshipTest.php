@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Article;
-use App\Models\BusinessOpportunity;
 use App\Models\DeletedRecord;
 use App\Models\ForumComment;
 use App\Models\ForumThread;

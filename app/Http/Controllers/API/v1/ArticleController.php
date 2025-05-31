@@ -271,4 +271,122 @@ class ArticleController extends Controller
                 ],
             ]);
     }
+
+    /**
+     * Display a listing of articles for public access.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function publicIndex(Request $request)
+    {
+        try {
+            $query = Article::where('status', 'PUBLIKASI');
+            
+            // Eager loading
+            if ($request->has('with_author') && $request->with_author) {
+                $query->with('author');
+            }
+            
+            // Search
+            if ($request->has('search')) {
+                $searchTerm = $request->search;
+                $query->where(function($q) use ($searchTerm) {
+                    $q->where('judul', 'like', "%{$searchTerm}%")
+                      ->orWhere('konten', 'like', "%{$searchTerm}%")
+                      ->orWhere('ringkasan', 'like', "%{$searchTerm}%");
+                });
+            }
+            
+            // Filter by category
+            if ($request->has('kategori')) {
+                $query->where('kategori', $request->kategori);
+            }
+            
+            // Filter by related waste type
+            if ($request->has('related_to_waste')) {
+                $wasteId = $request->related_to_waste;
+                $query->where(function($q) use ($wasteId) {
+                    $q->where('waste_id', $wasteId)
+                      ->orWhere('related_waste_ids', 'like', "%{$wasteId}%")
+                      ->orWhere('tags', 'like', '%sampah%'); // Fallback jika tidak ada yang terkait langsung
+                });
+            }
+            
+            // Filter by tag
+            if ($request->has('tag')) {
+                $tag = $request->tag;
+                $query->where(function($q) use ($tag) {
+                    $q->where('tag', 'like', "%{$tag}%")
+                      ->orWhere('tag', 'like', "%,{$tag},%")
+                      ->orWhere('tag', 'like', "{$tag},%")
+                      ->orWhere('tag', 'like', "%,{$tag}");
+                });
+            }
+            
+            // Sort
+            $sortBy = $request->input('sort_by', 'tanggal_publikasi');
+            $direction = $request->input('direction', 'desc');
+            $query->orderBy($sortBy, $direction);
+            
+            // Pagination
+            $perPage = $request->input('per_page', 15);
+            $articles = $query->paginate($perPage);
+            
+            return ArticleResource::collection($articles)
+                ->additional([
+                    'meta' => [
+                        'total' => $articles->total(),
+                        'per_page' => $articles->perPage(),
+                        'current_page' => $articles->currentPage(),
+                        'last_page' => $articles->lastPage(),
+                    ],
+                ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in publicIndex: ' . $e->getMessage());
+            \Log::error($e->getTraceAsString());
+            
+            // Return empty data with 200 status code instead of 500 error
+            return response()->json([
+                'data' => [],
+                'meta' => [
+                    'total' => 0,
+                    'per_page' => 15,
+                    'current_page' => 1,
+                    'last_page' => 1,
+                ],
+                'error' => env('APP_DEBUG') ? $e->getMessage() : 'Tidak dapat memuat data artikel'
+            ], 200);
+        }
+    }
+    
+    /**
+     * Display article details for public access
+     *
+     * @param Request $request
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function publicShow(Request $request, $id)
+    {
+        try {
+            $query = Article::where('article_id', $id)
+                           ->where('status', 'PUBLIKASI');
+            
+            // Eager loading
+            if ($request->has('with_author') && $request->with_author) {
+                $query->with('author');
+            }
+            
+            $article = $query->firstOrFail();
+            
+            return response()->json(new ArticleResource($article));
+        } catch (\Exception $e) {
+            \Log::error('Error in publicShow: ' . $e->getMessage());
+            
+            return response()->json([
+                'error' => 'Artikel tidak ditemukan atau tidak tersedia'
+            ], 404);
+        }
+    }
 } 

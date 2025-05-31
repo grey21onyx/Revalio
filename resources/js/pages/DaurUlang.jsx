@@ -381,16 +381,8 @@ const DaurUlang = () => {
   };
 
   const handleTutorialClick = (tutorial) => {
-    if (tutorial && tutorial.id) {
-      navigate(`/daur-ulang/${tutorial.id}`);
-    } else {
-      console.error('Tutorial ID tidak ditemukan:', tutorial);
-      setSnackbar({
-        open: true,
-        message: 'Tidak dapat membuka detail panduan. ID tidak valid.',
-        severity: 'error'
-      });
-    }
+    const tutorialId = tutorial.tutorial_id || tutorial.id;
+    navigate(`/daur-ulang/${tutorialId}`);
   };
 
   const handleCreateNew = () => {

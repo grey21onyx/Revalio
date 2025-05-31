@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from '../config/axios';
+import { fetchCsrfCookie } from '../config/axios';
+import api from '../services/api'; // Import API service
 
 // Buat context untuk autentikasi
 const AuthContext = createContext(null);
@@ -42,6 +44,11 @@ export const AuthProvider = ({ children }) => {
         fetchCurrentUser();
       }
     }
+    
+    // Ambil CSRF token saat aplikasi dimulai
+    fetchCsrfCookie().catch(err => {
+      console.error('Error fetching initial CSRF token:', err);
+    });
   }, []);
 
   const fetchCurrentUser = async () => {
@@ -50,7 +57,8 @@ export const AuthProvider = ({ children }) => {
       const token = localStorage.getItem('userToken');
       if (!token) return;
 
-      const response = await axios.get('/v1/user');
+      // Gunakan api service untuk konsistensi
+      const response = await api.get('/user');
       console.log('User data fetched from API:', response.data);
       
       // Simpan user data ke state dan localStorage
@@ -71,7 +79,8 @@ export const AuthProvider = ({ children }) => {
   const refreshUser = async () => {
     console.log('Refreshing user data...');
     try {
-      const response = await axios.get('/v1/profile');
+      // Gunakan api service untuk konsistensi
+      const response = await api.get('/profile');
       console.log('Profile refresh response:', response.data);
       
       if (response.data && response.data.status === 'success') {
@@ -110,8 +119,16 @@ export const AuthProvider = ({ children }) => {
     setIsLoading(true);
     setError(null);
     try {
+      // Ambil CSRF token terlebih dahulu sebelum login
+      console.log('Fetching CSRF token before login...');
+      await fetchCsrfCookie();
+      
       console.log('Attempting login with credentials:', { ...credentials, password: '******' });
-      const response = await axios.post('/v1/auth/login', credentials);
+      // Gunakan API service dengan baseURL: '/api/v1' daripada axios langsung
+      console.log('Using api service instead of axios directly for consistent endpoints');
+      
+      // Ganti axios.post dengan api.post (tanpa /v1/ karena sudah ada di baseURL)
+      const response = await api.post('/login', credentials);
       console.log('Login response:', response.data);
       
       // Ekstrak data dari response
@@ -147,7 +164,28 @@ export const AuthProvider = ({ children }) => {
       return response.data;
     } catch (err) {
       console.error('Login error:', err);
-      const errorMsg = err.response?.data?.message || 'Login gagal, silakan coba lagi';
+      
+      // Tambahkan logging yang lebih detail untuk error
+      if (err.response) {
+        console.error('Response error data:', err.response.data);
+        console.error('Response error status:', err.response.status);
+        console.error('Response error headers:', err.response.headers);
+        
+        // Panduan troubleshooting khusus untuk error 405 Method Not Allowed
+        if (err.response.status === 405) {
+          console.error('HTTP 405 Method Not Allowed detected. Kemungkinan masalah:');
+          console.error('1. Route definition mismatch: Periksa routes/api.php');
+          console.error('2. CSRF protection: Periksa VerifyCsrfToken middleware');
+          console.error('3. Cross-Origin issues: Periksa CORS setting');
+          console.error('Full error message:', err.response.data.message);
+        }
+      } else if (err.request) {
+        console.error('Request was made but no response was received:', err.request);
+      } else {
+        console.error('Error during request setup:', err.message);
+      }
+      
+      const errorMsg = err.response?.data?.message || 'Login gagal. Mohon coba lagi.';
       setError(errorMsg);
       throw new Error(errorMsg);
     } finally {
@@ -159,8 +197,16 @@ export const AuthProvider = ({ children }) => {
     setIsLoading(true);
     setError(null);
     try {
+      // Ambil CSRF token terlebih dahulu sebelum register
+      console.log('Fetching CSRF token before registration...');
+      await fetchCsrfCookie();
+      
       console.log('Attempting registration with data:', { ...userData, password: '******' });
-      const response = await axios.post('/v1/auth/register', userData);
+      // Gunakan API service untuk konsistensi dengan login
+      console.log('Using api service for registration');
+      
+      // Gunakan api.post alih-alih axios.post
+      const response = await api.post('/register', userData);
       console.log('Registration response:', response.data);
       
       // Jika registrasi sekaligus login
@@ -199,7 +245,8 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log('Logging out...');
       // API call ke logout (opsional)
-      await axios.post('/v1/auth/logout');
+      // Gunakan api service untuk konsistensi
+      await api.post('/logout');
     } catch (err) {
       console.error("Error saat logout:", err);
     } finally {

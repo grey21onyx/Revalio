@@ -809,68 +809,6 @@ public function getMonetizationTips(Request $request)
 }
 ```
 
-## 9. Halaman Peluang Usaha (PeluangUsaha.jsx & DetailPeluangUsaha.jsx)
-
-### Data yang diperlukan:
-- Daftar peluang usaha dengan filter dan pagination
-- Detail peluang usaha
-
-### Implementasi:
-1. Buat `BusinessOpportunityController`:
-```php
-public function index(Request $request)
-{
-    $query = BusinessOpportunity::query();
-    
-    // Filter by category
-    if ($request->has('kategori')) {
-        $query->where('kategori', $request->kategori);
-    }
-    
-    // Filter by investment range
-    if ($request->has('min_investment') && $request->has('max_investment')) {
-        $query->whereBetween('investasi_awal', [
-            $request->min_investment,
-            $request->max_investment
-        ]);
-    }
-    
-    // Search by title
-    if ($request->has('search')) {
-        $query->where(function($q) use ($request) {
-            $q->where('judul', 'like', "%{$request->search}%")
-              ->orWhere('deskripsi', 'like', "%{$request->search}%");
-        });
-    }
-    
-    // Sort
-    $sortField = $request->sort_by ?? 'judul';
-    $sortOrder = $request->sort_order ?? 'asc';
-    $query->orderBy($sortField, $sortOrder);
-    
-    $perPage = $request->per_page ?? 12;
-    $opportunities = $query->paginate($perPage);
-    
-    return BusinessOpportunityResource::collection($opportunities);
-}
-
-public function show($id)
-{
-    $opportunity = BusinessOpportunity::findOrFail($id);
-    
-    // Get related opportunities in the same category
-    $relatedOpportunities = BusinessOpportunity::where('kategori', $opportunity->kategori)
-        ->where('peluang_id', '!=', $id)
-        ->take(4)
-        ->get();
-    
-    return response()->json([
-        'opportunity' => new BusinessOpportunityDetailResource($opportunity),
-        'related_opportunities' => BusinessOpportunityResource::collection($relatedOpportunities)
-    ]);
-}
-```
-
 ## 10. Autentikasi & Manajemen User (Login.jsx, Register.jsx, Profile.jsx)
 
 ### Data yang diperlukan:
@@ -1571,15 +1509,7 @@ Berikut adalah tahapan implementasi backend untuk menyambungkan halaman-halaman 
    - Implementasi paginasi dan filtering
    - Sambungkan dengan frontend Forum.jsx dan DetailForum.jsx
 
-### Tahap 6: Monetisasi & Peluang Usaha
 
-1. **Waste Buyer**
-   - Implementasi endpoint untuk daftar pembeli dengan filter
-   - Sambungkan dengan frontend Monetisasi.jsx
-
-2. **Business Opportunity**
-   - Implementasi endpoint untuk daftar dan detail peluang usaha
-   - Sambungkan dengan frontend PeluangUsaha.jsx dan DetailPeluangUsaha.jsx
 
 ### Tahap 7: Home & Dashboard
 

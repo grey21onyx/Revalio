@@ -6,6 +6,8 @@ use App\Models\WasteType;
 use App\Models\WasteValue;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class WasteValueSeeder extends Seeder
 {
@@ -14,77 +16,33 @@ class WasteValueSeeder extends Seeder
      */
     public function run(): void
     {
-        // Data harga untuk beberapa sampah contoh
-        $wasteValues = [
-            // Plastik
-            [
-                'waste_id' => 1, // Botol PET
-                'harga_minimum' => 4000.00,
-                'harga_maksimum' => 5500.00,
-                'satuan' => 'kg',
-                'tanggal_update' => now(),
-                'sumber_data' => 'Bank Sampah Indonesia',
-            ],
-            [
-                'waste_id' => 2, // Kantong Kresek
-                'harga_minimum' => 1000.00,
-                'harga_maksimum' => 2000.00,
-                'satuan' => 'kg',
-                'tanggal_update' => now(),
-                'sumber_data' => 'Pengepul Lokal',
-            ],
-            // Kertas
-            [
-                'waste_id' => 4, // Kardus
-                'harga_minimum' => 2500.00,
-                'harga_maksimum' => 3500.00,
-                'satuan' => 'kg',
-                'tanggal_update' => now(),
-                'sumber_data' => 'Bank Sampah Indonesia',
-            ],
-            [
-                'waste_id' => 5, // Koran
-                'harga_minimum' => 3000.00,
-                'harga_maksimum' => 4000.00,
-                'satuan' => 'kg',
-                'tanggal_update' => now(),
-                'sumber_data' => 'Survey Lapangan',
-            ],
-            // Logam
-            [
-                'waste_id' => 7, // Kaleng Aluminium
-                'harga_minimum' => 10000.00,
-                'harga_maksimum' => 15000.00,
-                'satuan' => 'kg',
-                'tanggal_update' => now(),
-                'sumber_data' => 'Pengepul Logam',
-            ],
-            [
-                'waste_id' => 8, // Besi
-                'harga_minimum' => 3000.00,
-                'harga_maksimum' => 4500.00,
-                'satuan' => 'kg',
-                'tanggal_update' => now(),
-                'sumber_data' => 'Pengepul Logam',
-            ],
-            // Minyak Bekas
-            [
-                'waste_id' => 14, // Minyak Goreng Bekas
-                'harga_minimum' => 5000.00,
-                'harga_maksimum' => 7000.00,
-                'satuan' => 'liter',
-                'tanggal_update' => now(),
-                'sumber_data' => 'Pengumpul Minyak Bekas',
-            ],
-        ];
+        // Mendapatkan ID yang sudah ada di tabel waste_types
+        $wasteTypes = WasteType::pluck('waste_id', 'nama_sampah')->toArray();
         
-        foreach ($wasteValues as $value) {
-            // Menggunakan firstOrCreate untuk mencegah duplikasi
-            WasteValue::firstOrCreate(
-                ['waste_id' => $value['waste_id']],
-                $value
-            );
+        // Memastikan ada data di dalam waste_types
+        if (empty($wasteTypes)) {
+            $this->command->info('Tidak ada jenis sampah yang ditemukan. Pastikan WasteTypeSeeder sudah dijalankan.');
+            return;
         }
+
+        // Mapping nama sampah ke ID yang sudah ada
+        $botolPetId = $wasteTypes['Botol PET'] ?? null;
+        $kardusId = $wasteTypes['Kardus'] ?? null;
+        $kalengAluminiumId = $wasteTypes['Kaleng Aluminium'] ?? null;
+        
+        // Memastikan ID ada sebelum lanjut
+        if (!$botolPetId || !$kardusId || !$kalengAluminiumId) {
+            $this->command->info('Beberapa jenis sampah tidak ditemukan. Pastikan WasteTypeSeeder sudah dijalankan dengan benar.');
+            return;
+        }
+
+        // Menghapus data nilai sampah yang ada untuk mencegah duplikasi
+        WasteValue::truncate();
+        
+        // Buat data historis untuk 6 bulan terakhir
+        $this->createHistoricalData($botolPetId, 'Botol PET', 'Bank Sampah Indonesia');
+        $this->createHistoricalData($kardusId, 'Kardus', 'Bank Sampah Indonesia');
+        $this->createHistoricalData($kalengAluminiumId, 'Kaleng Aluminium', 'Pengepul Logam');
         
         // Dapatkan semua jenis sampah yang belum memiliki nilai
         $wasteIdsWithValues = WasteValue::pluck('waste_id')->toArray();
@@ -94,8 +52,57 @@ class WasteValueSeeder extends Seeder
         foreach ($wasteTypesWithoutValues as $wasteType) {
             // Periksa lagi untuk memastikan tidak ada nilai yang dibuat secara bersamaan
             if (!WasteValue::where('waste_id', $wasteType->waste_id)->exists()) {
-                WasteValue::factory()->create(['waste_id' => $wasteType->waste_id]);
+                // Buat data default untuk setiap jenis sampah
+                WasteValue::create([
+                    'waste_id' => $wasteType->waste_id,
+                    'harga_minimum' => 1000.00, // Harga default minimum
+                    'harga_maksimum' => 2000.00, // Harga default maksimum
+                    'satuan' => 'kg',
+                    'tanggal_update' => now(),
+                    'sumber_data' => 'Default Value',
+                ]);
             }
+        }
+    }
+    
+    /**
+     * Buat data historis untuk 6 bulan terakhir
+     */
+    private function createHistoricalData($wasteId, $wasteName, $source)
+    {
+        // Tentukan harga awal dan perubahan maksimal per bulan
+        $initialPrices = [
+            'Botol PET' => ['min' => 3500, 'max' => 5000],
+            'Kardus' => ['min' => 2000, 'max' => 3000],
+            'Kaleng Aluminium' => ['min' => 8000, 'max' => 13000],
+        ];
+        
+        $baseMin = $initialPrices[$wasteName]['min'];
+        $baseMax = $initialPrices[$wasteName]['max'];
+        
+        // Buat data untuk 6 bulan terakhir
+        for ($i = 6; $i >= 0; $i--) {
+            $date = Carbon::now()->subMonths($i);
+            
+            // Simulasi fluktuasi harga (antara -5% sampai +8%)
+            $fluctuationMin = rand(-5, 8) / 100;
+            $fluctuationMax = rand(-3, 10) / 100;
+            
+            $min = max(round($baseMin * (1 + $fluctuationMin), -2), 500); // Bulatkan ke 100 terdekat, minimal 500
+            $max = max(round($baseMax * (1 + $fluctuationMax), -2), $min + 500); // Selalu lebih tinggi dari min
+            
+            // Update harga basis untuk bulan berikutnya
+            $baseMin = $min;
+            $baseMax = $max;
+            
+            WasteValue::create([
+                'waste_id' => $wasteId,
+                'harga_minimum' => $min,
+                'harga_maksimum' => $max,
+                'satuan' => 'kg',
+                'tanggal_update' => $date,
+                'sumber_data' => $source,
+            ]);
         }
     }
 }

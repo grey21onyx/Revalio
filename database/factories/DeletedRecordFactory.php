@@ -23,7 +23,6 @@ class DeletedRecordFactory extends Factory
             'articles',
             'forum_threads',
             'forum_comments',
-            'business_opportunities',
         ];
         
         $selectedTable = $this->faker->randomElement($tables);

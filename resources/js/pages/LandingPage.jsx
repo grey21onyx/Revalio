@@ -31,7 +31,6 @@ import {
   Insights as TrackingIcon,
   MonetizationOn as MonetisasiIcon,
   Forum as ForumIcon,
-  BusinessCenter as PeluangUsahaIcon,
   ChevronRight as ChevronRightIcon,
   ArrowForward as ArrowForwardIcon,
   Article as ArticleIcon,

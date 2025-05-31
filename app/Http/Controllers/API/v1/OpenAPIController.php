@@ -647,10 +647,6 @@ class OpenAPIController extends Controller
             [
                 'name' => 'Waste Buyers',
                 'description' => 'Endpoints for managing waste buyers'
-            ],
-            [
-                'name' => 'Business Opportunities',
-                'description' => 'Endpoints for managing business opportunities'
             ]
         ];
     }

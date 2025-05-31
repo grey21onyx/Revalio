@@ -183,21 +183,6 @@ CREATE TABLE forum_comments (
     FOREIGN KEY (parent_komentar_id) REFERENCES forum_comments(komentar_id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Tabel: business_opportunities
--- Menyimpan informasi peluang usaha
-CREATE TABLE business_opportunities (
-    peluang_id INT AUTO_INCREMENT PRIMARY KEY,
-    judul VARCHAR(100) NOT NULL,
-    deskripsi TEXT NOT NULL,
-    kategori VARCHAR(50) NOT NULL,
-    investasi_awal DECIMAL(12,2),
-    potensi_pendapatan TEXT,
-    tantangan TEXT,
-    saran_implementasi TEXT,
-    updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_kategori (kategori)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Tabel: deleted_records
 -- Menyimpan catatan yang telah dihapus (recycle bin)
 CREATE TABLE deleted_records (

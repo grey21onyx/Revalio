@@ -78,7 +78,6 @@ Jl. Ahmad Yani, Batam 29461
   5.11 [STRUKTUR TABEL USER_WASTE_TRACKING](#511-struktur-tabel-user_waste_tracking)<br>
   5.12 [STRUKTUR TABEL FORUM_THREADS](#512-struktur-tabel-forum_threads)<br>
   5.13 [STRUKTUR TABEL FORUM_COMMENTS](#513-struktur-tabel-forum_comments)<br>
-  5.14 [STRUKTUR TABEL BUSINESS_OPPORTUNITIES](#514-struktur-tabel-business_opportunities)<br>
   5.15 [STRUKTUR TABEL DELETED_RECORDS](#515-struktur-tabel-deleted_records)<br>
   5.16 [SKEMA RELASI ANTAR TABEL](#516-skema-relasi-antar-tabel)<br>
 6 [PERANCANGAN ANTARMUKA](#6-perancangan-antarmuka)<br>
@@ -89,7 +88,6 @@ Jl. Ahmad Yani, Batam 29461
   6.5 [ANTARMUKA PANDUAN DAUR ULANG & REUSE](#65-antarmuka-panduan-daur-ulang--reuse)<br>
   6.6 [ANTARMUKA DETAIL PANDUAN](#66-antarmuka-detail-panduan)<br>
   6.7 [ANTARMUKA FORUM DISKUSI](#67-antarmuka-forum-diskusi)<br>
-  6.8 [ANTARMUKA PELUANG USAHA](#68-antarmuka-peluang-usaha)<br>
 7 [MATRIKS KETERUNUTAN](#7-matriks-keterunutan)<br>
 
  
@@ -109,7 +107,7 @@ Revalio berfokus pada pemberdayaan masyarakat untuk mengelola sampah dengan lebi
 - Panduan daur ulang dan reuse untuk berbagai jenis sampah
 - Tips monetisasi limbah, termasuk informasi tentang cara menjual dan siapa yang membeli
 - Sistem tracking volume sampah yang dikelola pengguna
-- Edukasi tentang dampak lingkungan dari pengelolaan sampah dan peluang usaha yang bisa dihasilkan
+- Edukasi tentang dampak lingkungan dari pengelolaan sampah 
 
 Aplikasi ini TIDAK berfungsi sebagai tempat jual beli langsung, melainkan sebagai panduan interaktif, tool manajemen, dan sumber informasi terpercaya dalam proses pengelolaan sampah.
 
@@ -166,7 +164,7 @@ Sistem ini dibangun sebagai panduan interaktif yang memungkinkan pengguna untuk:
 - Memahami proses daur ulang dan reuse untuk setiap jenis sampah
 - Mendapatkan tips monetisasi limbah, termasuk informasi tentang cara menjual dan target pembeli
 - Melacak volume sampah yang telah dikelola
-- Mendapatkan edukasi tentang dampak lingkungan dan peluang usaha terkait pengelolaan sampah
+- Mendapatkan edukasi tentang dampak lingkungan
 
 Aplikasi ini tidak berfungsi sebagai marketplace untuk jual beli sampah, melainkan sebagai sumber informasi terpercaya dan alat manajemen yang memberdayakan pengguna untuk mengoptimalkan nilai dari sampah yang mereka hasilkan.
 
@@ -203,7 +201,6 @@ Proses bisnis dari aplikasi Revalio meliputi:
 
 6. **Edukasi Dampak Lingkungan & Peluang Usaha**
    - Pengguna mengakses informasi tentang dampak positif dari pengelolaan sampah
-   - Pengguna mempelajari peluang usaha terkait daur ulang dan pengelolaan sampah
    - Pengguna mendapatkan inspirasi sukses story dari pelaku usaha pengelolaan sampah
 
 7. **Komunitas dan Pembelajaran**
@@ -332,9 +329,7 @@ Aplikasi Revalio memiliki kebutuhan fungsional sebagai berikut:
 
 6. **Edukasi Dampak Lingkungan & Peluang Usaha**
    - UC-23: Mempelajari dampak positif pengelolaan sampah
-   - UC-24: Mengeksplorasi peluang usaha terkait pengelolaan sampah
    - UC-25: Mengakses studi kasus dan kisah sukses
-   - UC-26: Mempelajari panduan memulai usaha pengelolaan sampah
 
 7. **Komunitas dan Pembelajaran**
    - UC-27: Berpartisipasi dalam forum diskusi
@@ -749,7 +744,6 @@ public enum ContentCategory {
     REUSE_IDEA,
     MONETIZATION_TIP,
     ENVIRONMENTAL_IMPACT,
-    BUSINESS_OPPORTUNITY
 }
 ```
 
@@ -778,7 +772,6 @@ Aplikasi Revalio menggunakan basis data berikut:
 9. user_waste_tracking - Menyimpan catatan sampah yang dikelola pengguna
 10. forum_threads - Menyimpan thread forum diskusi
 11. forum_comments - Menyimpan komentar forum
-12. business_opportunities - Menyimpan informasi peluang usaha
 13. deleted_records - Menyimpan catatan yang telah dihapus (recycle bin)
 
 5.3	STRUKTUR TABEL USERS
@@ -919,18 +912,6 @@ Aplikasi Revalio menggunakan basis data berikut:
 | tanggal_komentar | DATETIME | Tanggal komentar | DEFAULT CURRENT_TIMESTAMP |
 | parent_komentar_id | INT | ID komentar induk | FK |
 
-5.14	STRUKTUR TABEL BUSINESS_OPPORTUNITIES
-
-| Field | Tipe Data | Keterangan | Konstrain |
-|-------|-----------|------------|-----------|
-| peluang_id | INT | ID unik peluang | PK, AUTO_INCREMENT |
-| judul | VARCHAR(100) | Judul peluang | NOT NULL |
-| deskripsi | TEXT | Deskripsi peluang | NOT NULL |
-| kategori | VARCHAR(50) | Kategori peluang | NOT NULL |
-| investasi_awal | DECIMAL(12,2) | Investasi awal | |
-| potensi_pendapatan | TEXT | Potensi pendapatan | |
-| tantangan | TEXT | Tantangan implementasi | |
-| saran_implementasi | TEXT | Saran implementasi | |
 
 5.15	STRUKTUR TABEL DELETED_RECORDS
 
@@ -1161,30 +1142,7 @@ Halaman ini menyediakan forum diskusi untuk pengguna berinteraksi dan berbagi pe
 - Filter dan pencarian untuk menemukan topik spesifik
 - Notifikasi untuk balasan baru pada topik yang diikuti
 
-6.8	ANTARMUKA PELUANG USAHA
 
-Halaman ini menampilkan informasi tentang peluang usaha dari pengelolaan sampah.
-
-![Mockup Peluang Usaha](https://via.placeholder.com/800x600?text=Mockup+Peluang+Usaha)
-
-**Komponen Utama:**
-1. Header dengan judul halaman
-2. Panel filter:
-   - Kategori peluang usaha
-   - Range investasi awal
-   - Tingkat kesulitan
-3. Grid peluang usaha dengan card:
-   - Judul peluang
-   - Gambar ilustrasi
-   - Estimasi investasi awal
-   - Potensi pendapatan
-   - Kategori usaha
-4. Pagination
-
-**Interaksi:**
-- Filter berdasarkan berbagai kriteria
-- Mengklik card untuk melihat detail peluang usaha
-- Bookmark peluang yang diminati
 
 7	MATRIKS KETERUNUTAN
 
@@ -1197,7 +1155,6 @@ Matriks keterunutan menunjukkan hubungan antara kebutuhan fungsional, use case, 
 | F3 | Tracking volume sampah yang dikelola | UC-19, UC-20, UC-21, UC-22 | user_waste_tracking | Tracking Sampah |
 | F4 | Mempelajari panduan daur ulang dan reuse | UC-08 | tutorials, articles | Panduan Daur Ulang & Reuse, Detail Panduan |
 | F5 | Mendapatkan tips monetisasi limbah | UC-15, UC-16, UC-17, UC-18 | waste_buyers, waste_buyer_types | Tips Monetisasi |
-| F6 | Edukasi dampak lingkungan & peluang usaha | UC-23, UC-24, UC-25, UC-26 | articles, business_opportunities | Peluang Usaha |
 | F7 | Berpartisipasi dalam komunitas | UC-27, UC-28, UC-29 | forum_threads, forum_comments | Forum Diskusi |
 | F8 | Menerima notifikasi dan update | UC-30 | - | Notifikasi |
 | F9 | administrasi sistem | UC-31, UC-32, UC-33, UC-34 | deleted_records | admin Dashboard |

@@ -31,7 +31,6 @@ resources/
   - Detail Panduan
 - **Forum Diskusi**
   - Detail Thread Forum
-- **Peluang Usaha/Monetisasi**
 - **Profil Pengguna**
 
 ## Alur Pengembangan
@@ -64,8 +63,7 @@ resources/
 ### 8. Forum Diskusi:
 - Daftar thread dan halaman detail diskusi
 
-### 9. Monetisasi & Peluang Usaha:
-- Informasi pembeli potensial dan peluang usaha
+
 
 ### 10. Profil Pengguna:
 - Halaman profil dan pengaturan

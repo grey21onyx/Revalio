@@ -11,7 +11,7 @@ Aplikasi ini tidak berfungsi sebagai tempat jual beli, melainkan sebagai panduan
 - Panduan Daur Ulang & Reuse
 - Tips Monetisasi Limbah
 - Tracking Volume Sampah
-- Edukasi tentang Dampak Lingkungan & Peluang Usaha
+- Edukasi tentang Dampak Lingkungan
 
 ## ✨ Fitur Utama
 

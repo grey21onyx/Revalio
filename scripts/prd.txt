@@ -12,7 +12,7 @@ Revalio berfokus pada pemberdayaan masyarakat untuk mengelola sampah dengan lebi
 - Panduan daur ulang dan reuse untuk berbagai jenis sampah
 - Tips monetisasi limbah
 - Sistem tracking volume sampah yang dikelola pengguna
-- Edukasi tentang dampak lingkungan dari pengelolaan sampah dan peluang usaha
+- Edukasi tentang dampak lingkungan dari pengelolaan sampah 
 
 ## Teknologi
 - Frontend: React.js, Material-UI, Redux, Tailwind CSS, GSAP
@@ -51,7 +51,7 @@ Revalio berfokus pada pemberdayaan masyarakat untuk mengelola sampah dengan lebi
 - Melihat estimasi dampak lingkungan positif
 - Melihat estimasi nilai ekonomi potensial
 
-### 6. Edukasi Dampak Lingkungan & Peluang Usaha
+### 6. Edukasi Dampak Lingkungan 
 - Mempelajari dampak positif pengelolaan sampah
 - Mengeksplorasi peluang usaha terkait pengelolaan sampah
 - Mengakses studi kasus dan kisah sukses
@@ -77,7 +77,6 @@ Revalio berfokus pada pemberdayaan masyarakat untuk mengelola sampah dengan lebi
 5. Panduan Daur Ulang & Reuse
 6. Detail Panduan
 7. Forum Diskusi
-8. Peluang Usaha
 
 ## Persyaratan Database
 Aplikasi Revalio membutuhkan 13 tabel:
@@ -92,5 +91,4 @@ Aplikasi Revalio membutuhkan 13 tabel:
 9. user_waste_tracking
 10. forum_threads
 11. forum_comments
-12. business_opportunities
 13. deleted_records 

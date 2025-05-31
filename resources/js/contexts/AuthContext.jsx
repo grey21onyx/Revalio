@@ -121,7 +121,7 @@ export const AuthProvider = ({ children }) => {
       await fetchCsrfCookie();
       
       console.log('Attempting login with credentials:', { ...credentials, password: '******' });
-      const response = await axios.post('/v1/auth/login', credentials);
+      const response = await axios.post('/v1/login', credentials);
       console.log('Login response:', response.data);
       
       // Ekstrak data dari response
@@ -174,7 +174,7 @@ export const AuthProvider = ({ children }) => {
       await fetchCsrfCookie();
       
       console.log('Attempting registration with data:', { ...userData, password: '******' });
-      const response = await axios.post('/v1/auth/register', userData);
+      const response = await axios.post('/v1/register', userData);
       console.log('Registration response:', response.data);
       
       // Jika registrasi sekaligus login
@@ -213,7 +213,7 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log('Logging out...');
       // API call ke logout (opsional)
-      await axios.post('/v1/auth/logout');
+      await axios.post('/v1/logout');
     } catch (err) {
       console.error("Error saat logout:", err);
     } finally {

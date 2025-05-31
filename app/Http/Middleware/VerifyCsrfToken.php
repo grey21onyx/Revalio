@@ -12,6 +12,7 @@ class VerifyCsrfToken extends Middleware
      * @var array<int, string>
      */
     protected $except = [
-        //
+        'api/v1/*', // Pengecualian untuk semua endpoint API v1
+        'sanctum/csrf-cookie', // Memastikan endpoint sanctum juga dikecualikan
     ];
 }

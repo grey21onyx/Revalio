@@ -12,7 +12,7 @@ const instance = axios.create({
   }
 });
 
-// Fungsi khusus untuk mendapatkan CSRF cookie dengan retry logic
+// Fungsi khusus untuk mendapatkan CSRF cookie
 export const fetchCsrfCookie = async (retries = 3, timeout = 30000) => {
   const csrfInstance = axios.create({
     baseURL: '/', // URL dasar ke root karena sanctum/csrf-cookie bukan di /api
@@ -55,9 +55,26 @@ export const fetchCsrfCookie = async (retries = 3, timeout = 30000) => {
   throw lastError;
 };
 
+// Cek apakah CSRF cookie ada dan valid
+const hasCsrfToken = () => {
+  // Cek meta tag
+  const metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+  if (metaToken) return true;
+  
+  // Cek cookie
+  const getCookie = (name) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+  };
+  
+  const xsrfCookie = getCookie('XSRF-TOKEN');
+  return !!xsrfCookie;
+};
+
 // Interceptor untuk menambahkan token otentikasi dan CSRF token ke semua request
 instance.interceptors.request.use(
-  (config) => {
+  async (config) => {
     // Tambahkan auth token jika tersedia
     const token = localStorage.getItem('userToken');
     if (token) {
@@ -66,6 +83,18 @@ instance.interceptors.request.use(
     
     // Tambahkan CSRF token untuk request non-GET
     if (config.method !== 'get') {
+      // Jika tidak ada CSRF token dan ini bukan request ke csrf-cookie endpoint
+      // Maka ambil CSRF token terlebih dahulu
+      if (!hasCsrfToken() && !config.url.includes('/sanctum/csrf-cookie')) {
+        try {
+          console.log('No CSRF token found. Fetching new token before request...');
+          await fetchCsrfCookie();
+          console.log('Successfully fetched CSRF token before request');
+        } catch (err) {
+          console.error('Failed to fetch CSRF token before request:', err);
+        }
+      }
+      
       // Fungsi untuk mendapatkan cookie value
       const getCookie = (name) => {
         const value = `; ${document.cookie}`;
@@ -97,14 +126,6 @@ instance.interceptors.request.use(
         config.headers['X-XSRF-TOKEN'] = csrfToken;
       } else {
         console.warn('No CSRF token found for non-GET request to', config.url);
-        
-        // Jika token tidak ada dan ini bukan request ke endpoint csrf-cookie,
-        // coba ambil token baru di background (tanpa blocking request saat ini)
-        if (!config.url.includes('/sanctum/csrf-cookie')) {
-          console.debug('Attempting to fetch new CSRF token in background');
-          fetchCsrfCookie(2, 20000) // 2 percobaan dengan timeout 20 detik
-            .catch(err => console.error('Failed to fetch CSRF token:', err));
-        }
       }
     }
     
@@ -122,7 +143,7 @@ instance.interceptors.response.use(
     // Bisa menambahkan logika tambahan di sini jika perlu
     return response;
   },
-  (error) => {
+  async (error) => {
     console.error('Response error:', error.response?.status, error.response?.data);
     
     // Handle 401 Unauthorized response (token invalid/expired)
@@ -138,20 +159,40 @@ instance.interceptors.response.use(
       }
     }
     
-    // Handle 403 Forbidden karena CSRF
-    if (error.response && error.response.status === 403 && 
-        error.response.data && error.response.data.message && 
-        error.response.data.message.includes('CSRF')) {
-      console.log('CSRF token mismatch detected, refreshing CSRF token');
+    // Handle 419 untuk CSRF token mismatch
+    if (error.response && (error.response.status === 419 || 
+        (error.response.status === 403 && 
+         error.response.data?.message?.includes('CSRF')))) {
+      console.log('CSRF token mismatch detected (status 419/403), refreshing CSRF token');
       
-      // Refresh CSRF token
-      fetchCsrfCookie(2, 20000) // 2 percobaan dengan timeout 20 detik
-        .then(() => {
-          console.log('CSRF token refreshed successfully');
-        })
-        .catch(refreshError => {
-          console.error('Failed to refresh CSRF token:', refreshError);
-        });
+      // Coba refresh CSRF token dan coba lagi request
+      try {
+        await fetchCsrfCookie(3, 30000); // 3 percobaan dengan timeout 30 detik
+        console.log('CSRF token refreshed, retrying original request');
+        
+        // Buat konfigurasi baru tanpa interceptor untuk menghindari loop
+        const originalRequest = error.config;
+        
+        // Ambil CSRF token baru
+        const getCookie = (name) => {
+          const value = `; ${document.cookie}`;
+          const parts = value.split(`; ${name}=`);
+          if (parts.length === 2) return parts.pop().split(';').shift();
+        };
+        
+        const xsrfCookie = getCookie('XSRF-TOKEN');
+        if (xsrfCookie) {
+          const csrfToken = decodeURIComponent(xsrfCookie);
+          originalRequest.headers['X-CSRF-TOKEN'] = csrfToken;
+          originalRequest.headers['X-XSRF-TOKEN'] = csrfToken;
+        }
+        
+        // Retry request dengan token baru
+        return axios(originalRequest);
+      } catch (refreshError) {
+        console.error('Failed to refresh CSRF token:', refreshError);
+        return Promise.reject(error);
+      }
     }
     
     return Promise.reject(error);

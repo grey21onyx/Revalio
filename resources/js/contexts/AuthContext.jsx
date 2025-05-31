@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from '../config/axios';
+import { fetchCsrfCookie } from '../config/axios';
 
 // Buat context untuk autentikasi
 const AuthContext = createContext(null);
@@ -42,6 +43,11 @@ export const AuthProvider = ({ children }) => {
         fetchCurrentUser();
       }
     }
+    
+    // Ambil CSRF token saat aplikasi dimulai
+    fetchCsrfCookie().catch(err => {
+      console.error('Error fetching initial CSRF token:', err);
+    });
   }, []);
 
   const fetchCurrentUser = async () => {
@@ -110,6 +116,10 @@ export const AuthProvider = ({ children }) => {
     setIsLoading(true);
     setError(null);
     try {
+      // Ambil CSRF token terlebih dahulu sebelum login
+      console.log('Fetching CSRF token before login...');
+      await fetchCsrfCookie();
+      
       console.log('Attempting login with credentials:', { ...credentials, password: '******' });
       const response = await axios.post('/v1/auth/login', credentials);
       console.log('Login response:', response.data);
@@ -147,7 +157,7 @@ export const AuthProvider = ({ children }) => {
       return response.data;
     } catch (err) {
       console.error('Login error:', err);
-      const errorMsg = err.response?.data?.message || 'Login gagal, silakan coba lagi';
+      const errorMsg = err.response?.data?.message || 'Login gagal. Mohon coba lagi.';
       setError(errorMsg);
       throw new Error(errorMsg);
     } finally {
@@ -159,6 +169,10 @@ export const AuthProvider = ({ children }) => {
     setIsLoading(true);
     setError(null);
     try {
+      // Ambil CSRF token terlebih dahulu sebelum register
+      console.log('Fetching CSRF token before registration...');
+      await fetchCsrfCookie();
+      
       console.log('Attempting registration with data:', { ...userData, password: '******' });
       const response = await axios.post('/v1/auth/register', userData);
       console.log('Registration response:', response.data);

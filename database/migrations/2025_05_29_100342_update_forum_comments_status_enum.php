@@ -35,4 +35,4 @@ return new class extends Migration
             DB::statement("UPDATE forum_comments SET status = 'NONAKTIF' WHERE status = 'TIDAK_AKTIF'");
         });
     }
-}; 
+};

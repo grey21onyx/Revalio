@@ -1,18 +1,30 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\v1\AuthController;
-use App\Http\Controllers\API\v1\ArticleController;
-use App\Http\Controllers\API\v1\WasteTypeController;
-use App\Http\Controllers\API\v1\TutorialController;
-use App\Http\Controllers\API\v1\RecyclingGuideController;
 use App\Http\Controllers\API\v1\UserController;
-use App\Http\Controllers\API\v1\WasteTrackingController;
+use App\Http\Controllers\API\v1\WasteTypeController;
+use App\Http\Controllers\API\v1\WasteCategoryController;
+use App\Http\Controllers\API\v1\WasteValueController;
+use App\Http\Controllers\API\v1\TutorialController;
+use App\Http\Controllers\API\v1\ArticleController;
 use App\Http\Controllers\API\v1\ForumThreadController;
 use App\Http\Controllers\API\v1\ForumCommentController;
+use App\Http\Controllers\API\v1\UserWasteTrackingController;
 use App\Http\Controllers\API\v1\WasteBuyerController;
-use App\Http\Controllers\API\v1\WasteCategoryController;
+use App\Http\Controllers\API\v1\WasteBuyerTypeController;
+use App\Http\Controllers\API\v1\BusinessOpportunityController;
+use App\Http\Controllers\API\v1\RoleController;
+use App\Http\Controllers\API\v1\PermissionController;
+use App\Http\Controllers\API\v1\UserRoleController;
+use App\Http\Controllers\API\v1\OpenAPIController;
+use App\Http\Controllers\API\v1\HomeController;
+use App\Http\Controllers\API\v1\MonetizationController;
+use App\Http\Controllers\API\v1\HealthController;
+use App\Http\Controllers\API\v1\GISController;
+use App\Http\Controllers\API\v1\ForumRatingController;
+use App\Http\Controllers\API\v1\ForumViewController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -25,113 +37,171 @@ use App\Http\Controllers\API\v1\WasteCategoryController;
 |
 */
 
+// API v1 Routes
 Route::prefix('v1')->group(function () {
-    // Public routes (no auth required)
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
-    Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+    // API Documentation
+    Route::get('/docs', [OpenAPIController::class, 'documentation']);
     
-    // Public data endpoints
-    Route::get('/waste-types', [WasteTypeController::class, 'index']);
-    Route::get('/waste-types/{id}', [WasteTypeController::class, 'show']);
+    // Public Routes (No Auth Required)
     Route::get('/public/waste-types', [WasteTypeController::class, 'public']);
+    Route::get('/public/waste-categories', [WasteCategoryController::class, 'public']);
+    Route::get('/public/waste-values', [WasteValueController::class, 'public']);
+    Route::get('/public/tutorials', [TutorialController::class, 'public']);
+    Route::get('/public/articles', [ArticleController::class, 'public']);
+    Route::get('/public/forum-threads', [ForumThreadController::class, 'public']);
+    Route::get('/public/forum-threads/popular', [ForumThreadController::class, 'popular']);
+    Route::get('/public/forum-threads/{id}', [ForumThreadController::class, 'show']);
+    Route::get('/public/forum-threads/{threadId}/comments', [ForumCommentController::class, 'index']);
+    Route::get('/public/waste-buyers', [WasteBuyerController::class, 'public']);
+    Route::get('/public/waste-buyer-types', [WasteBuyerTypeController::class, 'public']);
+    Route::get('/public/monetization/tips', [MonetizationController::class, 'getMonetizationTips']);
+    Route::get('/public/monetization/summary', [MonetizationController::class, 'getMonetizationSummary']);
+    Route::get('/public/monetization/recommended-buyers', [MonetizationController::class, 'getRecommendedBuyers']);
+    Route::get('/public/home-data', [HomeController::class, 'index']);
     Route::get('/public/waste-types/{id}/detail', [WasteTypeController::class, 'showDetail']);
     Route::get('/public/waste-types/{id}/tutorials', [WasteTypeController::class, 'getRelatedTutorials']);
     Route::get('/public/waste-types/{id}/buyers', [WasteTypeController::class, 'getPotentialBuyers']);
     
-    Route::get('/public/waste-categories', [WasteCategoryController::class, 'public']);
+    // Health check
+    Route::get('/health', [HealthController::class, 'check']);
     
-    Route::get('/recycling-guides', [RecyclingGuideController::class, 'index']);
-    Route::get('/recycling-guides/{id}', [RecyclingGuideController::class, 'show']);
+    // Route to check if the user is authenticated
+    Route::get('/auth/check', [AuthController::class, 'check']);
     
-    // Tutorial routes - public
-    Route::get('/tutorials', [TutorialController::class, 'index']);
-    Route::get('/tutorials/{id}', [TutorialController::class, 'show']);
-    Route::get('/tutorials/{id}/comments', [TutorialController::class, 'getComments']);
-    Route::get('/public/tutorials', [TutorialController::class, 'public']);
-    Route::get('/waste-types/{wasteTypeId}/tutorials', [TutorialController::class, 'getByWasteType']);
+    // Authentication
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/auth/register', [AuthController::class, 'register']);
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/auth/login', [AuthController::class, 'login']);
+    Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+    Route::post('/auth/refresh', [AuthController::class, 'refresh'])->middleware('auth:sanctum');
+    Route::post('/auth/social/{provider}', [AuthController::class, 'socialLogin']);
+    Route::post('/auth/social/{provider}/callback', [AuthController::class, 'socialLoginCallback']);
+    Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
     
-    Route::get('/public/articles', [ArticleController::class, 'publicIndex']);
-    Route::get('/public/articles/{id}', [ArticleController::class, 'publicShow']);
-    
-    Route::get('/public/forum-threads', [ForumThreadController::class, 'public']);
-    Route::get('/public/forum-threads/popular', [ForumThreadController::class, 'popular']);
-    Route::get('/public/forum-threads/{id}', [ForumThreadController::class, 'show']);
-    Route::get('/public/forum-threads/{threadId}/comments', [ForumCommentController::class, 'publicIndex']);
-    
-    Route::get('/public/waste-buyers', [WasteBuyerController::class, 'publicIndex']);
-    Route::get('/public/waste-buyers/{id}', [WasteBuyerController::class, 'publicShow']);
-    
-    // Auth required routes
+    // Routes that require authentication
     Route::middleware('auth:sanctum')->group(function () {
-        // User profile
-        Route::get('/me', [AuthController::class, 'me']);
-        Route::post('/logout', [AuthController::class, 'logout']);
+        // Auth
+        Route::get('/user', [AuthController::class, 'user']);
+
+        // User Profile
+        Route::get('/profile', [UserController::class, 'profile']);
+        Route::put('/profile', [UserController::class, 'updateProfile']);
+        Route::post('/change-password', [UserController::class, 'updatePassword']);
+        Route::post('/upload-photo', [UserController::class, 'uploadPhoto']);
+        Route::get('/waste-history', [UserController::class, 'wasteHistory']);
+        Route::get('/user-statistics', [UserController::class, 'statistics']);
+        Route::get('/dashboard-stats', [UserController::class, 'getUserStats']);
+
+        // Users
+        Route::apiResource('users', UserController::class);
+
+        // Roles Management - admin Only
+        Route::middleware('role:admin')->group(function () {
+            // Roles
+            Route::apiResource('roles', RoleController::class);
+            Route::post('/roles/{id}/permissions', [RoleController::class, 'assignPermissions']);
+            
+            // Permissions
+            Route::apiResource('permissions', PermissionController::class);
+            Route::get('/permissions/{id}/roles', [PermissionController::class, 'getRoles']);
+            
+            // User Roles
+            Route::get('/user-roles', [UserRoleController::class, 'index']);
+            Route::get('/users/{id}/roles', [UserRoleController::class, 'getUserRoles']);
+            Route::post('/users/{id}/roles', [UserRoleController::class, 'assignRoles']);
+            Route::delete('/users/{userId}/roles/{roleId}', [UserRoleController::class, 'removeRole']);
+            Route::get('/roles/{roleId}/users', [UserRoleController::class, 'getUsersByRole']);
+            Route::get('/users/{userId}/has-role/{roleSlug}', [UserRoleController::class, 'checkRole']);
+        });
+
+        // Waste Types
+        Route::apiResource('waste-types', WasteTypeController::class);
         
-        // User management
-        Route::get('/users', [UserController::class, 'index']);
-        Route::get('/users/{id}', [UserController::class, 'show']);
-        Route::put('/users/{id}', [UserController::class, 'update']);
-        Route::delete('/users/{id}', [UserController::class, 'destroy']);
+        // Waste Categories
+        Route::apiResource('waste-categories', WasteCategoryController::class);
         
-        // Waste types
-        Route::post('/waste-types', [WasteTypeController::class, 'store']);
-        Route::put('/waste-types/{id}', [WasteTypeController::class, 'update']);
-        Route::delete('/waste-types/{id}', [WasteTypeController::class, 'destroy']);
+        // Favorit Feature
+        Route::get('/favorites/waste-types', [WasteTypeController::class, 'getUserFavorites']);
+        Route::post('/favorites/waste-types/{id}', [WasteTypeController::class, 'toggleFavorite']);
         
-        // Tutorial routes - auth required
-        Route::post('/tutorials', [TutorialController::class, 'store']);
-        Route::put('/tutorials/{id}', [TutorialController::class, 'update']);
-        Route::delete('/tutorials/{id}', [TutorialController::class, 'destroy']);
-        Route::post('/tutorials/{id}/rate', [TutorialController::class, 'rate']);
-        Route::post('/tutorials/{id}/toggle-completed', [TutorialController::class, 'toggleCompleted']);
-        Route::post('/tutorials/{id}/toggle-saved', [TutorialController::class, 'toggleSaved']);
-        Route::post('/tutorials/{id}/comments', [TutorialController::class, 'addComment']);
+        // Waste Values
+        Route::apiResource('waste-values', WasteValueController::class);
+        Route::get('/waste-values/history/{wasteTypeId}', [WasteValueController::class, 'getValueHistory']);
         
-        // Recycling guides
-        Route::post('/recycling-guides', [RecyclingGuideController::class, 'store']);
-        Route::put('/recycling-guides/{id}', [RecyclingGuideController::class, 'update']);
-        Route::delete('/recycling-guides/{id}', [RecyclingGuideController::class, 'destroy']);
+        // Tutorials
+        Route::get('tutorials', [TutorialController::class, 'index']);
+        Route::post('tutorials', [TutorialController::class, 'store']);
+        Route::get('tutorials/{id}', [TutorialController::class, 'show']);
+        Route::get('tutorials/{id}/comments', [TutorialController::class, 'getComments']);
         
         // Articles
         Route::apiResource('articles', ArticleController::class);
         
-        // Waste tracking
-        Route::apiResource('waste-tracking', WasteTrackingController::class);
-        Route::get('/waste-tracking/stats/weekly', [WasteTrackingController::class, 'weeklyStats']);
-        Route::get('/waste-tracking/stats/monthly', [WasteTrackingController::class, 'monthlyStats']);
-        Route::get('/waste-tracking/stats/yearly', [WasteTrackingController::class, 'yearlyStats']);
-        
-        // Forum routes menggunakan ForumThreadController dan ForumCommentController
+        // Forum Threads
         Route::get('/forum-threads/my-threads', [ForumThreadController::class, 'myThreads']);
         Route::get('/forum-threads/my-comments', [ForumThreadController::class, 'myComments']);
-        Route::post('/forum-threads', [ForumThreadController::class, 'store']);
-        Route::get('/forum-threads/{id}', [ForumThreadController::class, 'show']);
-        Route::put('/forum-threads/{id}', [ForumThreadController::class, 'update']);
-        Route::delete('/forum-threads/{id}', [ForumThreadController::class, 'destroy']);
+        Route::apiResource('forum-threads', ForumThreadController::class);
         Route::post('/forum-threads/{id}/like', [ForumThreadController::class, 'toggleLike']);
         
-        // Rute untuk Komentar (menggunakan ForumCommentController)
-        Route::get('/forum-threads/{threadId}/comments', [ForumCommentController::class, 'index'])->name('forum-threads.comments.index');
-        Route::post('/forum-threads/{threadId}/comments', [ForumCommentController::class, 'store'])->name('forum-threads.comments.store');
-        Route::get('/forum-comments/{commentId}', [ForumCommentController::class, 'show'])->name('forum-comments.show');
-        Route::put('/forum-comments/{commentId}', [ForumCommentController::class, 'update'])->name('forum-comments.update');
-        Route::delete('/forum-comments/{commentId}', [ForumCommentController::class, 'destroy'])->name('forum-comments.destroy');
-        Route::post('/forum-comments/{commentId}/like', [ForumCommentController::class, 'toggleLike'])->name('forum-comments.like');
+        // Forum Comments
+        Route::get('/forum-threads/{threadId}/comments', [ForumCommentController::class, 'index']);
+        Route::post('/forum-threads/{threadId}/comments', [ForumCommentController::class, 'store']);
+        Route::get('/forum-threads/{threadId}/comments/{id}', [ForumCommentController::class, 'show']);
+        Route::put('/forum-threads/{threadId}/comments/{id}', [ForumCommentController::class, 'update']);
+        Route::delete('/forum-threads/{threadId}/comments/{id}', [ForumCommentController::class, 'destroy']);
+        Route::post('/forum-threads/{threadId}/comments/{id}/like', [ForumCommentController::class, 'toggleLike']);
+        Route::get('/forum-threads/{threadId}/comments/{commentId}/replies', [ForumCommentController::class, 'getReplies']);
         
-        // Waste buyers
+        // User Waste Tracking
+        Route::apiResource('user-waste-trackings', UserWasteTrackingController::class);
+        Route::get('/user-waste-trackings/summary', [UserWasteTrackingController::class, 'getSummary']);
+        
+        // Waste Buyers
         Route::apiResource('waste-buyers', WasteBuyerController::class);
-        Route::post('/waste-buyers/{id}/bookmark', [WasteBuyerController::class, 'toggleBookmark']);
-        Route::get('/waste-buyers/{id}/rating', [WasteBuyerController::class, 'getRating']);
-        Route::post('/waste-buyers/{id}/rating', [WasteBuyerController::class, 'rateWasteBuyer']);
+        Route::get('/waste-buyers/cities', [WasteBuyerController::class, 'getCities']);
+        Route::get('/waste-buyers/provinces', [WasteBuyerController::class, 'getProvinces']);
+        Route::post('/waste-buyers/{id}/rate', [WasteBuyerController::class, 'rate']);
         
-        // Admin routes
-        Route::middleware('admin')->group(function () {
-            // Admin specific endpoints
-            Route::post('/admin/batch-delete-users', [UserController::class, 'batchDelete']);
-            
-            // More admin routes as needed
-        });
+        // Waste Buyer Types
+        Route::apiResource('waste-buyer-types', WasteBuyerTypeController::class);
+        
+        // User tutorial interactions
+        Route::post('tutorials/{id}/complete', [TutorialController::class, 'toggleCompleted']);
+        Route::post('tutorials/{id}/save', [TutorialController::class, 'toggleSaved']);
+        Route::post('tutorials/{id}/rate', [TutorialController::class, 'rate']);
+        Route::post('tutorials/{id}/comments', [TutorialController::class, 'addComment']);
+
+        // Waste tracking
+        Route::get('waste-tracking', [UserWasteTrackingController::class, 'index']);
+        Route::get('waste-tracking/waste-types', [UserWasteTrackingController::class, 'getWasteTypes']);
+        Route::post('waste-tracking', [UserWasteTrackingController::class, 'store']);
+        Route::get('waste-tracking/stats', [UserWasteTrackingController::class, 'stats']);
+        Route::get('waste-tracking/{id}', [UserWasteTrackingController::class, 'show']);
+        Route::put('waste-tracking/{id}', [UserWasteTrackingController::class, 'update']);
+        Route::delete('waste-tracking/{id}', [UserWasteTrackingController::class, 'destroy']);
+
+        // Forum thread rating
+        Route::post('/forum-threads/{threadId}/rating', [ForumRatingController::class, 'rateThread']);
+        Route::get('/forum-threads/{threadId}/rating', [ForumRatingController::class, 'getUserRating']);
+
+        // Forum thread view count
+        Route::post('/forum-threads/{threadId}/view', [ForumViewController::class, 'incrementView']);
+    });
+
+    // Forum thread view count - public route
+    Route::post('/public/forum-threads/{threadId}/view', [\App\Http\Controllers\API\v1\ForumViewController::class, 'incrementView']);
+});
+
+// GIS Routes untuk peta pengepul sampah
+Route::prefix('v1/gis')->group(function () {
+    Route::get('/locations', [GISController::class, 'getAllLocations']);
+    Route::get('/nearby', [GISController::class, 'getNearbyLocations']);
+    Route::get('/waste-types', [GISController::class, 'getWasteTypes']);
+    
+    // admin routes untuk update lokasi
+    Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+        Route::put('/location/{id}', [GISController::class, 'updateLocation']);
     });
 });

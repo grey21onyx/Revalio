@@ -11,11 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('user_waste_tracking', function (Blueprint $table) {
-            // Tambahkan kolom deleted_at jika belum ada
-            if (!Schema::hasColumn('user_waste_tracking', 'deleted_at')) {
-                $table->softDeletes();
-            }
+        Schema::table('likes', function (Blueprint $table) {
+            $table->string('type')->default('like')->after('likeable_type');
         });
     }
 
@@ -24,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('user_waste_tracking', function (Blueprint $table) {
-            $table->dropSoftDeletes();
+        Schema::table('likes', function (Blueprint $table) {
+            $table->dropColumn('type');
         });
     }
 };

@@ -34,4 +34,4 @@ return new class extends Migration
     {
         // No need to recreate the columns since we're moving away from this approach
     }
-}; 
+};

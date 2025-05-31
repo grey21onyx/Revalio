@@ -14,6 +14,11 @@ class WasteTypeResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        // Ambil nilai harga terbaru dari relasi wasteValues jika ada
+        $latestValue = $this->whenLoaded('wasteValues', function() {
+            return $this->wasteValues->sortByDesc('tanggal_update')->first();
+        });
+        
         return [
             'id' => $this->waste_id,
             'nama' => $this->nama_sampah,
@@ -26,6 +31,11 @@ class WasteTypeResource extends JsonResource
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'kategori_id' => $this->kategori_id,
+            // Tambahkan harga dari relasi wasteValues
+            'harga_minimum' => $latestValue ? (float) $latestValue->harga_minimum : null,
+            'harga_maksimum' => $latestValue ? (float) $latestValue->harga_maksimum : null,
+            'satuan_harga' => $latestValue ? $latestValue->satuan : null,
+            'tanggal_update_harga' => $latestValue ? $latestValue->tanggal_update : null,
             'kategori' => $this->whenLoaded('category', function() {
                 return new WasteCategoryResource($this->category);
             }),

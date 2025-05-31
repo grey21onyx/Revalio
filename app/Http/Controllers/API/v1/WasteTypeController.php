@@ -258,20 +258,16 @@ class WasteTypeController extends Controller
             $query = WasteType::query();
             
             // Eager loading
-            $relations = [];
+            $relations = ['wasteValues']; // Selalu load wasteValues untuk data harga
             if ($request->has('with_category') && $request->with_category) {
                 $relations[] = 'category';
-            }
-            if ($request->has('with_waste_values') && $request->with_waste_values) {
-                $relations[] = 'wasteValues';
             }
             if ($request->has('with_tutorials') && $request->with_tutorials) {
                 $relations[] = 'tutorials';
             }
             
-            if (!empty($relations)) {
-                $query->with($relations);
-            }
+            // Apply eager loading
+            $query->with($relations);
             
             // Search
             if ($request->has('search')) {
@@ -313,7 +309,7 @@ class WasteTypeController extends Controller
         
         $favorites = auth()->user()
             ->favoriteWasteTypes()
-            ->pluck('waste_id')
+            ->pluck('user_favorite_waste_types.waste_id')
             ->toArray();
             
         return response()->json(['favorites' => $favorites], 200);
@@ -334,7 +330,7 @@ class WasteTypeController extends Controller
         $user = auth()->user();
         $wasteType = WasteType::findOrFail($id);
         
-        if ($user->favoriteWasteTypes()->where('waste_id', $id)->exists()) {
+        if ($user->favoriteWasteTypes()->where('user_favorite_waste_types.waste_id', $id)->exists()) {
             $user->favoriteWasteTypes()->detach($id);
             $message = 'Removed from favorites';
             $isFavorite = false;
@@ -362,10 +358,44 @@ class WasteTypeController extends Controller
         try {
             $wasteType = WasteType::with([
                 'category',
-                'wasteValues',
+                'wasteValues' => function($query) {
+                    $query->orderBy('tanggal_update', 'desc');
+                },
                 'tutorials',
                 'buyers.wasteBuyer',
             ])->findOrFail($id);
+            
+            // Enhanced debugging info
+            \Log::info('WasteValues for id ' . $id . ':', [
+                'count' => $wasteType->wasteValues->count(),
+                'latest' => $wasteType->wasteValues->first() ? [
+                    'nilai_id' => $wasteType->wasteValues->first()->nilai_id,
+                    'harga_minimum' => $wasteType->wasteValues->first()->harga_minimum,
+                    'harga_maksimum' => $wasteType->wasteValues->first()->harga_maksimum,
+                    'tanggal_update' => $wasteType->wasteValues->first()->tanggal_update,
+                ] : 'No values found',
+                'all_values' => $wasteType->wasteValues->map(function($value) {
+                    return [
+                        'nilai_id' => $value->nilai_id,
+                        'harga_minimum' => $value->harga_minimum,
+                        'harga_maksimum' => $value->harga_maksimum,
+                        'tanggal_update' => $value->tanggal_update,
+                    ];
+                }),
+            ]);
+            
+            // Make sure the values are properly ordered
+            $wasteType->setRelation('wasteValues', $wasteType->wasteValues->sortByDesc('tanggal_update'));
+            
+            // Verify ordering after explicit sort
+            \Log::info('Ordered WasteValues:', [
+                'first_value' => $wasteType->wasteValues->first() ? [
+                    'nilai_id' => $wasteType->wasteValues->first()->nilai_id,
+                    'harga_minimum' => $wasteType->wasteValues->first()->harga_minimum,
+                    'harga_maksimum' => $wasteType->wasteValues->first()->harga_maksimum,
+                    'tanggal_update' => $wasteType->wasteValues->first()->tanggal_update,
+                ] : 'No values found'
+            ]);
             
             // Get price history grouped by month
             $priceHistory = WasteValue::where('waste_id', $id)
@@ -384,7 +414,7 @@ class WasteTypeController extends Controller
             // Check if the user has favorited this waste type
             $isFavorite = false;
             if (auth()->check()) {
-                $isFavorite = auth()->user()->favoriteWasteTypes()->where('waste_id', $id)->exists();
+                $isFavorite = auth()->user()->favoriteWasteTypes()->where('user_favorite_waste_types.waste_id', $id)->exists();
             }
             
             return response()->json([
@@ -480,5 +510,19 @@ class WasteTypeController extends Controller
                 'error' => env('APP_DEBUG') ? $e->getMessage() : 'Tidak dapat memuat data pembeli potensial'
             ], 200); // Return 200 with empty data instead of 500
         }
+    }
+
+    /**
+     * Clear the waste types cache
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function clearCache()
+    {
+        CacheService::forgetByPrefix(self::CACHE_PREFIX);
+        
+        return response()->json([
+            'message' => 'Cache berhasil dibersihkan'
+        ]);
     }
 } 

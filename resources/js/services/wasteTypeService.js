@@ -56,9 +56,30 @@ const WasteTypeService = {
    */
   getPublicWasteTypeDetail: async (id) => {
     try {
+      console.log(`Fetching waste type detail for ID: ${id}`);
       const response = await axios.get(`${API_URL}/public/waste-types/${id}/detail`);
+      console.log('Raw API response for waste type detail:', response);
+      
+      // Check if wasteValues exist and log them
+      if (response.data && response.data.waste_type && response.data.waste_type.wasteValues) {
+        console.log('Waste values from API:', response.data.waste_type.wasteValues);
+        
+        if (response.data.waste_type.wasteValues.length > 0) {
+          const latestValue = response.data.waste_type.wasteValues[0];
+          console.log('Latest waste value data:', {
+            minimum: latestValue.harga_minimum,
+            maksimum: latestValue.harga_maksimum,
+            satuan: latestValue.satuan,
+            tanggal: latestValue.tanggal_update
+          });
+        }
+      } else {
+        console.warn('No wasteValues found in response');
+      }
+      
       return response.data;
     } catch (error) {
+      console.error('Error fetching waste type detail:', error);
       throw error;
     }
   },

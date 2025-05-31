@@ -42,8 +42,6 @@ import {
   ArrowForward as ArrowForwardIcon,
   ViewModule as GridViewIcon,
   ViewList as ListViewIcon,
-  Favorite as FavoriteIcon,
-  FavoriteBorder as FavoriteBorderIcon,
   InfoOutlined as InfoOutlinedIcon,
   Sort as SortIcon,
   Refresh as RefreshIcon
@@ -71,6 +69,63 @@ const categoryColors = {
   'Elektronik': '#9C27B0',
   'default': '#3f51b5'
 };
+
+// Data statis sebagai fallback jika API belum tersedia atau gagal
+const mockCategories = [
+  { id: 1, nama: 'Plastik', ikon: '/assets/images/waste/plastic-icon.png' },
+  { id: 2, nama: 'Kertas', ikon: '/assets/images/waste/paper-icon.png' },
+  { id: 3, nama: 'Besi', ikon: '/assets/images/waste/metal-icon.png' },
+  { id: 4, nama: 'Alumunium', ikon: '/assets/images/waste/aluminum-icon.png' },
+  { id: 5, nama: 'Elektronik', ikon: '/assets/images/waste/electronic-icon.png' }
+];
+
+const mockTypes = [
+  { 
+    id: 1, 
+    nama: 'Botol Plastik PET', 
+    kategori_id: 1, 
+    deskripsi: 'Botol plastik minuman seperti air mineral, soda, dan jus.',
+    gambar: '/assets/images/waste/plastic-bottle.jpg',
+    harga_minimum: 2500,
+    harga_maksimum: 5000
+  },
+  { 
+    id: 2, 
+    nama: 'Kertas HVS', 
+    kategori_id: 2, 
+    deskripsi: 'Kertas putih untuk dokumen dan fotokopi.',
+    gambar: '/assets/images/waste/paper.jpg',
+    harga_minimum: 3000,
+    harga_maksimum: 4500
+  },
+  { 
+    id: 3, 
+    nama: 'Besi Bekas', 
+    kategori_id: 3, 
+    deskripsi: 'Potongan besi bekas dari berbagai sumber.',
+    gambar: '/assets/images/waste/iron.jpg',
+    harga_minimum: 5000,
+    harga_maksimum: 8000
+  },
+  { 
+    id: 4, 
+    nama: 'Kaleng Aluminium', 
+    kategori_id: 4, 
+    deskripsi: 'Kaleng minuman aluminium seperti kaleng soda dan bir.',
+    gambar: '/assets/images/waste/aluminum-can.jpg',
+    harga_minimum: 10000,
+    harga_maksimum: 15000
+  },
+  { 
+    id: 5, 
+    nama: 'Elektronik Bekas', 
+    kategori_id: 5, 
+    deskripsi: 'Perangkat elektronik bekas seperti ponsel dan laptop.',
+    gambar: '/assets/images/waste/electronic.jpg',
+    harga_minimum: 20000,
+    harga_maksimum: 100000
+  }
+];
 
 // Komponen untuk card kategori
 const CategoryCard = ({ category, isSelected, onClick }) => {
@@ -161,11 +216,10 @@ const CategoryCard = ({ category, isSelected, onClick }) => {
 };
 
 // Komponen untuk tampilan grid
-const GridItemCard = ({ item, index, onToggleFavorite, favorites }) => {
+const GridItemCard = ({ item, index }) => {
   const theme = useTheme();
   const navigate = useNavigate();
   const cardRef = useRef(null);
-  const isFavorite = favorites.includes(item.id);
   
   useEffect(() => {
     const element = cardRef.current;
@@ -206,11 +260,6 @@ const GridItemCard = ({ item, index, onToggleFavorite, favorites }) => {
     navigate(`/katalog/detail-sampah/${item.id}`);
   };
   
-  const handleFavoriteClick = (e) => {
-    e.stopPropagation(); // Mencegah event bubbling ke card
-    onToggleFavorite(item.id);
-  };
-  
   return (
     <Paper 
       ref={cardRef}
@@ -232,24 +281,6 @@ const GridItemCard = ({ item, index, onToggleFavorite, favorites }) => {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Favorite Button */}
-      <IconButton 
-        size="small" 
-        onClick={handleFavoriteClick}
-        sx={{
-          position: 'absolute',
-          top: 8,
-          right: 8,
-          bgcolor: 'rgba(255,255,255,0.8)',
-          '&:hover': {
-            bgcolor: 'rgba(255,255,255,0.95)'
-          },
-          zIndex: 2
-        }}
-      >
-        {isFavorite ? <FavoriteIcon color="error" /> : <FavoriteBorderIcon />}
-      </IconButton>
-      
       {/* Image */}
       <Box sx={{ position: 'relative', pt: '56.25%' /* 16:9 aspect ratio */ }}>
         <img 
@@ -312,7 +343,9 @@ const GridItemCard = ({ item, index, onToggleFavorite, favorites }) => {
                 color: theme.palette.success.main
               }}
             >
-              Harga tidak tersedia
+              {item.harga_minimum && item.harga_maksimum 
+                ? `Rp ${item.harga_minimum.toLocaleString()} - ${item.harga_maksimum.toLocaleString()}`
+                : "Harga tidak tersedia"}
             </Typography>
           </Box>
           <Tooltip title="Lihat Detail">
@@ -327,10 +360,9 @@ const GridItemCard = ({ item, index, onToggleFavorite, favorites }) => {
 };
 
 // Komponen untuk tampilan list
-const ListItemRow = ({ item, index, onToggleFavorite, favorites }) => {
+const ListItemRow = ({ item, index }) => {
   const theme = useTheme();
   const itemRef = useRef(null);
-  const isFavorite = favorites.includes(item.id);
   const navigate = useNavigate();
   
   // Tetapkan warna kategori
@@ -355,35 +387,6 @@ const ListItemRow = ({ item, index, onToggleFavorite, favorites }) => {
       }
     );
   }, [index]);
-  
-  // Handle favorite toggle with animation
-  const handleFavoriteClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const btn = e.currentTarget;
-    
-    // Animate the button on click
-    gsap.to(btn, {
-      scale: 0.8,
-      duration: 0.1,
-      onComplete: () => {
-        gsap.to(btn, {
-          scale: 1.2,
-          duration: 0.2,
-          ease: "back.out(1.7)",
-          onComplete: () => {
-            gsap.to(btn, {
-              scale: 1,
-              duration: 0.2
-            });
-          }
-        });
-      }
-    });
-    
-    onToggleFavorite(item.id);
-  };
 
   const handleItemClick = () => {
     navigate(`/katalog/detail-sampah/${item.id}`);
@@ -472,7 +475,9 @@ const ListItemRow = ({ item, index, onToggleFavorite, favorites }) => {
                     color: theme.palette.success.main
                   }}
                 >
-                  Harga tidak tersedia
+                  {item.harga_minimum && item.harga_maksimum 
+                    ? `Rp ${item.harga_minimum.toLocaleString()} - ${item.harga_maksimum.toLocaleString()}`
+                    : "Harga tidak tersedia"}
                 </Typography>
               </Box>
             </Box>
@@ -480,13 +485,6 @@ const ListItemRow = ({ item, index, onToggleFavorite, favorites }) => {
         />
         
         <Box sx={{ display: 'flex', flexDirection: 'column', pr: 2 }}>
-          <IconButton 
-            onClick={handleFavoriteClick}
-            sx={{ mb: 1 }}
-          >
-            {isFavorite ? <FavoriteIcon color="error" /> : <FavoriteBorderIcon />}
-          </IconButton>
-          
           <Button 
             variant="outlined" 
             size="small" 
@@ -513,7 +511,6 @@ const Katalog = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('name_asc');
   const [isSearchActive, setIsSearchActive] = useState(false);
-  const [favorites, setFavorites] = useState([]);
   const [viewMode, setViewMode] = useState('grid');
   const [page, setPage] = useState(1);
   const itemsPerPage = 6; // Jumlah item per halaman
@@ -544,22 +541,16 @@ const Katalog = () => {
       setWasteCategories(categories);
       console.log('Categories:', categories);
       
-      // Fetch jenis sampah
+      // Fetch jenis sampah dengan parameter with_waste_values=true untuk memastikan data harga dimuat
       console.log('Fetching waste types...');
-      const typesResponse = await axios.get('/api/v1/public/waste-types');
+      const typesResponse = await axios.get('/api/v1/public/waste-types', {
+        params: {
+          with_waste_values: true // Selalu minta data harga
+        }
+      });
       const types = typesResponse.data.data || [];
       setWasteTypes(types);
-      console.log('Types:', types);
-      
-      // Jika user telah login, fetch favorit
-      if (isLoggedIn()) {
-        try {
-          const favoritesResponse = await wasteTypeService.getUserFavorites();
-          setFavorites(favoritesResponse.favorites || []);
-        } catch (error) {
-          console.warn('Error fetching favorites:', error);
-        }
-      }
+      console.log('Types with price data:', types);
       
       setLoading(false);
     } catch (error) {
@@ -567,11 +558,6 @@ const Katalog = () => {
       setError('Terjadi kesalahan saat memuat data. Silakan coba lagi.');
       setLoading(false);
     }
-  };
-  
-  // Fungsi untuk mengecek apakah user sudah login
-  const isLoggedIn = () => {
-    return localStorage.getItem('token') !== null;
   };
   
   // Handle view mode change
@@ -588,17 +574,6 @@ const Katalog = () => {
     window.scrollTo({
       top: 0,
       behavior: 'smooth',
-    });
-  };
-  
-  // Handle toggle favorite
-  const handleToggleFavorite = (itemId) => {
-    setFavorites(prev => {
-      if (prev.includes(itemId)) {
-        return prev.filter(id => id !== itemId);
-      } else {
-        return [...prev, itemId];
-      }
     });
   };
   
@@ -661,74 +636,13 @@ const Katalog = () => {
         case 'name_desc':
           return (b.nama || '').localeCompare(a.nama || '');
         case 'price_asc':
-          return 0; // Nonaktifkan sementara pengurutan harga
+          return ((a.harga_minimum || 0) + (a.harga_maksimum || 0)) / 2 - ((b.harga_minimum || 0) + (b.harga_maksimum || 0)) / 2;
         case 'price_desc':
-          return 0; // Nonaktifkan sementara pengurutan harga
+          return ((b.harga_minimum || 0) + (b.harga_maksimum || 0)) / 2 - ((a.harga_minimum || 0) + (a.harga_maksimum || 0)) / 2;
         default:
           return 0;
       }
     });
-  
-  // Data statis untuk ditampilkan jika tidak ada data dari API
-  const mockCategories = [
-    { id: 1, nama: 'Plastik', deskripsi: 'Berbagai jenis sampah plastik', ikon: '/assets/images/waste/plastic.png' },
-    { id: 2, nama: 'Kertas', deskripsi: 'Berbagai jenis sampah kertas', ikon: '/assets/images/waste/paper.png' },
-    { id: 3, nama: 'Logam', deskripsi: 'Berbagai jenis sampah logam', ikon: '/assets/images/waste/metal.png' },
-    { id: 4, nama: 'Elektronik', deskripsi: 'Berbagai jenis sampah elektronik', ikon: '/assets/images/waste/electronic.png' },
-    { id: 5, nama: 'Organik', deskripsi: 'Berbagai jenis sampah organik', ikon: '/assets/images/waste/organic.png' },
-    { id: 6, nama: 'Kaca', deskripsi: 'Berbagai jenis sampah kaca', ikon: '/assets/images/waste/glass.png' }
-  ];
-  
-  const mockTypes = [
-    { 
-      id: 1, 
-      nama: 'Botol Plastik PET', 
-      deskripsi: 'Botol plastik PET (Polyethylene Terephthalate) seperti botol air mineral atau minuman ringan.',
-      kategori_id: 1,
-      kategori: { id: 1, nama: 'Plastik' },
-      gambar: '/assets/images/waste/pet-bottle.jpg'
-    },
-    { 
-      id: 2, 
-      nama: 'Karton Kardus', 
-      deskripsi: 'Kardus bekas kemasan yang terbuat dari kertas tebal atau karton.',
-      kategori_id: 2,
-      kategori: { id: 2, nama: 'Kertas' },
-      gambar: '/assets/images/waste/cardboard.jpg'
-    },
-    { 
-      id: 3, 
-      nama: 'Kaleng Aluminium', 
-      deskripsi: 'Kaleng minuman yang terbuat dari aluminium.',
-      kategori_id: 3,
-      kategori: { id: 3, nama: 'Logam' },
-      gambar: '/assets/images/waste/aluminum-can.jpg'
-    },
-    { 
-      id: 4, 
-      nama: 'Limbah Elektronik', 
-      deskripsi: 'Perangkat elektronik bekas seperti ponsel, kabel, atau baterai.',
-      kategori_id: 4,
-      kategori: { id: 4, nama: 'Elektronik' },
-      gambar: '/assets/images/waste/electronic-waste.jpg'
-    },
-    { 
-      id: 5, 
-      nama: 'Sisa Makanan', 
-      deskripsi: 'Sisa makanan yang dapat dikomposkan menjadi pupuk organik.',
-      kategori_id: 5,
-      kategori: { id: 5, nama: 'Organik' },
-      gambar: '/assets/images/waste/food-waste.jpg'
-    },
-    { 
-      id: 6, 
-      nama: 'Botol Kaca', 
-      deskripsi: 'Botol kaca bekas yang dapat didaur ulang.',
-      kategori_id: 6,
-      kategori: { id: 6, nama: 'Kaca' },
-      gambar: '/assets/images/waste/glass-bottle.jpg'
-    }
-  ];
   
   // Gunakan data asli jika tersedia, jika tidak gunakan data statis
   const displayCategories = wasteCategories.length > 0 ? wasteCategories : mockCategories;
@@ -968,24 +882,22 @@ const Katalog = () => {
               {displayTypes.length > 0 ? (
                 viewMode === 'grid' ? (
                   <Grid container spacing={3}>
-                    {paginatedItems.map((item) => (
+                    {paginatedItems.map((item, index) => (
                       <Grid item xs={12} sm={6} md={4} key={item.id}>
                         <GridItemCard 
                           item={item} 
-                          onToggleFavorite={handleToggleFavorite}
-                          favorites={favorites}
+                          index={index}
                         />
                       </Grid>
                     ))}
                   </Grid>
                 ) : (
                   <List sx={{ width: '100%' }}>
-                    {paginatedItems.map((item) => (
+                    {paginatedItems.map((item, index) => (
                       <ListItemRow 
                         key={item.id} 
-                        item={item} 
-                        onToggleFavorite={handleToggleFavorite}
-                        favorites={favorites}
+                        item={item}
+                        index={index}
                       />
                     ))}
                   </List>

@@ -39,8 +39,10 @@ class WasteTypeDetailResource extends JsonResource
                         'satuan' => $value->satuan,
                         'tanggal_update' => $value->tanggal_update,
                         'sumber_data' => $value->sumber_data,
+                        'created_at' => $value->created_at,
+                        'updated_at' => $value->updated_at,
                     ];
-                });
+                })->sortByDesc('tanggal_update')->values();
             }),
             'tutorials' => $this->whenLoaded('tutorials', function() {
                 return $this->tutorials->map(function($tutorial) {

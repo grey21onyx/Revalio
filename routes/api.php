@@ -43,6 +43,10 @@ Route::prefix('v1')->group(function () {
     Route::get('/docs', [OpenAPIController::class, 'documentation']);
     
     // Public Routes (No Auth Required)
+    // Public data endpoints
+    Route::get('/waste-types', [WasteTypeController::class, 'index']);
+    Route::get('/waste-types/{id}', [WasteTypeController::class, 'show']);
+    Route::get('/public/waste-types/clear-cache', [WasteTypeController::class, 'clearCache']);
     Route::get('/public/waste-types', [WasteTypeController::class, 'public']);
     Route::get('/public/waste-categories', [WasteCategoryController::class, 'public']);
     Route::get('/public/waste-values', [WasteValueController::class, 'public']);

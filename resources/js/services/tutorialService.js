@@ -1,4 +1,5 @@
 import axios from 'axios';
+import api from './api'; // Import api instance yang sudah dikonfigurasi
 
 // Base API URL - gunakan URL relatif untuk keamanan
 const API_URL = '/api/v1';
@@ -65,8 +66,8 @@ const TutorialService = {
   },
 
   /**
-   * Mendapatkan tutorial berdasarkan ID
-   * @param {number} id ID tutorial
+   * Mendapatkan detail tutorial berdasarkan ID
+   * @param {number} id ID tutorial yang akan diambil
    * @returns {Promise} Promise berisi data tutorial
    */
   getTutorialById: async (id) => {
@@ -78,20 +79,8 @@ const TutorialService = {
       
       console.log(`Memanggil API untuk mendapatkan tutorial dengan ID: ${id}`);
       
-      // Persiapkan header otentikasi jika tersedia
-      const headers = {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      };
-      
-      // Tambahkan token otentikasi jika tersedia
-      const token = localStorage.getItem('userToken');
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      // Panggil API dengan header yang sudah diperbaiki
-      const response = await axios.get(`${API_URL}/tutorials/${id}`, { headers });
+      // Gunakan api instance yang sudah terkonfigurasi dengan baik
+      const response = await api.get(`/tutorials/${id}`);
       
       console.log('Respon API berhasil:', response.status);
       
@@ -148,15 +137,8 @@ const TutorialService = {
    */
   getPublicTutorials: async (params = {}) => {
     try {
-      const headers = {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      };
-      
-      const response = await axios.get(`${API_URL}/public/tutorials`, { 
-        params,
-        headers 
-      });
+      // Gunakan api instance yang sudah terkonfigurasi dengan baik
+      const response = await api.get(`/public/tutorials`, { params });
       
       if (!response.data) {
         throw new Error('Tidak ada data yang diterima dari API');
@@ -184,17 +166,14 @@ const TutorialService = {
    */
   createTutorial: async (tutorialData) => {
     try {
+      // Untuk form data, kita perlu menyesuaikan header
       const headers = {
         'Content-Type': 'multipart/form-data',
-        'Accept': 'application/json'
       };
       
-      const token = localStorage.getItem('userToken');
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      const response = await axios.post(`${API_URL}/tutorials`, tutorialData, { headers });
+      // Gunakan api instance yang sudah terkonfigurasi dengan benar
+      // Tapi tambahkan header khusus untuk multipart/form-data
+      const response = await api.post(`/tutorials`, tutorialData, { headers });
       return response.data;
     } catch (error) {
       console.error('Error creating tutorial:', error);
@@ -221,17 +200,8 @@ const TutorialService = {
    */
   toggleCompleted: async (id) => {
     try {
-      const headers = {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      };
-      
-      const token = localStorage.getItem('userToken');
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      const response = await axios.post(`${API_URL}/tutorials/${id}/toggle-completed`, {}, { headers });
+      // Gunakan api instance yang sudah terkonfigurasi dengan baik
+      const response = await api.post(`/tutorials/${id}/toggle-completed`);
       return response.data;
     } catch (error) {
       console.error('Error toggling completed status:', error);
@@ -251,17 +221,8 @@ const TutorialService = {
    */
   toggleSaved: async (id) => {
     try {
-      const headers = {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      };
-      
-      const token = localStorage.getItem('userToken');
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      const response = await axios.post(`${API_URL}/tutorials/${id}/toggle-saved`, {}, { headers });
+      // Gunakan api instance yang sudah terkonfigurasi dengan baik
+      const response = await api.post(`/tutorials/${id}/toggle-saved`);
       return response.data;
     } catch (error) {
       console.error('Error toggling saved status:', error);
@@ -282,17 +243,8 @@ const TutorialService = {
    */
   rateTutorial: async (id, rating) => {
     try {
-      const headers = {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      };
-      
-      const token = localStorage.getItem('userToken');
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      const response = await axios.post(`${API_URL}/tutorials/${id}/rate`, { rating }, { headers });
+      // Gunakan api instance yang sudah terkonfigurasi dengan baik
+      const response = await api.post(`/tutorials/${id}/rate`, { rating });
       return response.data;
     } catch (error) {
       console.error('Error rating tutorial:', error);
@@ -317,17 +269,8 @@ const TutorialService = {
       const data = { content };
       if (rating) data.rating = rating;
       
-      const headers = {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      };
-      
-      const token = localStorage.getItem('userToken');
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      const response = await axios.post(`${API_URL}/tutorials/${id}/comments`, data, { headers });
+      // Gunakan api instance yang sudah terkonfigurasi dengan baik
+      const response = await api.post(`/tutorials/${id}/comments`, data);
       return response.data;
     } catch (error) {
       console.error('Error adding comment:', error);
@@ -350,21 +293,8 @@ const TutorialService = {
    */
   getComments: async (id, params = {}) => {
     try {
-      const headers = {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      };
-      
-      const token = localStorage.getItem('userToken');
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      const response = await axios.get(`${API_URL}/tutorials/${id}/comments`, { 
-        params,
-        headers 
-      });
-      
+      // Gunakan api instance yang sudah terkonfigurasi dengan baik
+      const response = await api.get(`/tutorials/${id}/comments`, { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching comments:', error);

@@ -101,16 +101,16 @@ const DetailPanduan = () => {
           const response = await TutorialService.getTutorialById(id);
           console.log('Tutorial data received from API:', JSON.stringify(response, null, 2));
           
-          // API TutorialResource menempatkan data di root, bukan dalam property data
-          const tutorialData = response;
+          // Mengambil data tutorial dari properti 'data' di dalam respons
+          const tutorialData = response.data;
           setTutorial(tutorialData);
           
           // Set user interaksi jika sudah login
-          if (isAuthenticated) {
+          if (isAuthenticated && tutorialData) {
             setIsBookmarked(tutorialData.is_saved || false);
             setIsCompleted(tutorialData.is_completed || false);
             if (tutorialData.user_rating) {
-              setUserRating(tutorialData.user_rating);
+              setUserRating(parseFloat(tutorialData.user_rating) || 0);
             }
           }
         } catch (err) {
@@ -125,7 +125,7 @@ const DetailPanduan = () => {
             setTimeout(() => navigate('/daur-ulang', { replace: true }), 3000);
           } else if (err.response && err.response.status === 401) {
             setError('Anda perlu login untuk melihat tutorial ini');
-            // Redirect ke halaman login jika perlu
+            // Tidak perlu redirect ke login jika tutorial bisa dilihat tanpa login
           } else {
             setError('Terjadi kesalahan saat memuat panduan. Silakan coba lagi nanti.');
           }
@@ -184,12 +184,13 @@ const DetailPanduan = () => {
     }
     
     try {
-      // Kirim komentar dan rating ke API
-      await TutorialService.addComment(id, comment, userRating);
+      // Kirim komentar dan rating (jika ada) ke API
+      const ratingToSend = userRating > 0 ? Math.round(userRating) : null;
+      await TutorialService.addComment(id, comment, ratingToSend);
       
       // Refresh data tutorial untuk menampilkan komentar baru
       const response = await TutorialService.getTutorialById(id);
-      setTutorial(response);
+      setTutorial(response.data);
       
       // Reset form
       setComment('');
@@ -206,7 +207,14 @@ const DetailPanduan = () => {
       
       // Tampilkan pesan error yang sesuai
       let errorMessage = 'Terjadi kesalahan saat mengirim ulasan';
-      if (err.response && err.response.data && err.response.data.message) {
+      
+      // Jika error karena tidak terautentikasi
+      if (err.response && err.response.status === 401) {
+        errorMessage = 'Sesi Anda telah berakhir. Silakan login kembali.';
+      } else if (err.message) {
+        // Gunakan pesan error dari service jika ada
+        errorMessage = err.message;
+      } else if (err.response && err.response.data && err.response.data.message) {
         errorMessage = err.response.data.message;
       }
       
@@ -244,7 +252,14 @@ const DetailPanduan = () => {
       
       // Tampilkan pesan error yang sesuai
       let errorMessage = 'Terjadi kesalahan saat menyimpan tutorial';
-      if (err.response && err.response.data && err.response.data.message) {
+      
+      // Jika error karena tidak terautentikasi
+      if (err.response && err.response.status === 401) {
+        errorMessage = 'Sesi Anda telah berakhir. Silakan login kembali.';
+      } else if (err.message) {
+        // Gunakan pesan error dari service jika ada
+        errorMessage = err.message;
+      } else if (err.response && err.response.data && err.response.data.message) {
         errorMessage = err.response.data.message;
       }
       
@@ -282,7 +297,14 @@ const DetailPanduan = () => {
       
       // Tampilkan pesan error yang sesuai
       let errorMessage = 'Terjadi kesalahan saat menandai tutorial sebagai selesai';
-      if (err.response && err.response.data && err.response.data.message) {
+      
+      // Jika error karena tidak terautentikasi
+      if (err.response && err.response.status === 401) {
+        errorMessage = 'Sesi Anda telah berakhir. Silakan login kembali.';
+      } else if (err.message) {
+        // Gunakan pesan error dari service jika ada
+        errorMessage = err.message;
+      } else if (err.response && err.response.data && err.response.data.message) {
         errorMessage = err.response.data.message;
       }
       
@@ -305,16 +327,17 @@ const DetailPanduan = () => {
     }
     
     try {
+      const roundedRating = Math.round(newValue);
       setUserRating(newValue);
       
       // Jika user hanya ingin memberi rating tanpa komentar
       if (!comment.trim()) {
-        // Kirim rating ke API
-        await TutorialService.rateTutorial(id, newValue);
+        // Kirim rating yang sudah dibulatkan ke API
+        await TutorialService.rateTutorial(id, roundedRating);
         
         // Refresh tutorial data
         const response = await TutorialService.getTutorialById(id);
-        setTutorial(response);
+        setTutorial(response.data);
         
         // Tampilkan notifikasi sukses
         setSnackbar({
@@ -328,7 +351,14 @@ const DetailPanduan = () => {
       
       // Tampilkan pesan error yang sesuai
       let errorMessage = 'Terjadi kesalahan saat menyimpan rating';
-      if (err.response && err.response.data && err.response.data.message) {
+      
+      // Jika error karena tidak terautentikasi
+      if (err.response && err.response.status === 401) {
+        errorMessage = 'Sesi Anda telah berakhir. Silakan login kembali.';
+      } else if (err.message) {
+        // Gunakan pesan error dari service jika ada
+        errorMessage = err.message;
+      } else if (err.response && err.response.data && err.response.data.message) {
         errorMessage = err.response.data.message;
       }
       
@@ -452,7 +482,7 @@ const DetailPanduan = () => {
           
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Rating 
-              value={tutorial.average_rating || 0} 
+              value={parseFloat(tutorial.average_rating) || 0}
               precision={0.5} 
               readOnly 
               size="small" 
@@ -800,7 +830,7 @@ const DetailPanduan = () => {
                       </Typography>
                       {item.rating > 0 && (
                         <Rating 
-                          value={item.rating} 
+                          value={parseFloat(item.rating) || 0}
                           size="small" 
                           readOnly 
                           sx={{ mr: 1 }}
@@ -838,14 +868,14 @@ const DetailPanduan = () => {
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
+        <DialogTitle sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
           py: 2,
           px: 3
         }}>
-          <Typography variant="h6" fontWeight={600}>
+          <Typography variant="h6" component="div" fontWeight={600}>
             {tutorial.judul}
           </Typography>
           <IconButton onClick={handleCloseImageModal}>

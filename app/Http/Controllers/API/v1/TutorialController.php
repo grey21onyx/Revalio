@@ -85,7 +85,7 @@ class TutorialController extends Controller
             $tutorials->getCollection()->transform(function($tutorial) use ($userId) {
                 $tutorial->is_completed = $tutorial->completedByUsers()->where('user_completed_tutorials.user_id', $userId)->exists();
                 $tutorial->is_saved = $tutorial->savedByUsers()->where('user_saved_tutorials.user_id', $userId)->exists();
-                $tutorial->user_rating = $tutorial->ratings()->where('user_id', $userId)->value('rating');
+                $tutorial->user_rating = $tutorial->ratings()->where('tutorial_ratings.user_id', $userId)->value('rating');
                 return $tutorial;
             });
         }
@@ -164,9 +164,12 @@ class TutorialController extends Controller
                 $userId = Auth::id();
                 
                 // Cek status tutorial untuk user yang login (completed, saved, rated)
-                $tutorial->is_completed = $tutorial->completedByUsers()->where('user_id', $userId)->exists();
-                $tutorial->is_saved = $tutorial->savedByUsers()->where('user_id', $userId)->exists();
-                $tutorial->user_rating = $tutorial->ratings()->where('user_id', $userId)->value('rating');
+                $tutorial->is_completed = $tutorial->completedByUsers()
+                    ->where('user_completed_tutorials.user_id', $userId)->exists();
+                $tutorial->is_saved = $tutorial->savedByUsers()
+                    ->where('user_saved_tutorials.user_id', $userId)->exists();
+                $tutorial->user_rating = $tutorial->ratings()
+                    ->where('tutorial_ratings.user_id', $userId)->value('rating');
                 
                 // Tambahkan status sudah mengakses tutorial jika belum
                 $this->recordTutorialView($userId, $id);
@@ -375,7 +378,7 @@ class TutorialController extends Controller
         $user = Auth::user();
         $tutorial = Tutorial::findOrFail($id);
         
-        if ($tutorial->completedByUsers()->where('user_id', $user->user_id)->exists()) {
+        if ($tutorial->completedByUsers()->where('user_completed_tutorials.user_id', $user->user_id)->exists()) {
             $tutorial->completedByUsers()->detach($user->user_id);
             $message = 'Tutorial dihapus dari daftar selesai';
             $isCompleted = false;
@@ -403,7 +406,7 @@ class TutorialController extends Controller
         $user = Auth::user();
         $tutorial = Tutorial::findOrFail($id);
         
-        if ($tutorial->savedByUsers()->where('user_id', $user->user_id)->exists()) {
+        if ($tutorial->savedByUsers()->where('user_saved_tutorials.user_id', $user->user_id)->exists()) {
             $tutorial->savedByUsers()->detach($user->user_id);
             $message = 'Tutorial dihapus dari daftar simpan';
             $isSaved = false;
@@ -437,8 +440,13 @@ class TutorialController extends Controller
         
         // Create or update rating
         $tutorial->ratings()->updateOrCreate(
-            ['user_id' => $user->user_id],
-            ['rating' => $request->rating]
+            [
+                'user_id' => $user->user_id, // Digunakan untuk mencari DAN untuk membuat jika tidak ada
+                // tutorial_id akan otomatis ditambahkan oleh relasi
+            ],
+            [
+                'rating' => $request->rating // Nilai yang akan diupdate atau di-create
+            ]
         );
         
         // Update average rating
@@ -447,7 +455,7 @@ class TutorialController extends Controller
         return response()->json([
             'message' => 'Rating berhasil diperbarui',
             'average_rating' => $tutorial->average_rating,
-            'user_rating' => $request->rating
+            'user_rating' => $request->rating // Mengembalikan rating yang dikirim user
         ]);
     }
     

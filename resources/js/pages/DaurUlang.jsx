@@ -216,14 +216,14 @@ const TutorialCard = ({ tutorial, index, onClick }) => {
           
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
             <Rating 
-              value={tutorial.average_rating || 0} 
+              value={parseFloat(tutorial.average_rating) || 0} 
               precision={0.5} 
               readOnly 
               size="small" 
               sx={{ mr: 1 }}
             />
             <Typography variant="caption" color="text.secondary">
-              {tutorial.average_rating ? tutorial.average_rating.toFixed(1) : 'Belum ada rating'}
+              {tutorial.average_rating ? parseFloat(tutorial.average_rating).toFixed(1) : 'Belum ada rating'}
             </Typography>
           </Box>
           

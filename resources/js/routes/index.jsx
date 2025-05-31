@@ -59,6 +59,12 @@ const AppRoutes = () => {
       <Route path="/edukasi/kategori/sampah-kertas" element={<SampahKertas />} />
       <Route path="/edukasi/kategori/sampah-logam" element={<SampahLogam />} />
       
+      {/* Public Katalog Routes */}
+      <Route element={<MainLayout />}>
+        <Route path="/katalog" element={<Katalog />} />
+        <Route path="/katalog/detail-sampah/:id" element={<DetailSampah />} />
+      </Route>
+      
       {/* Auth Routes - untuk user yang BELUM login */}
       <Route element={<PublicRoute />}>
         <Route element={<AuthLayout />}>
@@ -73,10 +79,6 @@ const AppRoutes = () => {
         <Route element={<MainLayout />}>
           {/* Dashboard/Home */}
           <Route path="/home" element={<Home />} />
-          
-          {/* Katalog Sampah */}
-          <Route path="/katalog" element={<Katalog />} />
-          <Route path="/katalog/detail-sampah/:id" element={<DetailSampah />} />
           
           {/* Panduan Daur Ulang */}
           <Route path="/daur-ulang" element={<DaurUlang />} />

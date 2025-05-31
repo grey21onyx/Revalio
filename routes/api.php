@@ -12,6 +12,7 @@ use App\Http\Controllers\API\v1\WasteTrackingController;
 use App\Http\Controllers\API\v1\ForumTopicController;
 use App\Http\Controllers\API\v1\ForumCommentController;
 use App\Http\Controllers\API\v1\WasteBuyerController;
+use App\Http\Controllers\API\v1\WasteCategoryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -34,6 +35,12 @@ Route::prefix('v1')->group(function () {
     // Public data endpoints
     Route::get('/waste-types', [WasteTypeController::class, 'index']);
     Route::get('/waste-types/{id}', [WasteTypeController::class, 'show']);
+    Route::get('/public/waste-types', [WasteTypeController::class, 'public']);
+    Route::get('/public/waste-types/{id}/detail', [WasteTypeController::class, 'showDetail']);
+    Route::get('/public/waste-types/{id}/tutorials', [WasteTypeController::class, 'getRelatedTutorials']);
+    Route::get('/public/waste-types/{id}/buyers', [WasteTypeController::class, 'getPotentialBuyers']);
+    
+    Route::get('/public/waste-categories', [WasteCategoryController::class, 'public']);
     
     Route::get('/recycling-guides', [RecyclingGuideController::class, 'index']);
     Route::get('/recycling-guides/{id}', [RecyclingGuideController::class, 'show']);

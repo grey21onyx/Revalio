@@ -45,7 +45,8 @@ import {
   Favorite as FavoriteIcon,
   FavoriteBorder as FavoriteBorderIcon,
   InfoOutlined as InfoOutlinedIcon,
-  Sort as SortIcon
+  Sort as SortIcon,
+  Refresh as RefreshIcon
 } from '@mui/icons-material';
 import { gsap } from 'gsap';
 import { Link, useNavigate } from 'react-router-dom';
@@ -83,7 +84,7 @@ const CategoryCard = ({ category, isSelected, onClick }) => {
   const handleMouseEnter = () => {
     gsap.to(cardRef.current, { 
       y: -5, 
-      boxShadow: '0 6px 12px rgba(0,0,0,0.1)', 
+      boxShadow: '0 6px 12px rgba(0,0,0,0.08)', 
       duration: 0.3 
     });
   };
@@ -91,61 +92,53 @@ const CategoryCard = ({ category, isSelected, onClick }) => {
   const handleMouseLeave = () => {
     gsap.to(cardRef.current, { 
       y: 0, 
-      boxShadow: '0 2px 4px rgba(0,0,0,0.05)', 
+      boxShadow: isSelected ? '0 4px 8px rgba(0,0,0,0.1)' : 'none', 
       duration: 0.3 
     });
   };
   
   return (
-    <Paper
+    <Paper 
       ref={cardRef}
-      onClick={handleCardClick}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
       elevation={0}
-      sx={{ 
-        p: 2,
-        height: '100%',
+      sx={{
+        p: 1.5,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         cursor: 'pointer',
-        borderRadius: 2,
         transition: 'all 0.3s ease',
+        bgcolor: isSelected ? 'primary.main' : 'background.paper',
+        color: isSelected ? 'primary.contrastText' : 'text.primary',
+        borderRadius: '12px',
         border: '1px solid',
         borderColor: isSelected ? 'primary.main' : 'grey.200',
-        bgcolor: isSelected ? 'primary.lighter' : 'background.paper',
-        color: isSelected ? 'primary.main' : 'text.primary',
-        boxShadow: isSelected 
-          ? '0 4px 12px rgba(0,0,0,0.08)' 
-          : '0 2px 4px rgba(0,0,0,0.05)',
-        '& svg': {
-          color: isSelected ? 'primary.main' : 'action.active',
-          transition: 'color 0.3s ease',
-        },
+        boxShadow: isSelected ? '0 4px 8px rgba(0,0,0,0.1)' : 'none',
         '&:hover': {
-          borderColor: 'primary.main',
-          '& svg': {
-            color: 'primary.main'
-          }
+          borderColor: isSelected ? 'primary.dark' : 'primary.main',
         }
       }}
+      onClick={handleCardClick}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
-      <Avatar
-        sx={{
-          width: 56,
-          height: 56,
-          mb: 1,
-          bgcolor: isSelected ? 'primary.lighter' : 'grey.100',
-          border: '1px solid',
-          borderColor: isSelected ? 'primary.main' : 'transparent',
+      <Avatar 
+        sx={{ 
+          width: 48, 
+          height: 48, 
+          mb: 1.5,
+          bgcolor: isSelected ? 'primary.contrastText' : 'grey.100'
         }}
       >
-        <Box
-          component="img"
+        <img 
           src={category.ikon || "/assets/images/waste/recycle-icon.png"}
           alt={category.nama}
-          sx={{ width: 32, height: 32 }}
+          style={{ 
+            width: '60%', 
+            height: '60%', 
+            objectFit: 'contain',
+            filter: isSelected ? 'brightness(0) saturate(100%) invert(37%) sepia(74%) saturate(1530%) hue-rotate(142deg) brightness(91%) contrast(101%)' : 'none'
+          }}
           onError={(e) => {
             e.target.src = "/assets/images/waste/recycle-icon.png";
           }}
@@ -275,7 +268,7 @@ const GridItemCard = ({ item, index, onToggleFavorite, favorites }) => {
           }}
         />
         <Chip 
-          label={item.kategori?.nama || 'Uncategorized'} 
+          label={item.category?.nama || 'Uncategorized'} 
           size="small" 
           sx={{ 
             position: 'absolute', 
@@ -341,7 +334,7 @@ const ListItemRow = ({ item, index, onToggleFavorite, favorites }) => {
   const navigate = useNavigate();
   
   // Tetapkan warna kategori
-  const categoryName = item.kategori?.nama;
+  const categoryName = item.category?.nama;
   const categoryColor = categoryName ? (categoryColors[categoryName] || categoryColors.default) : categoryColors.default;
   
   useEffect(() => {
@@ -432,7 +425,7 @@ const ListItemRow = ({ item, index, onToggleFavorite, favorites }) => {
               }}
             />
             <Chip 
-              label={item.kategori?.nama || 'Uncategorized'} 
+              label={item.category?.nama || 'Uncategorized'} 
               size="small"
               sx={{ 
                 position: 'absolute', 
@@ -531,58 +524,55 @@ const Katalog = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  // Mengambil data dari API saat komponen dimuat
+  const navigate = useNavigate();
+  const searchRef = useRef(null);
+  
+  // Efek untuk fetch data
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      
-      try {
-        // Ambil data kategori sampah
-        console.log('Fetching waste categories...');
-        const categoriesResponse = await axios.get('/api/v1/public/waste-categories');
-        
-        // Ambil data jenis sampah
-        console.log('Fetching waste types...');
-        const typesResponse = await axios.get('/api/v1/public/waste-types', {
-          params: { with_category: true }
-        });
-        
-        // Ambil data dengan cara lebih eksplisit
-        const categories = categoriesResponse.data.data || [];
-        const types = typesResponse.data.data || [];
-        
-        console.log('Categories:', categories);
-        console.log('Types:', types);
-        
-        // Update state dengan data yang diterima
-        setWasteCategories(categories);
-        setWasteTypes(types);
-      } catch (err) {
-        console.error('Error fetching data:', err);
-        setError('Terjadi kesalahan saat mengambil data. Silakan coba lagi nanti.');
-        
-        // Jika gagal, gunakan data statis sebagai fallback
-        setWasteCategories(mockCategories);
-        setWasteTypes(mockTypes);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     fetchData();
-    
-    // Load saved favorites from localStorage
-    const savedFavorites = localStorage.getItem('wasteTypeFavorites');
-    if (savedFavorites) {
-      setFavorites(JSON.parse(savedFavorites));
-    }
   }, []);
   
-  // Save favorites to localStorage when it changes
-  useEffect(() => {
-    localStorage.setItem('wasteTypeFavorites', JSON.stringify(favorites));
-  }, [favorites]);
+  // Fungsi untuk mengambil data
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch kategori sampah
+      console.log('Fetching waste categories...');
+      const categoriesResponse = await axios.get('/api/v1/public/waste-categories');
+      const categories = categoriesResponse.data.data || [];
+      setWasteCategories(categories);
+      console.log('Categories:', categories);
+      
+      // Fetch jenis sampah
+      console.log('Fetching waste types...');
+      const typesResponse = await axios.get('/api/v1/public/waste-types');
+      const types = typesResponse.data.data || [];
+      setWasteTypes(types);
+      console.log('Types:', types);
+      
+      // Jika user telah login, fetch favorit
+      if (isLoggedIn()) {
+        try {
+          const favoritesResponse = await wasteTypeService.getUserFavorites();
+          setFavorites(favoritesResponse.favorites || []);
+        } catch (error) {
+          console.warn('Error fetching favorites:', error);
+        }
+      }
+      
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setError('Terjadi kesalahan saat memuat data. Silakan coba lagi.');
+      setLoading(false);
+    }
+  };
+  
+  // Fungsi untuk mengecek apakah user sudah login
+  const isLoggedIn = () => {
+    return localStorage.getItem('token') !== null;
+  };
   
   // Handle view mode change
   const handleViewModeChange = (event, newViewMode) => {
@@ -644,13 +634,13 @@ const Katalog = () => {
     if (!wasteType) return null;
     
     // Cari kategori yang sesuai jika belum di-load dengan API
-    const category = wasteType.kategori || 
+    const category = wasteType.category || 
                    (wasteType.kategori_id && wasteCategories.find(cat => cat.id === wasteType.kategori_id)) ||
                    null;
     
     return {
       ...wasteType,
-      kategori: category,
+      category: category,
       kategori_id: wasteType.kategori_id || (category ? category.id : null)
     };
   }).filter(Boolean); // Hapus nilai null jika ada
@@ -978,11 +968,10 @@ const Katalog = () => {
               {displayTypes.length > 0 ? (
                 viewMode === 'grid' ? (
                   <Grid container spacing={3}>
-                    {paginatedItems.map((item, index) => (
+                    {paginatedItems.map((item) => (
                       <Grid item xs={12} sm={6} md={4} key={item.id}>
                         <GridItemCard 
                           item={item} 
-                          index={index} 
                           onToggleFavorite={handleToggleFavorite}
                           favorites={favorites}
                         />
@@ -991,11 +980,10 @@ const Katalog = () => {
                   </Grid>
                 ) : (
                   <List sx={{ width: '100%' }}>
-                    {paginatedItems.map((item, index) => (
+                    {paginatedItems.map((item) => (
                       <ListItemRow 
                         key={item.id} 
                         item={item} 
-                        index={index} 
                         onToggleFavorite={handleToggleFavorite}
                         favorites={favorites}
                       />

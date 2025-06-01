@@ -210,6 +210,7 @@ const Home = () => {
   const [articles, setArticles] = useState([]);
   const [communityThreads, setCommunityThreads] = useState([]);
   const [userStats, setUserStats] = useState(null);
+  const [userName, setUserName] = useState('');
   
   // State untuk loading dan error
   const [loading, setLoading] = useState({

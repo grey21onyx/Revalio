@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('forum_threads', function (Blueprint $table) {
-            $table->integer('view_count')->default(0)->after('status');
+            if (!Schema::hasColumn('forum_threads', 'view_count')) {
+                $table->integer('view_count')->default(0)->after('status');
+            }
         });
     }
 
@@ -22,7 +24,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('forum_threads', function (Blueprint $table) {
-            $table->dropColumn('view_count');
+            if (Schema::hasColumn('forum_threads', 'view_count')) {
+                $table->dropColumn('view_count');
+            }
         });
     }
 };

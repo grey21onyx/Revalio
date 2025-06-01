@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('likes', function (Blueprint $table) {
-            $table->string('type')->default('like')->after('likeable_type');
+            if (!Schema::hasColumn('likes', 'type')) {
+                $table->string('type')->default('like')->after('likeable_type');
+            }
         });
     }
 
@@ -22,7 +24,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('likes', function (Blueprint $table) {
-            $table->dropColumn('type');
+            if (Schema::hasColumn('likes', 'type')) {
+                $table->dropColumn('type');
+            }
         });
     }
 };

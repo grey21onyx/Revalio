@@ -835,12 +835,6 @@ const Home = () => {
                     }}
                     onClick={() => handleThreadClick(thread.id)}
                   >
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mr: 3, minWidth: { xs: 50, md: 80 } }}>
-                      <Box sx={{ bgcolor: theme.palette.primary.light, color: theme.palette.primary.contrastText, borderRadius: '50%', width: { xs: 40, md: 50 }, height: { xs: 40, md: 50 }, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: { xs: '1rem', md: '1.2rem' }, mb: 1 }}>
-                        {thread.replies}
-                      </Box>
-                      <Typography variant="caption" color="text.secondary">balasan</Typography>
-                    </Box>
                     <Box sx={{ flex: 1 }}>
                       <Typography variant="h6" fontWeight={600} gutterBottom>{thread.title}</Typography>
                       <Typography variant="body2" color="text.secondary" sx={{ 

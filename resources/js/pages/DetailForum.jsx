@@ -83,17 +83,30 @@ const getUserDisplayName = (user) => {
 const getUserAvatarUrl = (user) => {
   if (!user) return '';
   
+  // Try to get avatar from different possible fields
   let avatarUrl = user.foto_profil || user.avatar || '';
+  
+  // If empty, return empty string
+  if (!avatarUrl) return '';
   
   // If the URL is already absolute, return it as is
   if (avatarUrl.startsWith('http') || avatarUrl.startsWith('https')) {
     return avatarUrl;
   }
   
-  // If it's a relative path, check if it includes storage/app/public
-  // but only attach domain if the path is non-empty
+  // If it already starts with /storage/, use it as is
+  if (avatarUrl.startsWith('/storage/')) {
+    return avatarUrl;
+  }
+  
+  // Add /storage/ prefix if not already there
   if (avatarUrl && !avatarUrl.startsWith('/')) {
-    avatarUrl = `/${avatarUrl}`; // Ensure it starts with a slash
+    avatarUrl = `/${avatarUrl}`;
+  }
+  
+  // If it's a relative path but doesn't include storage/, add it
+  if (!avatarUrl.includes('/storage/')) {
+    avatarUrl = `/storage${avatarUrl}`;
   }
   
   return avatarUrl;

@@ -392,33 +392,81 @@ const Home = () => {
   const fetchUserStats = async () => {
     setLoading(prev => ({ ...prev, stats: true }));
     try {
-      // Simulasi pengambilan data pengguna yang sudah login
-      // Ganti dengan logika autentikasi dan panggilan API sesungguhnya
-      // const user = auth.currentUser; // Contoh jika menggunakan Firebase Auth
-      // if (user) {
-      //   setUserName(user.displayName || 'Pengguna Revalio');
-      //   const response = await axios.get(`/api/user/${user.uid}/stats`);
-      //   setUserStats(response.data);
-      // } else {
-      //   // Handle jika pengguna tidak login, mungkin redirect atau tampilkan pesan
-      //   setUserStats(null);
-      // }
-      setTimeout(() => {
-        // Data dummy untuk statistik jika user login
-        setUserStats({
-          totalSampah: 45.2, // dalam kg
-          nilaiEkonomi: 320000, // dalam rupiah
-          sampahTerakhir: '2023-05-16',
-          kategoriTerbanyak: 'Plastik'
+      // Mengambil data tracking dari API yang sama dengan Tracking.jsx
+      const response = await api.get('/user-waste-trackings');
+      
+      if (response?.data?.data && Array.isArray(response.data.data)) {
+        const trackingData = response.data.data;
+        
+        // Hitung total sampah (kg)
+        const totalSampah = trackingData.reduce((total, record) => {
+          return total + parseFloat(record.amount || 0);
+        }, 0);
+        
+        // Hitung total nilai ekonomi (Rp)
+        const nilaiEkonomi = trackingData.reduce((total, record) => {
+          return total + parseFloat(record.estimated_value || 0);
+        }, 0);
+        
+        // Temukan tanggal input terakhir
+        const sortedByDate = [...trackingData].sort((a, b) => {
+          return new Date(b.tracking_date) - new Date(a.tracking_date);
         });
-        setUserName("Siti Aminah"); // Contoh nama pengguna
-        setLoading(prev => ({ ...prev, stats: false }));
-      }, 900);
-
+        const sampahTerakhir = sortedByDate.length > 0 ? sortedByDate[0].tracking_date : '';
+        
+        // Hitung kategori favorit (yang paling sering)
+        const kategoriCount = {};
+        trackingData.forEach(record => {
+          // Coba dapatkan kategori dari category_name atau dari waste_name
+          // Ini fleksibel untuk menangani berbagai format data
+          const kategori = record.category_name || (record.waste_name ? record.waste_name.split(' ')[0] : 'Uncategorized');
+          kategoriCount[kategori] = (kategoriCount[kategori] || 0) + 1;
+        });
+        
+        let kategoriTerbanyak = 'Belum ada';
+        let maxCount = 0;
+        
+        Object.entries(kategoriCount).forEach(([kategori, count]) => {
+          if (count > maxCount) {
+            maxCount = count;
+            kategoriTerbanyak = kategori;
+          }
+        });
+        
+        // Set statistik user
+        setUserStats({
+          totalSampah: parseFloat(totalSampah.toFixed(2)),
+          nilaiEkonomi: nilaiEkonomi,
+          sampahTerakhir: sampahTerakhir,
+          kategoriTerbanyak: kategoriTerbanyak
+        });
+      } else {
+        // Jika belum ada data tracking
+        setUserStats({
+          totalSampah: 0,
+          nilaiEkonomi: 0,
+          sampahTerakhir: '',
+          kategoriTerbanyak: 'Belum ada'
+        });
+      }
+      
+      setLoading(prev => ({ ...prev, stats: false }));
     } catch (err) {
       console.error('Error fetching user stats:', err);
       setError(prev => ({ ...prev, stats: 'Gagal memuat data statistik pengguna' }));
       setLoading(prev => ({ ...prev, stats: false }));
+      
+      // Fallback ke data dummy untuk development/demo
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Using dummy data for user stats as fallback');
+        setUserStats({
+          totalSampah: 0,
+          nilaiEkonomi: 0,
+          sampahTerakhir: '',
+          kategoriTerbanyak: 'Belum ada'
+        });
+        setLoading(prev => ({ ...prev, stats: false }));
+      }
     }
   };
   
@@ -443,11 +491,18 @@ const Home = () => {
 
   // Format date helper
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
+    if (!dateString) return 'Belum ada input';
+    
+    try {
+      return new Date(dateString).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Format tanggal tidak valid';
+    }
   };
 
   // Format time ago helper

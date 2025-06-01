@@ -160,6 +160,7 @@ Route::prefix('v1')->group(function () {
         
         // User Waste Tracking
         Route::apiResource('user-waste-trackings', UserWasteTrackingController::class);
+        Route::get('/user-waste-trackings/export/{format}', [UserWasteTrackingController::class, 'export']);
         Route::get('/user-waste-trackings/summary', [UserWasteTrackingController::class, 'getSummary']);
         
         // Waste Buyers

@@ -52,6 +52,7 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import axios from 'axios';
 import Swal from 'sweetalert2';
 import { 
   Search as SearchIcon,
@@ -85,6 +86,124 @@ import {
   PieChart, Pie, Cell, 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer 
 } from 'recharts';
+
+// Custom hook untuk fetching data
+const useAPI = () => {
+  const { isAuthenticated } = useAuth();
+  const token = localStorage.getItem('userToken');
+  
+  const api = axios.create({
+    baseURL: '/api/v1',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': token ? `Bearer ${token}` : ''
+    }
+  });
+  
+  const fetchWasteTypes = async () => {
+    try {
+      const response = await api.get('/waste-tracking/waste-types');
+      return response.data.data;
+    } catch (error) {
+      console.error('Error fetching waste types:', error);
+      throw error;
+    }
+  };
+  
+  const fetchWasteCategories = async () => {
+    try {
+      const response = await api.get('/waste-categories');
+      return response.data.data;
+    } catch (error) {
+      console.error('Error fetching waste categories:', error);
+      throw error;
+    }
+  };
+  
+  const fetchWasteValues = async () => {
+    try {
+      const response = await api.get('/waste-values');
+      return response.data.data;
+    } catch (error) {
+      console.error('Error fetching waste values:', error);
+      throw error;
+    }
+  };
+  
+  const fetchUserWasteTracking = async (params = {}) => {
+    try {
+      const response = await api.get('/user-waste-trackings', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching user waste tracking:', error);
+      throw error;
+    }
+  };
+  
+  const createWasteTracking = async (data) => {
+    try {
+      const response = await api.post('/user-waste-trackings', data);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating waste tracking:', error);
+      throw error;
+    }
+  };
+  
+  const updateWasteTracking = async (id, data) => {
+    try {
+      const response = await api.put(`/user-waste-trackings/${id}`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating waste tracking:', error);
+      throw error;
+    }
+  };
+  
+  const deleteWasteTracking = async (id) => {
+    try {
+      const response = await api.delete(`/user-waste-trackings/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting waste tracking:', error);
+      throw error;
+    }
+  };
+  
+  const exportWasteTracking = async (format = 'csv') => {
+    try {
+      const response = await api.get(`/user-waste-trackings/export/${format}`, {
+        responseType: 'blob'
+      });
+      
+      // Create a download link and trigger click
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `waste_tracking_export_${new Date().toISOString().split('T')[0]}.${format}`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      return true;
+    } catch (error) {
+      console.error('Error exporting waste tracking:', error);
+      throw error;
+    }
+  };
+  
+  return {
+    fetchWasteTypes,
+    fetchWasteCategories,
+    fetchWasteValues,
+    fetchUserWasteTracking,
+    createWasteTracking,
+    updateWasteTracking,
+    deleteWasteTracking,
+    exportWasteTracking
+  };
+};
 
 // Data dummy untuk demonstrasi tampilan
 const dummyWasteTypes = [
@@ -195,10 +314,42 @@ const wasteInfoGuide = {
   }
 };
 
+// Helper function to truncate text
+const truncateText = (text, maxLength) => {
+  if (!text) return '';
+  return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+};
+
+// Create component for truncated cell with tooltip
+const TruncatedCell = ({ text, maxLength = 20, align = "left" }) => {
+  if (!text) return <Typography variant="body2" color="text.secondary" fontStyle="italic">-</Typography>;
+  
+  const shouldTruncate = text.length > maxLength;
+  const displayText = shouldTruncate ? truncateText(text, maxLength) : text;
+  
+  return (
+    <Tooltip title={shouldTruncate ? text : ""} arrow placement="top">
+      <Typography
+        variant="body2"
+        sx={{
+          maxWidth: '100%',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          cursor: shouldTruncate ? 'pointer' : 'default',
+          textAlign: align
+        }}
+      >
+        {displayText}
+      </Typography>
+    </Tooltip>
+  );
+};
+
 const Tracking = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [tabValue, setTabValue] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
@@ -208,21 +359,41 @@ const Tracking = () => {
   const [dateRangeEnd, setDateRangeEnd] = useState(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [filteredRecords, setFilteredRecords] = useState(dummyWasteRecords);
+  
+  // New state for actual data
+  const [wasteTypes, setWasteTypes] = useState([]);
+  const [wasteCategories, setWasteCategories] = useState([]);
+  const [wasteValues, setWasteValues] = useState({});
+  const [wasteRecords, setWasteRecords] = useState([]);
+  const [filteredRecords, setFilteredRecords] = useState([]);
+  const [isLoading, setIsLoading] = useState({
+    wasteTypes: true,
+    wasteRecords: true,
+    delete: false,
+    edit: false,
+    export: false,
+    submit: false
+  });
+  const [error, setError] = useState(null);
+  
+  // Chart data state
   const [chartData, setChartData] = useState({
     pieData: [],
     timelineData: []
   });
 
+  // Get API functions
+  const api = useAPI();
+
   // State untuk form tambah catatan
   const [formData, setFormData] = useState({
-    waste_id: '',
-    jumlah: '',
-    satuan: 'kg',
-    tanggal_pencatatan: new Date(),
-    status_pengelolaan: 'disimpan',
-    catatan: '',
-    foto: null
+    waste_type_id: '',
+    amount: '',
+    unit: 'kg',
+    tracking_date: new Date(),
+    management_status: 'disimpan',
+    notes: '',
+    photo: null
   });
 
   // State for tour/guide
@@ -241,7 +412,6 @@ const Tracking = () => {
 
   // State untuk validasi dan nilai ekonomis
   const [formErrors, setFormErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [estimatedValue, setEstimatedValue] = useState(0);
   const [showWasteInfo, setShowWasteInfo] = useState(false);
@@ -251,50 +421,136 @@ const Tracking = () => {
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [confirmDialogAction, setConfirmDialogAction] = useState('');
-  const [isLoading, setIsLoading] = useState({
-    delete: false,
-    edit: false,
-    export: false
-  });
-  const [exportMenuAnchorEl, setExportMenuAnchorEl] = useState(null);
-  const [isExporting, setIsExporting] = useState(false);
-
-  // State untuk dialog konfirmasi hapus
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [recordToDelete, setRecordToDelete] = useState(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   // State for collapsible form in Pencatatan tab
   const [formExpanded, setFormExpanded] = useState(false);
+  
+  // Add edit mode state
+  const [editMode, setEditMode] = useState(false);
+  const [editingRecord, setEditingRecord] = useState(null);
+  
+  // Add state for the details dialog on mobile
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [detailsRecord, setDetailsRecord] = useState(null);
+  
+  // Toggle form expanded state
+  const toggleFormExpanded = () => {
+    setFormExpanded(prev => !prev);
+  };
+  
+  // Fetch waste types, categories, and records on component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(prev => ({ ...prev, wasteTypes: true, wasteRecords: true }));
+        setError(null);
+        
+        // Fetch waste types
+        const typesData = await api.fetchWasteTypes();
+        setWasteTypes(typesData);
+        
+        // Fetch waste records
+        const recordsData = await api.fetchUserWasteTracking();
+        
+        if (recordsData && recordsData.data) {
+          setWasteRecords(recordsData.data);
+          setFilteredRecords(recordsData.data);
+          
+          // Generate chart data only if we have records
+          if (recordsData.data.length > 0) {
+            setChartData(generateChartData(recordsData.data));
+          }
+        }
+        
+        setIsLoading(prev => ({ ...prev, wasteTypes: false, wasteRecords: false }));
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError('Terjadi kesalahan saat mengambil data. Silakan coba lagi.');
+        setIsLoading(prev => ({ ...prev, wasteTypes: false, wasteRecords: false }));
+        
+        // Use dummy data if API fails in development
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Using dummy data since API request failed');
+          setWasteTypes(dummyWasteTypes);
+          setWasteRecords(dummyWasteRecords);
+          setFilteredRecords(dummyWasteRecords);
+          setChartData(generateChartData(dummyWasteRecords));
+        }
+      }
+    };
+    
+    if (isAuthenticated) {
+      fetchData();
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     // Filter records berdasarkan pencarian dan filter
-    const filtered = dummyWasteRecords.filter(record => {
-      const matchesSearch = record.waste_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           record.catatan.toLowerCase().includes(searchQuery.toLowerCase());
+    if (wasteRecords.length > 0) {
+      const filtered = wasteRecords.filter(record => {
+        const wasteType = wasteTypes.find(t => t.id === record.waste_type_id);
+        const wasteName = wasteType ? wasteType.name : '';
+        
+        const matchesSearch = 
+          wasteName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (record.notes && record.notes.toLowerCase().includes(searchQuery.toLowerCase()));
+        
+        const matchesWasteType = wasteTypeFilter === '' || record.waste_type_id === parseInt(wasteTypeFilter);
+        const matchesStatus = statusFilter === '' || record.management_status === statusFilter;
+        
+        const recordDate = new Date(record.tracking_date);
+        const matchesDateStart = !dateRangeStart || recordDate >= dateRangeStart;
+        const matchesDateEnd = !dateRangeEnd || recordDate <= dateRangeEnd;
+        
+        return matchesSearch && matchesWasteType && matchesStatus && matchesDateStart && matchesDateEnd;
+      });
+
+      setFilteredRecords(filtered);
+      setChartData(generateChartData(filtered));
+    }
+  }, [searchQuery, wasteTypeFilter, statusFilter, dateRangeStart, dateRangeEnd, wasteRecords, wasteTypes]);
+
+  // Modified generateChartData function to work with actual data structure
+  const generateChartData = (records) => {
+    // Data untuk chart kategori (pie chart)
+    const categoryData = {};
+    
+    records.forEach(record => {
+      // Find waste type
+      const wasteType = wasteTypes.find(t => t.id === record.waste_type_id);
       
-      const matchesWasteType = wasteTypeFilter === '' || record.waste_id === parseInt(wasteTypeFilter);
-      const matchesStatus = statusFilter === '' || record.status_pengelolaan === statusFilter;
-      
-      const recordDate = new Date(record.tanggal_pencatatan);
-      const matchesDateStart = !dateRangeStart || recordDate >= dateRangeStart;
-      const matchesDateEnd = !dateRangeEnd || recordDate <= dateRangeEnd;
-      
-      return matchesSearch && matchesWasteType && matchesStatus && matchesDateStart && matchesDateEnd;
+      if (wasteType) {
+        const category = wasteType.category_name || 'Uncategorized';
+        if (!categoryData[category]) {
+          categoryData[category] = 0;
+        }
+        categoryData[category] += parseFloat(record.amount);
+      }
     });
 
-    setFilteredRecords(filtered);
-    setChartData(generateChartData(filtered));
-  }, [searchQuery, wasteTypeFilter, statusFilter, dateRangeStart, dateRangeEnd]);
+    const pieData = Object.entries(categoryData).map(([name, value]) => ({ name, value }));
+
+    // Data untuk chart tren waktu (line chart)
+    const dateData = {};
+    records.forEach(record => {
+      const date = record.tracking_date.split('T')[0]; // Format YYYY-MM-DD
+      if (!dateData[date]) {
+        dateData[date] = 0;
+      }
+      dateData[date] += parseFloat(record.amount);
+    });
+
+    const timelineData = Object.entries(dateData)
+      .sort(([dateA], [dateB]) => new Date(dateA) - new Date(dateB))
+      .map(([date, value]) => ({ date, value }));
+
+    return { pieData, timelineData };
+  };
 
   const handleTabChange = (event, newValue) => {
-    // If switching to Pencatatan tab from tab 2 (old Riwayat Pencatatan), set formExpanded to false
-    if (tabValue === 2 && newValue === 1) {
+    // If switching to Pencatatan tab from tab 0 (Dashboard), set formExpanded to false
+    if (tabValue === 0 && newValue === 1) {
       setFormExpanded(false);
-    }
-    // If switching to Pencatatan tab from tab 1 (old Catat Sampah), set formExpanded to true
-    else if (tabValue === 1 && newValue === 1) {
-      setFormExpanded(true);
     }
     
     setTabValue(newValue);
@@ -328,18 +584,18 @@ const Tracking = () => {
   const handleDateChange = (newDate) => {
     setFormData(prev => ({
       ...prev,
-      tanggal_pencatatan: newDate
+      tracking_date: newDate
     }));
   };
 
-  // Tambahan useEffect untuk menghitung estimasi nilai ekonomis
+  // Calculate estimated value based on selected waste type and amount
   useEffect(() => {
-    if (formData.waste_id && formData.jumlah) {
-      const wasteId = parseInt(formData.waste_id);
-      const amount = parseFloat(formData.jumlah);
+    if (formData.waste_type_id && formData.amount) {
+      const wasteId = parseInt(formData.waste_type_id);
+      const amount = parseFloat(formData.amount);
       
-      if (wasteValueEstimates[wasteId] && !isNaN(amount)) {
-        const estimated = wasteValueEstimates[wasteId] * amount;
+      if (wasteValues[wasteId] && !isNaN(amount)) {
+        const estimated = wasteValues[wasteId] * amount;
         setEstimatedValue(estimated);
       } else {
         setEstimatedValue(0);
@@ -347,24 +603,53 @@ const Tracking = () => {
     } else {
       setEstimatedValue(0);
     }
-  }, [formData.waste_id, formData.jumlah]);
+  }, [formData.waste_type_id, formData.amount, wasteValues]);
+
+  // Function to handle edit button click
+  const handleEditClick = (record) => {
+    setEditingRecord(record);
+    setFormData({
+      waste_type_id: record.waste_type_id.toString(),
+      amount: record.amount.toString(),
+      unit: record.unit,
+      tracking_date: new Date(record.tracking_date),
+      management_status: record.management_status,
+      notes: record.notes || '',
+      photo: null
+    });
+    setEditMode(true);
+    setFormExpanded(true);
+    // Scroll to the form
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
 
   // Function untuk validasi form
   const validateForm = () => {
     const errors = {};
     
-    if (!formData.waste_id) {
-      errors.waste_id = "Jenis sampah harus dipilih";
+    if (!formData.waste_type_id) {
+      errors.waste_type_id = "Jenis sampah harus dipilih";
     }
     
-    if (!formData.jumlah) {
-      errors.jumlah = "Jumlah harus diisi";
-    } else if (parseFloat(formData.jumlah) <= 0) {
-      errors.jumlah = "Jumlah harus lebih dari 0";
+    if (!formData.amount) {
+      errors.amount = "Jumlah harus diisi";
+    } else {
+      const amount = parseFloat(formData.amount);
+      if (amount <= 0) {
+        errors.amount = "Jumlah harus lebih dari 0";
+      }
+      // Add validation for maximum value based on database constraints
+      // Assuming DECIMAL(10,2) in database, max value is 99,999,999.99
+      else if (amount > 99999999.99) {
+        errors.amount = "Jumlah terlalu besar, maksimal 99,999,999.99";
+      }
     }
     
-    if (!formData.tanggal_pencatatan) {
-      errors.tanggal_pencatatan = "Tanggal pencatatan harus diisi";
+    if (!formData.tracking_date) {
+      errors.tracking_date = "Tanggal pencatatan harus diisi";
     }
     
     setFormErrors(errors);
@@ -376,41 +661,172 @@ const Tracking = () => {
     setShowWasteInfo(prev => !prev);
   };
 
-  // Modifikasi handleFormSubmit untuk validasi
-  const handleFormSubmit = (e) => {
+  // Modified form submit handler to handle both create and update
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
     
     if (validateForm()) {
-      setIsSubmitting(true);
+      setIsLoading(prev => ({ ...prev, submit: true }));
       
-      // Simulasikan pengiriman data ke server
-      setTimeout(() => {
-        console.log("Form submitted:", formData);
-        setIsSubmitting(false);
+      try {
+        // Format data for API
+        const formattedData = {
+          waste_type_id: parseInt(formData.waste_type_id),
+          amount: parseFloat(formData.amount),
+          unit: formData.unit,
+          tracking_date: formData.tracking_date.toISOString().split('T')[0],
+          management_status: formData.management_status,
+          notes: formData.notes,
+          estimated_value: estimatedValue,
+          // photo will be handled separately in a real implementation with multipart/form-data
+        };
+        
+        let response;
+        
+        if (editMode && editingRecord) {
+          // Update existing record
+          response = await api.updateWasteTracking(editingRecord.id, formattedData);
+          
+          // Update the record in state
+          setWasteRecords(prev => prev.map(r => 
+            r.id === editingRecord.id ? response.data : r
+          ));
+          
+          // Exit edit mode
+          setEditMode(false);
+          setEditingRecord(null);
+        } else {
+          // Create new record
+          response = await api.createWasteTracking(formattedData);
+          
+          // Add the new record to the state
+          setWasteRecords(prev => [response.data, ...prev]);
+        }
+        
+        setIsLoading(prev => ({ ...prev, submit: false }));
         setSubmitSuccess(true);
         
-        // Reset form setelah beberapa detik
+        // Reset form after success
         setTimeout(() => {
           setSubmitSuccess(false);
           setFormData({
-            waste_id: '',
-            jumlah: '',
-            satuan: 'kg',
-            tanggal_pencatatan: new Date(),
-            status_pengelolaan: 'disimpan',
-            catatan: '',
-            foto: null
+            waste_type_id: '',
+            amount: '',
+            unit: 'kg',
+            tracking_date: new Date(),
+            management_status: 'disimpan',
+            notes: '',
+            photo: null
           });
           setEstimatedValue(0);
         }, 3000);
-      }, 1500);
+        
+        // Show success message
+        Swal.fire({
+          title: 'Berhasil!',
+          text: editMode ? 'Data sampah berhasil diperbarui' : 'Data sampah berhasil disimpan',
+          icon: 'success',
+          timer: 2000,
+          timerProgressBar: true,
+          showConfirmButton: false
+        });
+      } catch (err) {
+        console.error('Error submitting form:', err);
+        setIsLoading(prev => ({ ...prev, submit: false }));
+        
+        // Show error message
+        Swal.fire({
+          title: 'Gagal!',
+          text: err.response?.data?.message || 'Terjadi kesalahan saat menyimpan data',
+          icon: 'error',
+          confirmButtonText: 'Tutup'
+        });
+      }
     }
   };
 
   // Menghitung total nilai estimasi dan berat total
-  const totalNilai = filteredRecords.reduce((sum, record) => sum + record.nilai_estimasi, 0);
-  const totalBerat = filteredRecords.reduce((sum, record) => sum + record.jumlah, 0);
+  const totalNilai = filteredRecords.reduce((sum, record) => sum + (parseFloat(record.estimated_value) || 0), 0);
+  const totalBerat = filteredRecords.reduce((sum, record) => sum + parseFloat(record.amount), 0);
 
+  // Handler untuk dialog konfirmasi hapus
+  const handleDeleteDialogOpen = (record) => {
+    setSelectedRecord(record);
+    setConfirmDialogOpen(true);
+  };
+
+  const handleConfirmDialogClose = () => {
+    setConfirmDialogOpen(false);
+    setSelectedRecord(null);
+  };
+
+  // Handler untuk menghapus record dengan API
+  const handleDeleteRecord = async () => {
+    if (!selectedRecord) return;
+    
+    setIsLoading(prev => ({ ...prev, delete: true }));
+    
+    try {
+      // Delete from API
+      await api.deleteWasteTracking(selectedRecord.id);
+      
+      // Remove from local state
+      setWasteRecords(prev => prev.filter(r => r.id !== selectedRecord.id));
+      
+      setIsLoading(prev => ({ ...prev, delete: false }));
+      setConfirmDialogOpen(false);
+      setSelectedRecord(null);
+      
+      // Show success message
+      Swal.fire({
+        title: 'Berhasil!',
+        text: 'Data sampah telah dihapus',
+        icon: 'success',
+        timer: 2000,
+        timerProgressBar: true,
+        showConfirmButton: false
+      });
+    } catch (err) {
+      console.error('Error deleting record:', err);
+      setIsLoading(prev => ({ ...prev, delete: false }));
+      
+      // Show error message
+      Swal.fire({
+        title: 'Gagal!',
+        text: err.response?.data?.message || 'Terjadi kesalahan saat menghapus data',
+        icon: 'error',
+        confirmButtonText: 'Tutup'
+      });
+    }
+  };
+
+  // Handler for export data with API
+  const handleExportData = async (format) => {
+    setIsLoading(prev => ({ ...prev, export: true }));
+    
+    try {
+      await api.exportWasteTracking(format);
+      
+      setIsLoading(prev => ({ ...prev, export: false }));
+      handleConfirmDialogClose();
+      
+      // Success notification handled by the API function
+    } catch (err) {
+      console.error('Error exporting data:', err);
+      setIsLoading(prev => ({ ...prev, export: false }));
+      
+      // Show error message
+      Swal.fire({
+        title: 'Gagal Ekspor!',
+        text: 'Terjadi kesalahan saat mengekspor data',
+        icon: 'error',
+        confirmButtonText: 'Tutup'
+      });
+      
+      handleConfirmDialogClose();
+    }
+  };
+  
   // Fungsi untuk menangani klik login
   const handleLoginClick = () => {
     navigate('/login', { state: { from: '/tracking' } });
@@ -448,15 +864,6 @@ const Tracking = () => {
     setAnchorEl(null);
   };
 
-  // Handlers untuk menu ekspor
-  const handleExportMenuOpen = (event) => {
-    setExportMenuAnchorEl(event.currentTarget);
-  };
-
-  const handleExportMenuClose = () => {
-    setExportMenuAnchorEl(null);
-  };
-
   // Handler untuk dialog konfirmasi
   const handleConfirmDialogOpen = (action) => {
     setConfirmDialogAction(action);
@@ -464,62 +871,16 @@ const Tracking = () => {
     handleMenuClose();
   };
 
-  const handleConfirmDialogClose = () => {
-    setConfirmDialogOpen(false);
-  };
-
   // Handler untuk aksi pada record
   const handleRecordAction = () => {
     if (!selectedRecord) return;
 
     if (confirmDialogAction === 'delete') {
-      setIsLoading(prev => ({ ...prev, delete: true }));
-      
-      // Simulasi penghapusan data
-      setTimeout(() => {
-        const newRecords = filteredRecords.filter(r => r.id !== selectedRecord.id);
-        setFilteredRecords(newRecords);
-        setIsLoading(prev => ({ ...prev, delete: false }));
-        setConfirmDialogOpen(false);
-        
-        // Tampilkan notifikasi berhasil
-        Swal.fire({
-          title: 'Berhasil!',
-          text: 'Data sampah telah dihapus',
-          icon: 'success',
-          timer: 2000,
-          timerProgressBar: true,
-          showConfirmButton: false
-        });
-      }, 1000);
+      handleDeleteRecord();
     } else if (confirmDialogAction === 'edit') {
-      // Logika untuk edit akan diimplementasikan nanti
-      console.log("Edit record:", selectedRecord);
+      handleEditClick(selectedRecord);
       setConfirmDialogOpen(false);
     }
-  };
-
-  // Handler untuk ekspor data
-  const handleExportData = (format) => {
-    setIsExporting(true);
-    
-    // Simulasi ekspor data
-    setTimeout(() => {
-      console.log(`Exporting data as ${format}`);
-      setIsExporting(false);
-      
-      // Tampilkan notifikasi berhasil
-      Swal.fire({
-        title: 'Ekspor Berhasil!',
-        text: `Data telah diekspor dalam format ${format.toUpperCase()}`,
-        icon: 'success',
-        timer: 2000,
-        timerProgressBar: true,
-        showConfirmButton: false
-      });
-      
-      handleExportMenuClose();
-    }, 1500);
   };
 
   // Function untuk mendapatkan konfigurasi status
@@ -543,73 +904,6 @@ const Tracking = () => {
       color: 'default', 
       label: status 
     };
-  };
-
-  // Function untuk export button dengan badge
-  const ExportButton = () => (
-    <Button
-      variant="outlined"
-      startIcon={<FileDownloadIcon />}
-      onClick={handleExportMenuOpen}
-      sx={{ ml: { xs: 0, sm: 2 }, mt: { xs: 1, sm: 0 } }}
-    >
-      Ekspor Data
-      <Badge 
-        color="secondary" 
-        badgeContent={filteredRecords.length} 
-        max={99}
-        sx={{ ml: 1 }}
-      />
-    </Button>
-  );
-
-  // Handler untuk dialog konfirmasi hapus
-  const handleDeleteDialogOpen = (record) => {
-    setRecordToDelete(record);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleDeleteDialogClose = () => {
-    setDeleteDialogOpen(false);
-  };
-
-  // Handler untuk menghapus record
-  const handleDeleteRecord = () => {
-    if (!recordToDelete) return;
-    
-    setIsDeleting(true);
-    
-    // Simulasi penghapusan data
-    setTimeout(() => {
-      const newRecords = filteredRecords.filter(r => r.id !== recordToDelete.id);
-      setFilteredRecords(newRecords);
-      setIsDeleting(false);
-      setDeleteDialogOpen(false);
-      
-      // Tampilkan notifikasi berhasil
-      Swal.fire({
-        title: 'Berhasil!',
-        text: 'Data sampah telah dihapus',
-        icon: 'success',
-        timer: 2000,
-        timerProgressBar: true,
-        showConfirmButton: false
-      });
-    }, 1000);
-  };
-
-  // Handler untuk reset filter
-  const handleResetFilters = () => {
-    setSearchQuery('');
-    setWasteTypeFilter('');
-    setStatusFilter('');
-    setDateRangeStart(null);
-    setDateRangeEnd(null);
-  };
-
-  // Toggle form visibility in Pencatatan tab
-  const toggleFormExpanded = () => {
-    setFormExpanded(prev => !prev);
   };
 
   // Modify userGuideSteps to reflect the new structure
@@ -647,6 +941,32 @@ const Tracking = () => {
       );
     }
     return <Box sx={{ display: 'none' }}></Box>;
+  };
+
+  const cancelEditMode = () => {
+    setEditMode(false);
+    setEditingRecord(null);
+    setFormData({
+      waste_type_id: '',
+      amount: '',
+      unit: 'kg',
+      tracking_date: new Date(),
+      management_status: 'disimpan',
+      notes: '',
+      photo: null
+    });
+    setEstimatedValue(0);
+  };
+
+  // Handler to show details dialog on mobile
+  const handleShowDetails = (record) => {
+    setDetailsRecord(record);
+    setDetailsDialogOpen(true);
+  };
+
+  // Handler to close details dialog
+  const handleCloseDetails = () => {
+    setDetailsDialogOpen(false);
   };
 
   // Menampilkan overlay login jika belum terautentikasi, bukan langsung return null
@@ -855,37 +1175,61 @@ const Tracking = () => {
               </Box>
             </Paper>
 
+            {/* Error Display */}
+            {error && (
+              <Alert severity="error" sx={{ mb: 4 }}>
+                <AlertTitle>Error</AlertTitle>
+                {error}
+              </Alert>
+            )}
+
             {/* Statistik Cards */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
               <Grid item xs={12} md={6}>
-                <Card
-                  title="Total Nilai Ekonomis"
-                  description={`Estimasi total nilai sampah yang kamu kelola`}
-                  sx={{ bgcolor: theme.palette.success.light, color: '#fff' }}
-                  descriptionSx={{ color: '#fff' }}
-                >
-                  <Typography variant="h3" sx={{ mt: 2, fontWeight: 700, color: '#fff' }}>
-                    Rp {totalNilai.toLocaleString()}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mt: 1, color: 'rgba(255,255,255,0.8)' }}>
-                    Nilai ini merupakan estimasi berdasarkan harga pasar untuk sampah yang dapat didaur ulang
-                  </Typography>
-                </Card>
+                {isLoading.wasteRecords ? (
+                  <Paper sx={{ p: 3, height: '100%' }}>
+                    <Skeleton variant="text" sx={{ fontSize: '1.25rem', width: '60%', mb: 1 }} />
+                    <Skeleton variant="text" sx={{ fontSize: '1rem', width: '80%', mb: 2 }} />
+                    <Skeleton variant="rectangular" height={60} sx={{ borderRadius: 1 }} />
+                  </Paper>
+                ) : (
+                  <Card
+                    title="Total Nilai Ekonomis"
+                    description={`Estimasi total nilai sampah yang kamu kelola`}
+                    sx={{ bgcolor: theme.palette.success.light, color: '#fff' }}
+                    descriptionSx={{ color: '#fff' }}
+                  >
+                    <Typography variant="h3" sx={{ mt: 2, fontWeight: 700, color: '#fff' }}>
+                      Rp {totalNilai.toLocaleString()}
+                    </Typography>
+                    <Typography variant="body2" sx={{ mt: 1, color: 'rgba(255,255,255,0.8)' }}>
+                      Nilai ini merupakan estimasi berdasarkan harga pasar untuk sampah yang dapat didaur ulang
+                    </Typography>
+                  </Card>
+                )}
               </Grid>
               <Grid item xs={12} md={6}>
-                <Card
-                  title="Total Sampah Terkelola"
-                  description={`Jumlah total sampah yang sudah kamu kelola`}
-                  sx={{ bgcolor: theme.palette.info.light, color: '#fff' }}
-                  descriptionSx={{ color: '#fff' }}
-                >
-                  <Typography variant="h3" sx={{ mt: 2, fontWeight: 700, color: '#fff' }}>
-                    {totalBerat.toLocaleString()} kg
-                  </Typography>
-                  <Typography variant="body2" sx={{ mt: 1, color: 'rgba(255,255,255,0.8)' }}>
-                    Kontribusimu untuk mengurangi sampah yang terbuang ke lingkungan
-                  </Typography>
-                </Card>
+                {isLoading.wasteRecords ? (
+                  <Paper sx={{ p: 3, height: '100%' }}>
+                    <Skeleton variant="text" sx={{ fontSize: '1.25rem', width: '60%', mb: 1 }} />
+                    <Skeleton variant="text" sx={{ fontSize: '1rem', width: '80%', mb: 2 }} />
+                    <Skeleton variant="rectangular" height={60} sx={{ borderRadius: 1 }} />
+                  </Paper>
+                ) : (
+                  <Card
+                    title="Total Sampah Terkelola"
+                    description={`Jumlah total sampah yang sudah kamu kelola`}
+                    sx={{ bgcolor: theme.palette.info.light, color: '#fff' }}
+                    descriptionSx={{ color: '#fff' }}
+                  >
+                    <Typography variant="h3" sx={{ mt: 2, fontWeight: 700, color: '#fff' }}>
+                      {totalBerat.toLocaleString()} kg
+                    </Typography>
+                    <Typography variant="body2" sx={{ mt: 1, color: 'rgba(255,255,255,0.8)' }}>
+                      Kontribusimu untuk mengurangi sampah yang terbuang ke lingkungan
+                    </Typography>
+                  </Card>
+                )}
               </Grid>
             </Grid>
 
@@ -897,7 +1241,11 @@ const Tracking = () => {
                     Komposisi Sampah Berdasarkan Kategori
                   </Typography>
                   <Box sx={{ height: { xs: 260, sm: 300 }, display: 'flex', justifyContent: 'center' }}>
-                    {chartData.pieData.length > 0 ? (
+                    {isLoading.wasteRecords ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', width: '100%' }}>
+                        <CircularProgress color="primary" />
+                      </Box>
+                    ) : chartData.pieData.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
                           <Pie
@@ -936,7 +1284,11 @@ const Tracking = () => {
                     Tren Pengumpulan Sampah
                   </Typography>
                   <Box sx={{ height: { xs: 260, sm: 300 }, display: 'flex', justifyContent: 'center' }}>
-                    {chartData.timelineData.length > 0 ? (
+                    {isLoading.wasteRecords ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', width: '100%' }}>
+                        <CircularProgress color="primary" />
+                      </Box>
+                    ) : chartData.timelineData.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart
                           data={chartData.timelineData}
@@ -997,7 +1349,15 @@ const Tracking = () => {
                 style={{ cursor: 'pointer' }}
               >
                 <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', fontSize: { xs: '0.95rem', md: '1.25rem' } }}>
-                  <AddIcon sx={{ mr: 1, fontSize: { xs: '1rem', md: '1.5rem' } }} /> Catat Sampah Baru
+                  {editMode ? (
+                    <>
+                      <EditIcon sx={{ mr: 1, fontSize: { xs: '1rem', md: '1.5rem' } }} /> Edit Catatan Sampah
+                    </>
+                  ) : (
+                    <>
+                      <AddIcon sx={{ mr: 1, fontSize: { xs: '1rem', md: '1.5rem' } }} /> Catat Sampah Baru
+                    </>
+                  )}
                 </Typography>
                 <IconButton size="small" color="inherit">
                   {formExpanded ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
@@ -1022,19 +1382,19 @@ const Tracking = () => {
                   <form onSubmit={handleFormSubmit}>
                     <Grid container spacing={isMobile ? 2 : 3}>
                       <Grid item xs={12} md={6}>
-                        <FormControl fullWidth error={!!formErrors.waste_id}>
+                        <FormControl fullWidth error={!!formErrors.waste_type_id}>
                           <TextField
                             label="Jenis Sampah"
-                            name="waste_id"
+                            name="waste_type_id"
                             select
                             fullWidth
-                            value={formData.waste_id}
+                            value={formData.waste_type_id}
                             onChange={handleFormChange}
                             required
-                            error={!!formErrors.waste_id}
-                            helperText={formErrors.waste_id}
+                            error={!!formErrors.waste_type_id}
+                            helperText={formErrors.waste_type_id}
                             InputProps={{
-                              endAdornment: formData.waste_id && (
+                              endAdornment: formData.waste_type_id && (
                                 <InputAdornment position="end">
                                   <Tooltip title="Lihat tips pengelolaan" arrow>
                                     <IconButton 
@@ -1050,7 +1410,7 @@ const Tracking = () => {
                             }}
                             sx={{ '& .MuiInputLabel-root': { fontSize: isMobile ? '0.85rem' : 'inherit' } }}
                           >
-                            {dummyWasteTypes.map((option) => (
+                            {wasteTypes.map((option) => (
                               <MenuItem key={option.id} value={option.id}>
                                 {option.name} ({option.category_name})
                               </MenuItem>
@@ -1059,19 +1419,19 @@ const Tracking = () => {
                         </FormControl>
                         
                         {/* Waste Info Guide */}
-                        {showWasteInfo && formData.waste_id && (
+                        {showWasteInfo && formData.waste_type_id && (
                           <Paper variant="outlined" sx={{ p: isMobile ? 1.5 : 2, mt: 1, bgcolor: 'rgba(0, 150, 136, 0.05)' }}>
                             <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ fontSize: isMobile ? '0.8rem' : '0.9rem' }}>
-                              Tips untuk {dummyWasteTypes.find(w => w.id === parseInt(formData.waste_id))?.name}:
+                              Tips untuk {wasteTypes.find(w => w.id === parseInt(formData.waste_type_id))?.name}:
                             </Typography>
                             <Typography variant="body2" paragraph sx={{ fontSize: isMobile ? '0.8rem' : '0.9rem' }}>
-                              {wasteInfoGuide[formData.waste_id]?.tips || "Tidak ada tips khusus."}
+                              {wasteInfoGuide[formData.waste_type_id]?.tips || "Tidak ada tips khusus."}
                             </Typography>
                             <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ fontSize: isMobile ? '0.8rem' : '0.9rem' }}>
                               Dampak Lingkungan:
                             </Typography>
                             <Typography variant="body2" sx={{ fontSize: isMobile ? '0.8rem' : '0.9rem' }}>
-                              {wasteInfoGuide[formData.waste_id]?.impact || "Informasi dampak tidak tersedia."}
+                              {wasteInfoGuide[formData.waste_type_id]?.impact || "Informasi dampak tidak tersedia."}
                             </Typography>
                           </Paper>
                         )}
@@ -1080,14 +1440,14 @@ const Tracking = () => {
                       <Grid item xs={12} sm={6} md={3}>
                         <TextField
                           label="Jumlah"
-                          name="jumlah"
+                          name="amount"
                           type="number"
                           fullWidth
-                          value={formData.jumlah}
+                          value={formData.amount}
                           onChange={handleFormChange}
                           required
-                          error={!!formErrors.jumlah}
-                          helperText={formErrors.jumlah}
+                          error={!!formErrors.amount}
+                          helperText={formErrors.amount}
                           InputProps={{
                             inputProps: { min: 0, step: 0.1 }
                           }}
@@ -1097,10 +1457,10 @@ const Tracking = () => {
                       <Grid item xs={12} sm={6} md={3}>
                         <TextField
                           label="Satuan"
-                          name="satuan"
+                          name="unit"
                           select
                           fullWidth
-                          value={formData.satuan}
+                          value={formData.unit}
                           onChange={handleFormChange}
                           required
                         >
@@ -1143,15 +1503,15 @@ const Tracking = () => {
                         <LocalizationProvider dateAdapter={AdapterDateFns}>
                           <DatePicker
                             label="Tanggal Pencatatan"
-                            value={formData.tanggal_pencatatan}
+                            value={formData.tracking_date}
                             onChange={handleDateChange}
                             format="dd/MM/yyyy"
                             slotProps={{ 
                               textField: { 
                                 fullWidth: true, 
                                 required: true,
-                                error: !!formErrors.tanggal_pencatatan,
-                                helperText: formErrors.tanggal_pencatatan 
+                                error: !!formErrors.tracking_date,
+                                helperText: formErrors.tracking_date 
                               } 
                             }}
                           />
@@ -1161,10 +1521,10 @@ const Tracking = () => {
                       <Grid item xs={12} sm={6}>
                         <TextField
                           label="Status Pengelolaan"
-                          name="status_pengelolaan"
+                          name="management_status"
                           select
                           fullWidth
-                          value={formData.status_pengelolaan}
+                          value={formData.management_status}
                           onChange={handleFormChange}
                           required
                         >
@@ -1182,11 +1542,11 @@ const Tracking = () => {
                       <Grid item xs={12}>
                         <TextField
                           label="Catatan (opsional)"
-                          name="catatan"
+                          name="notes"
                           multiline
                           rows={3}
                           fullWidth
-                          value={formData.catatan}
+                          value={formData.notes}
                           onChange={handleFormChange}
                           placeholder="Tambahkan detail tentang sampah, lokasi pengumpulan, atau informasi tambahan lainnya"
                         />
@@ -1198,44 +1558,24 @@ const Tracking = () => {
                             variant="contained"
                             color="primary"
                             type="submit"
-                            startIcon={isSubmitting ? <CircularProgress size={isMobile ? 16 : 20} color="inherit" /> : <SaveIcon />}
-                            disabled={isSubmitting}
+                            startIcon={isLoading.submit ? <CircularProgress size={isMobile ? 16 : 20} color="inherit" /> : <SaveIcon />}
+                            disabled={isLoading.submit}
                             size={isMobile ? "medium" : "large"}
                             sx={{ px: isMobile ? 2 : 3, py: isMobile ? 0.75 : 1 }}
                           >
-                            {isSubmitting ? 'Menyimpan...' : 'Simpan Catatan'}
+                            {isLoading.submit ? 'Menyimpan...' : (editMode ? 'Perbarui Catatan' : 'Simpan Catatan')}
                           </Button>
                           
-                          <Button
-                            variant="outlined"
-                            component="label"
-                            startIcon={<CameraIcon />}
-                            size={isMobile ? "medium" : "large"}
-                          >
-                            Tambah Foto
-                            <input
-                              type="file"
-                              hidden
-                              accept="image/*"
-                              onChange={(e) => {
-                                if (e.target.files && e.target.files[0]) {
-                                  setFormData(prev => ({
-                                    ...prev,
-                                    foto: e.target.files[0]
-                                  }));
-                                }
-                              }}
-                            />
-                          </Button>
-                          
-                          {formData.foto && (
-                            <Chip 
-                              label={formData.foto.name.length > 15 ? formData.foto.name.substring(0, 15) + '...' : formData.foto.name} 
-                              onDelete={() => setFormData(prev => ({ ...prev, foto: null }))}
-                              color="primary" 
+                          {editMode && (
+                            <Button
                               variant="outlined"
-                              sx={{ height: isMobile ? 28 : 32, '& .MuiChip-label': { fontSize: isMobile ? '0.75rem' : '0.85rem' } }}
-                            />
+                              color="secondary"
+                              onClick={cancelEditMode}
+                              size={isMobile ? "medium" : "large"}
+                              sx={{ px: isMobile ? 2 : 3, py: isMobile ? 0.75 : 1 }}
+                            >
+                              Batal
+                            </Button>
                           )}
                         </Box>
                       </Grid>
@@ -1267,36 +1607,17 @@ const Tracking = () => {
                   variant="outlined"
                   color="error"
                   startIcon={<ClearAllIcon fontSize={isMobile ? 'small' : 'medium'} />}
-                  onClick={handleResetFilters}
+                  onClick={() => {
+                    setSearchQuery('');
+                    setWasteTypeFilter('');
+                    setStatusFilter('');
+                    setDateRangeStart(null);
+                    setDateRangeEnd(null);
+                  }}
                   disabled={!searchQuery && !wasteTypeFilter && !statusFilter && !dateRangeStart && !dateRangeEnd}
                   size={isMobile ? 'small' : 'medium'}
                 >
                   {isMobile ? 'Reset' : 'Reset Filter'}
-                </Button>
-                <Button
-                  variant="outlined"
-                  color="primary"
-                  startIcon={<FileDownloadIcon fontSize={isMobile ? 'small' : 'medium'} />}
-                  onClick={handleExportMenuOpen}
-                  disabled={filteredRecords.length === 0 || isExporting}
-                  size={isMobile ? 'small' : 'medium'}
-                >
-                  {isExporting ? (
-                    <>
-                      <CircularProgress size={isMobile ? 16 : 20} color="inherit" sx={{ mr: 1 }} />
-                      {isMobile ? 'Ekspor...' : 'Mengekspor...'}
-                    </>
-                  ) : (
-                    <>
-                      {isMobile ? 'Ekspor' : 'Ekspor Data'}
-                      <Badge 
-                        color="secondary" 
-                        badgeContent={filteredRecords.length} 
-                        max={99}
-                        sx={{ ml: 1, '& .MuiBadge-badge': { fontSize: '0.65rem', height: '16px', minWidth: '16px' } }}
-                      />
-                    </>
-                  )}
                 </Button>
               </Box>
             </Box>
@@ -1334,7 +1655,7 @@ const Tracking = () => {
                     sx={{ '& .MuiInputLabel-root': { fontSize: isMobile ? '0.8rem' : 'inherit' } }}
                   >
                     <MenuItem value="">Semua</MenuItem>
-                    {dummyWasteTypes.map((option) => (
+                    {wasteTypes.map((option) => (
                       <MenuItem key={option.id} value={option.id}>
                         {option.name}
                       </MenuItem>
@@ -1389,7 +1710,36 @@ const Tracking = () => {
             {/* Data Display: Table for Desktop, Cards for Mobile */}
             {isMobile ? (
               <Box>
-                {filteredRecords.length === 0 ? (
+                {error && (
+                  <Alert severity="error" sx={{ mb: 2 }}>
+                    <AlertTitle>Error</AlertTitle>
+                    {error}
+                  </Alert>
+                )}
+
+                {isLoading.wasteRecords ? (
+                  [...Array(3)].map((_, index) => (
+                    <Paper key={index} sx={{ mb: 2, p: 2 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                        <Skeleton variant="text" width="60%" />
+                        <Skeleton variant="circular" width={24} height={24} />
+                      </Box>
+                      <Skeleton variant="text" width="40%" />
+                      <Divider sx={{ my: 1 }} />
+                      <Grid container spacing={1}>
+                        <Grid item xs={6}>
+                          <Skeleton variant="text" width="80%" />
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Skeleton variant="text" width="60%" />
+                        </Grid>
+                        <Grid item xs={12}>
+                          <Skeleton variant="text" width="100%" />
+                        </Grid>
+                      </Grid>
+                    </Paper>
+                  ))
+                ) : filteredRecords.length === 0 ? (
                   <Paper sx={{ p: 3, textAlign: 'center' }}>
                     <SearchIcon sx={{ fontSize: 40, color: 'text.secondary', opacity: 0.5, mb: 1 }} />
                     <Typography variant="h6" color="text.secondary" gutterBottom sx={{ fontSize: '1rem' }}>
@@ -1429,13 +1779,13 @@ const Tracking = () => {
                         
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                           <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                            {format(new Date(record.tanggal_pencatatan), 'dd MMM yyyy')}
+                            {format(new Date(record.tracking_date), 'dd MMM yyyy')}
                           </Typography>
                           
                           <Chip
                             size="small"
-                            label={getStatusConfig(record.status_pengelolaan).label}
-                            color={getStatusConfig(record.status_pengelolaan).color}
+                            label={getStatusConfig(record.management_status).label}
+                            color={getStatusConfig(record.management_status).color}
                             sx={{ height: 24, '& .MuiChip-label': { px: 1, fontSize: '0.7rem' } }}
                           />
                         </Box>
@@ -1445,7 +1795,7 @@ const Tracking = () => {
                         <Grid container spacing={1}>
                           <Grid item xs={6}>
                             <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>Jumlah</Typography>
-                            <Typography variant="body2" fontWeight="medium" sx={{ fontSize: '0.85rem' }}>{record.jumlah} {record.satuan}</Typography>
+                            <Typography variant="body2" fontWeight="medium" sx={{ fontSize: '0.85rem' }}>{record.amount} {record.unit}</Typography>
                           </Grid>
                           <Grid item xs={6}>
                             <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>Kategori</Typography>
@@ -1454,36 +1804,33 @@ const Tracking = () => {
                           <Grid item xs={12} sx={{ mt: 0.5 }}>
                             <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>Nilai Estimasi</Typography>
                             <Typography variant="body1" fontWeight="bold" color="success.main" sx={{ fontSize: '0.9rem' }}>
-                              Rp {record.nilai_estimasi.toLocaleString()}
+                              Rp {record.estimated_value.toLocaleString()}
                             </Typography>
                           </Grid>
-                          {record.catatan && (
+                          {record.notes && (
                             <Grid item xs={12} sx={{ mt: 0.5 }}>
                               <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>Catatan:</Typography>
-                              <Tooltip title={record.catatan} arrow>
-                                <Typography 
-                                  variant="body2" 
-                                  sx={{ 
-                                    maxWidth: '100%',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
-                                    cursor: 'pointer',
-                                    display: 'block'
-                                  }}
-                                >
-                                  {record.catatan}
-                                </Typography>
-                              </Tooltip>
+                              <TruncatedCell text={record.notes} maxLength={50} />
                             </Grid>
                           )}
                         </Grid>
                         
                         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+                          <Button
+                            variant="text"
+                            color="info"
+                            size="small"
+                            startIcon={<ViewIcon fontSize="small" />}
+                            onClick={() => handleShowDetails(record)}
+                            sx={{ mr: 1, fontSize: '0.75rem' }}
+                          >
+                            Detail
+                          </Button>
                           <IconButton 
                             color="primary" 
                             size="small"
                             sx={{ mr: 1 }}
+                            onClick={() => handleEditClick(record)}
                           >
                             <EditIcon fontSize="small" />
                           </IconButton>
@@ -1519,6 +1866,13 @@ const Tracking = () => {
               </Box>
             ) : (
               <Paper sx={{ borderRadius: '8px', overflow: 'hidden' }}>
+                {error && (
+                  <Alert severity="error">
+                    <AlertTitle>Error</AlertTitle>
+                    {error}
+                  </Alert>
+                )}
+                
                 <TableContainer>
                   <Table sx={{ minWidth: 650 }} size="medium">
                     <TableHead>
@@ -1534,7 +1888,25 @@ const Tracking = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {filteredRecords.length === 0 ? (
+                      {isLoading.wasteRecords ? (
+                        [...Array(5)].map((_, index) => (
+                          <TableRow key={index}>
+                            <TableCell><Skeleton variant="text" /></TableCell>
+                            <TableCell><Skeleton variant="text" /></TableCell>
+                            <TableCell><Skeleton variant="text" /></TableCell>
+                            <TableCell align="right"><Skeleton variant="text" /></TableCell>
+                            <TableCell><Skeleton variant="rectangular" height={24} width={80} sx={{ borderRadius: 4 }} /></TableCell>
+                            <TableCell align="right"><Skeleton variant="text" /></TableCell>
+                            <TableCell><Skeleton variant="text" /></TableCell>
+                            <TableCell align="center">
+                              <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                                <Skeleton variant="circular" width={24} height={24} sx={{ mr: 1 }} />
+                                <Skeleton variant="circular" width={24} height={24} />
+                              </Box>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : filteredRecords.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
                             <SearchIcon sx={{ fontSize: 48, color: 'text.secondary', opacity: 0.5, mb: 2 }} />
@@ -1559,48 +1931,31 @@ const Tracking = () => {
                           .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                           .map((record) => (
                             <TableRow key={record.id} hover>
-                              <TableCell>{format(new Date(record.tanggal_pencatatan), 'dd/MM/yyyy')}</TableCell>
+                              <TableCell>{format(new Date(record.tracking_date), 'dd/MM/yyyy')}</TableCell>
                               <TableCell>{record.waste_name}</TableCell>
                               <TableCell>{record.category_name}</TableCell>
-                              <TableCell align="right">{record.jumlah} {record.satuan}</TableCell>
+                              <TableCell align="right">
+                                <TruncatedCell text={`${record.amount} ${record.unit}`} maxLength={10} align="right" />
+                              </TableCell>
                               <TableCell>
                                 <Chip
                                   size="small"
-                                  label={getStatusConfig(record.status_pengelolaan).label}
-                                  color={getStatusConfig(record.status_pengelolaan).color}
+                                  label={getStatusConfig(record.management_status).label}
+                                  color={getStatusConfig(record.management_status).color}
                                 />
                               </TableCell>
                               <TableCell align="right" sx={{ fontWeight: 700, color: 'success.main' }}>
-                                Rp {record.nilai_estimasi.toLocaleString()}
+                                Rp {record.estimated_value.toLocaleString()}
                               </TableCell>
                               <TableCell>
-                                {record.catatan ? (
-                                  <Tooltip title={record.catatan} arrow>
-                                    <Typography 
-                                      variant="body2" 
-                                      sx={{ 
-                                        maxWidth: '200px',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        whiteSpace: 'nowrap',
-                                        cursor: 'pointer',
-                                        display: 'block'
-                                      }}
-                                    >
-                                      {record.catatan}
-                                    </Typography>
-                                  </Tooltip>
-                                ) : (
-                                  <Typography variant="body2" color="text.secondary" fontStyle="italic">
-                                    -
-                                  </Typography>
-                                )}
+                                <TruncatedCell text={record.notes} maxLength={30} />
                               </TableCell>
                               <TableCell align="center">
                                 <IconButton 
                                   color="primary" 
                                   size="small"
                                   sx={{ mr: 1 }}
+                                  onClick={() => handleEditClick(record)}
                                 >
                                   <EditIcon fontSize="small" />
                                 </IconButton>
@@ -1619,7 +1974,7 @@ const Tracking = () => {
                   </Table>
                 </TableContainer>
                 
-                {filteredRecords.length > 0 && (
+                {!isLoading.wasteRecords && filteredRecords.length > 0 && (
                   <TablePagination
                     rowsPerPageOptions={[5, 10, 25]}
                     component="div"
@@ -1637,8 +1992,8 @@ const Tracking = () => {
 
         {/* Dialog konfirmasi hapus */}
         <Dialog
-          open={deleteDialogOpen}
-          onClose={handleDeleteDialogClose}
+          open={confirmDialogOpen}
+          onClose={handleConfirmDialogClose}
           PaperProps={{
             sx: { width: isMobile ? '85%' : '500px', p: isMobile ? 1 : 2, borderRadius: 2 }
           }}
@@ -1648,7 +2003,7 @@ const Tracking = () => {
           </DialogTitle>
           <DialogContent sx={{ pt: isMobile ? 1 : 2 }}>
             <Typography variant="body1" sx={{ fontSize: isMobile ? '0.9rem' : '1rem' }}>
-              Apakah Anda yakin ingin menghapus catatan {recordToDelete?.waste_name}?
+              Apakah Anda yakin ingin menghapus catatan {selectedRecord?.waste_name}?
             </Typography>
             <Typography variant="body2" color="error" sx={{ mt: 2, fontSize: isMobile ? '0.8rem' : '0.9rem' }}>
               Tindakan ini tidak dapat dibatalkan.
@@ -1656,7 +2011,7 @@ const Tracking = () => {
           </DialogContent>
           <DialogActions sx={{ px: isMobile ? 2 : 3, pb: isMobile ? 2 : 3 }}>
             <Button 
-              onClick={handleDeleteDialogClose} 
+              onClick={handleConfirmDialogClose} 
               variant="text"
               size={isMobile ? "small" : "medium"}
               sx={{ fontSize: isMobile ? '0.8rem' : '0.9rem' }}
@@ -1668,11 +2023,73 @@ const Tracking = () => {
               variant="contained" 
               color="error"
               size={isMobile ? "small" : "medium"}
-              disabled={isDeleting}
-              startIcon={isDeleting && <CircularProgress size={16} color="inherit" />}
+              disabled={isLoading.delete}
+              startIcon={isLoading.delete && <CircularProgress size={16} color="inherit" />}
               sx={{ fontSize: isMobile ? '0.8rem' : '0.9rem' }}
             >
-              {isDeleting ? 'Menghapus...' : 'Hapus'}
+              {isLoading.delete ? 'Menghapus...' : 'Hapus'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Add mobile details dialog */}
+        <Dialog
+          open={detailsDialogOpen}
+          onClose={handleCloseDetails}
+          PaperProps={{
+            sx: { width: '85%', p: 1, borderRadius: 2 }
+          }}
+        >
+          <DialogTitle sx={{ pb: 1, fontSize: '1.1rem' }}>
+            Detail Catatan Sampah
+          </DialogTitle>
+          <DialogContent sx={{ pt: 1 }}>
+            {detailsRecord && (
+              <>
+                <Typography variant="subtitle1" color="primary.main" gutterBottom>
+                  {detailsRecord.waste_name} ({detailsRecord.category_name})
+                </Typography>
+                <Divider sx={{ my: 1 }} />
+                <Grid container spacing={2}>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" color="text.secondary">Jumlah</Typography>
+                    <Typography variant="body2" fontWeight="medium">
+                      {detailsRecord.amount} {detailsRecord.unit}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" color="text.secondary">Tanggal</Typography>
+                    <Typography variant="body2" fontWeight="medium">
+                      {format(new Date(detailsRecord.tracking_date), 'dd/MM/yyyy')}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" color="text.secondary">Status</Typography>
+                    <Typography variant="body2" fontWeight="medium">
+                      {detailsRecord.management_status}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" color="text.secondary">Nilai Estimasi</Typography>
+                    <Typography variant="body2" fontWeight="bold" color="success.main">
+                      Rp {detailsRecord.estimated_value.toLocaleString()}
+                    </Typography>
+                  </Grid>
+                  {detailsRecord.notes && (
+                    <Grid item xs={12}>
+                      <Typography variant="caption" color="text.secondary">Catatan</Typography>
+                      <Typography variant="body2">
+                        {detailsRecord.notes}
+                      </Typography>
+                    </Grid>
+                  )}
+                </Grid>
+              </>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseDetails} variant="contained" size="small">
+              Tutup
             </Button>
           </DialogActions>
         </Dialog>

@@ -200,8 +200,8 @@ const TutorialService = {
    */
   toggleCompleted: async (id) => {
     try {
-      // Gunakan api instance yang sudah terkonfigurasi dengan baik
-      const response = await api.post(`/tutorials/${id}/toggle-completed`);
+      // Gunakan PUT method untuk mengubah status completed
+      const response = await api.put(`/tutorials/${id}/complete`);
       return response.data;
     } catch (error) {
       console.error('Error toggling completed status:', error);
@@ -221,8 +221,8 @@ const TutorialService = {
    */
   toggleSaved: async (id) => {
     try {
-      // Gunakan api instance yang sudah terkonfigurasi dengan baik
-      const response = await api.post(`/tutorials/${id}/toggle-saved`);
+      // Gunakan PUT method untuk mengubah status saved
+      const response = await api.put(`/tutorials/${id}/save`);
       return response.data;
     } catch (error) {
       console.error('Error toggling saved status:', error);
@@ -243,6 +243,11 @@ const TutorialService = {
    */
   rateTutorial: async (id, rating) => {
     try {
+      // Validasi rating (1-5)
+      if (!rating || rating < 1 || rating > 5) {
+        throw new Error('Rating harus antara 1 dan 5');
+      }
+      
       // Gunakan api instance yang sudah terkonfigurasi dengan baik
       const response = await api.post(`/tutorials/${id}/rate`, { rating });
       return response.data;

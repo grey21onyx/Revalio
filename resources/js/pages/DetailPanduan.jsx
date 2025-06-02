@@ -326,6 +326,16 @@ const DetailPanduan = () => {
       return;
     }
     
+    // Jika user mencoba untuk menghapus rating (setValue ke 0), hindari
+    if (newValue === 0) {
+      setSnackbar({
+        open: true,
+        message: 'Nilai rating harus antara 1 dan 5',
+        severity: 'warning'
+      });
+      return;
+    }
+    
     try {
       const roundedRating = Math.round(newValue);
       setUserRating(newValue);

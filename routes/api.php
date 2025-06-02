@@ -173,8 +173,8 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('waste-buyer-types', WasteBuyerTypeController::class);
         
         // User tutorial interactions
-        Route::post('tutorials/{id}/complete', [TutorialController::class, 'toggleCompleted']);
-        Route::post('tutorials/{id}/save', [TutorialController::class, 'toggleSaved']);
+        Route::put('tutorials/{id}/complete', [TutorialController::class, 'toggleCompleted']);
+        Route::put('tutorials/{id}/save', [TutorialController::class, 'toggleSaved']);
         Route::post('tutorials/{id}/rate', [TutorialController::class, 'rate']);
         Route::post('tutorials/{id}/comments', [TutorialController::class, 'addComment']);
 

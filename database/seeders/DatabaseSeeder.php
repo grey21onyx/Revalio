@@ -38,6 +38,9 @@ class DatabaseSeeder extends Seeder
 
         // Seed waste categories
         $this->seedWasteCategories();
+
+        // Add Forum Reports
+        $this->call(ForumReportSeeder::class);
     }
     
     /**

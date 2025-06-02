@@ -15,7 +15,22 @@ import {
   IconButton,
   Divider,
   Pagination,
-  Rating
+  Rating,
+  Badge,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Tab,
+  Tabs,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Card,
+  CardContent,
+  useTheme
 } from '@mui/material';
 import ForumIcon from '@mui/icons-material/Forum';
 import SearchIcon from '@mui/icons-material/Search';
@@ -24,6 +39,11 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import SortIcon from '@mui/icons-material/Sort';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import StarIcon from '@mui/icons-material/Star';
+import FlagIcon from '@mui/icons-material/Flag';
+import WarningIcon from '@mui/icons-material/Warning';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import BlockIcon from '@mui/icons-material/Block';
+import CommentIcon from '@mui/icons-material/Comment';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import api from '../services/api';
@@ -74,6 +94,7 @@ class ErrorBoundary extends React.Component {
 const Forum = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
+  const theme = useTheme();
 
   // State for all tabs
   const [threads, setThreads] = useState([]);
@@ -108,8 +129,32 @@ const Forum = () => {
   const [filteredMyComments, setFilteredMyComments] = useState([]);
   const [myCommentsPage, setMyCommentsPage] = useState(1);
   
-  const [activeTab, setActiveTab] = useState('all'); // 'all', 'myThreads', 'myComments'
+  // New state for admin features
+  const [activeTab, setActiveTab] = useState('all'); // 'all', 'myThreads', 'myComments', 'reports', 'moderation'
   const [loadingMyData, setLoadingMyData] = useState(false);
+  
+  // Admin-specific state
+  const [reportedComments, setReportedComments] = useState([]);
+  const [reportedThreads, setReportedThreads] = useState([]);
+  const [loadingReports, setLoadingReports] = useState(false);
+  const [reportFilter, setReportFilter] = useState('all'); // 'all', 'pending', 'resolved', 'rejected'
+  const [reportsPage, setReportsPage] = useState(1);
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [previewContent, setPreviewContent] = useState(null);
+  
+  // Enhanced state for reports
+  const [reportStats, setReportStats] = useState({
+    total: 0,
+    pending: 0,
+    resolved: 0,
+    rejected: 0
+  });
+
+  // Check if user is admin
+  const isAdmin = user && (user.role === 'admin' || user.user_type === 'admin');
+
+  // Add these to the state variables section (near the top of the component)
+  const [reportSortOrder, setReportSortOrder] = useState('newest'); // 'newest' or 'oldest'
 
   // Fetch threads from API
   useEffect(() => {
@@ -388,6 +433,18 @@ const Forum = () => {
   const handleTabChange = (tabValue) => {
     // Jika tab yang sama diklik lagi, refresh data
     const isTabChange = activeTab !== tabValue;
+    
+    // Check if the tab is admin-only and user is not admin
+    if ((tabValue === 'reports' || tabValue === 'moderation') && !isAdmin) {
+      Swal.fire({
+        title: 'Akses Dibatasi',
+        text: 'Hanya administrator yang dapat mengakses fitur moderasi forum.',
+        icon: 'warning',
+        confirmButtonText: 'Kembali ke Forum'
+      });
+      return; // Don't change tab
+    }
+    
     setActiveTab(tabValue);
     
     if (isAuthenticated) {
@@ -398,6 +455,9 @@ const Forum = () => {
       } else if (tabValue === 'myComments') {
         fetchMyComments();
         setMyCommentsPage(1); // Reset to first page when changing tabs
+      } else if (tabValue === 'reports' && isAdmin) {
+        fetchReportedContent();
+        setReportsPage(1); // Reset to first page when changing tabs
       }
     }
     
@@ -658,8 +718,288 @@ const Forum = () => {
     }
   };
 
+  // Fetch reported content for admin - enhanced version
+  const fetchReportedContent = async () => {
+    if (!isAdmin) return;
+    
+    try {
+      setLoadingReports(true);
+      
+      // Call API to get reports data
+      try {
+        const response = await api.get('/forum-reports');
+        console.log('Reports data:', response.data);
+        
+        if (response.data && Array.isArray(response.data.data)) {
+          // Set the reports
+          const reportsData = response.data.data;
+          
+          const commentReports = reportsData.filter(report => report.reportable_type === 'comment');
+          const threadReports = reportsData.filter(report => report.reportable_type === 'thread');
+          
+          console.log('Comment reports:', commentReports.length);
+          console.log('Thread reports:', threadReports.length);
+          
+          setReportedComments(commentReports);
+          setReportedThreads(threadReports);
+          
+          // Calculate report statistics
+          if (response.data.stats) {
+            setReportStats(response.data.stats);
+          } else {
+            // Calculate stats from data if not provided by API
+            const totalReports = reportsData.length;
+            const pendingReports = reportsData.filter(report => report.status === 'reported').length;
+            const resolvedReports = reportsData.filter(report => report.status === 'resolved').length;
+            const rejectedReports = reportsData.filter(report => report.status === 'rejected').length;
+            
+            setReportStats({
+              total: totalReports,
+              pending: pendingReports,
+              resolved: resolvedReports,
+              rejected: rejectedReports
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching reports data:', error);
+        
+        // Check if this is a 500 server error
+        if (error.response && error.response.status === 500) {
+          console.error('Server error details:', error.response.data);
+          
+          // Show a more descriptive message to the user
+          Swal.fire({
+            title: 'Server Error',
+            text: 'Terjadi kesalahan pada server saat mengambil data laporan. Fitur laporan mungkin belum diaktifkan atau memerlukan konfigurasi lebih lanjut.',
+            icon: 'error',
+            confirmButtonText: 'Kembali ke Forum',
+            showCancelButton: true,
+            cancelButtonText: 'Coba Lagi'
+          }).then((result) => {
+            if (result.isConfirmed) {
+              // Switch back to the main forum tab
+              handleTabChange('all');
+            } else {
+              // Try again
+              fetchReportedContent();
+            }
+          });
+        } else {
+          // Generic error for other cases
+          Swal.fire('Error', 'Gagal mengambil data laporan. Silakan coba lagi nanti.', 'error');
+        }
+        
+        // Fallback to empty data in case of error
+        setReportedComments([]);
+        setReportedThreads([]);
+        setReportStats({
+          total: 0,
+          pending: 0,
+          resolved: 0,
+          rejected: 0
+        });
+      }
+      
+      setLoadingReports(false);
+    } catch (error) {
+      console.error('Error fetching reported content:', error);
+      Swal.fire('Error', 'Gagal mengambil data laporan', 'error');
+      setLoadingReports(false);
+    }
+  };
+
+  // Filter reported content - enhanced version
+  const getFilteredReports = () => {
+    // Combine comment and thread reports
+    let allReports = [
+      ...reportedComments.map(report => ({ ...report, reportType: 'comment' })),
+      ...reportedThreads.map(report => ({ ...report, reportType: 'thread' }))
+    ];
+    
+    if (reportFilter !== 'all') {
+      // Map 'pending' filter to 'reported' status in our data model
+      const statusToFilter = reportFilter === 'pending' ? 'reported' : reportFilter;
+      allReports = allReports.filter(report => report.status === statusToFilter);
+    }
+    
+    // Sort by reported time
+    return allReports.sort((a, b) => {
+      const dateA = new Date(a.reported_at);
+      const dateB = new Date(b.reported_at);
+      
+      if (reportSortOrder === 'newest') {
+        return dateB - dateA; // Newest first
+      } else {
+        return dateA - dateB; // Oldest first
+      }
+    });
+  };
+
+  // Enhanced preview dialog
+  const handleOpenPreviewDialog = (report) => {
+    setPreviewContent({
+      id: report.id,
+      reportType: report.reportType,
+      commentId: report.reportType === 'comment' ? report.comment_id : null,
+      threadId: report.thread_id,
+      threadTitle: report.thread?.judul || 'Thread tidak tersedia',
+      content: report.reportType === 'comment' ? report.konten : report.description || 'Tidak ada deskripsi',
+      reportReason: report.report_reason,
+      reportedBy: report.reported_by?.name || 'Pengguna tidak diketahui',
+      reportedAt: report.reported_at,
+      authorName: report.user?.name || 'Pengguna tidak diketahui',
+      authorId: report.user?.id,
+      status: report.status,
+      resolutionNote: report.resolution_note,
+      resolvedAt: report.resolved_at
+    });
+    setPreviewDialogOpen(true);
+  };
+
+  // Function to handle closing the preview dialog
+  const handleClosePreviewDialog = () => {
+    setPreviewDialogOpen(false);
+    setPreviewContent(null);
+  };
+
+  // Handle action on reported content - enhanced version
+  const handleReportAction = async (reportId, action) => {
+    try {
+      Swal.fire({
+        title: 'Memproses...',
+        text: 'Menjalankan tindakan moderasi',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      // Find the report to determine its type
+      const report = getFilteredReports().find(r => r.id === reportId);
+      if (!report) {
+        throw new Error('Report not found');
+      }
+
+      const resolutionNote = action === 'approve' ? 'Laporan valid, konten telah ditinjau' :
+                            action === 'delete' ? 'Konten melanggar pedoman' :
+                            'Laporan ditolak, konten tidak melanggar pedoman';
+      
+      // Call API to moderate the report based on report type
+      let response;
+      if (report.reportType === 'comment') {
+        response = await api.patch(`/forum-reports/${reportId}/moderate`, {
+          action: action,
+          resolution_note: resolutionNote
+        });
+      } else {
+        // For thread reports, use the appropriate API endpoint
+        response = await api.patch(`/forum-reports/${reportId}/moderate`, {
+          action: action,
+          resolution_note: resolutionNote,
+          report_type: 'thread'
+        });
+      }
+      
+      console.log('Report moderation response:', response.data);
+      
+      if (response.data && response.data.data) {
+        // Refresh reports data to get updated status
+        fetchReportedContent();
+      }
+      
+      Swal.fire({
+        title: 'Berhasil!',
+        text: action === 'approve' 
+          ? 'Laporan telah ditandai sebagai teratasi' 
+          : action === 'delete' 
+            ? `${report.reportType === 'comment' ? 'Komentar' : 'Thread'} berhasil dihapus` 
+            : 'Konten telah ditolak dan dibiarkan',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
+      });
+      
+      // Close preview dialog if open
+      if (previewDialogOpen) {
+        setPreviewDialogOpen(false);
+      }
+      
+    } catch (error) {
+      console.error('Error processing report action:', error);
+      Swal.fire('Error', 'Gagal memproses tindakan moderasi', 'error');
+    }
+  };
+
+  // Add function to handle deleting all reports
+  const handleDeleteAllReports = () => {
+    if (reportedComments.length === 0 && reportedThreads.length === 0) {
+      Swal.fire('Info', 'Tidak ada laporan untuk dihapus', 'info');
+      return;
+    }
+
+    Swal.fire({
+      title: 'Hapus Semua Laporan?',
+      text: "Anda akan menghapus semua laporan. Tindakan ini tidak dapat dibatalkan!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Ya, Hapus Semua',
+      cancelButtonText: 'Batal'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Show loading
+        Swal.fire({
+          title: 'Menghapus Laporan',
+          text: 'Mohon tunggu...',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+        
+        // Call API to delete all reports
+        api.delete('/forum-reports/all')
+          .then(response => {
+            console.log('All reports deleted:', response.data);
+            
+            // Reset report states
+            setReportedComments([]);
+            setReportedThreads([]);
+            setReportStats({
+              total: 0,
+              pending: 0,
+              resolved: 0,
+              rejected: 0
+            });
+            
+            Swal.fire(
+              'Terhapus!',
+              'Semua laporan berhasil dihapus.',
+              'success'
+            );
+          })
+          .catch(error => {
+            console.error('Error deleting all reports:', error);
+            
+            let errorMessage = 'Gagal menghapus laporan. Silakan coba lagi nanti.';
+            if (error.response && error.response.data && error.response.data.message) {
+              errorMessage = error.response.data.message;
+            }
+            
+            Swal.fire(
+              'Error!',
+              errorMessage,
+              'error'
+            );
+          });
+      }
+    });
+  };
+
   return (
-      <Box sx={{ backgroundColor: '#f9f9f9', py: { xs: 3, md: 5 } }}>
+    <Box sx={{ backgroundColor: '#f9f9f9', py: { xs: 3, md: 5 } }}>
       <Container maxWidth="lg">
         {/* Header */}
         <ErrorBoundary>
@@ -763,6 +1103,65 @@ const Forum = () => {
                     }}
                   >
                     Komentar Saya
+                  </Button>
+                </>
+              )}
+
+              {/* Admin-only tabs */}
+              {isAdmin && (
+                <>
+                  <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
+                  
+                  <Button 
+                    variant={activeTab === 'reports' ? "contained" : "text"}
+                    onClick={() => handleTabChange('reports')}
+                    sx={{ 
+                      px: 3,
+                      py: 1,
+                      borderRadius: 2,
+                      fontWeight: activeTab === 'reports' ? 700 : 500,
+                      color: activeTab === 'reports' ? 'white' : 'error.main',
+                      backgroundColor: activeTab === 'reports' ? 'error.main' : 'transparent',
+                      '&:hover': {
+                        backgroundColor: activeTab === 'reports' ? 'error.dark' : 'action.hover',
+                      }
+                    }}
+                    startIcon={<FlagIcon />}
+                  >
+                    <Badge 
+                      badgeContent={
+                        reportedComments.filter(item => item.status === 'reported').length + 
+                        reportedThreads.filter(item => item.status === 'reported').length
+                      } 
+                      color="error"
+                      sx={{
+                        '& .MuiBadge-badge': {
+                          backgroundColor: activeTab === 'reports' ? 'white' : 'error.main',
+                          color: activeTab === 'reports' ? 'error.main' : 'white',
+                        }
+                      }}
+                    >
+                      Laporan
+                    </Badge>
+                  </Button>
+
+                  <Button 
+                    variant={activeTab === 'moderation' ? "contained" : "text"}
+                    onClick={() => handleTabChange('moderation')}
+                    sx={{ 
+                      px: 3,
+                      py: 1,
+                      borderRadius: 2,
+                      fontWeight: activeTab === 'moderation' ? 700 : 500,
+                      color: activeTab === 'moderation' ? 'white' : 'success.main',
+                      backgroundColor: activeTab === 'moderation' ? 'success.main' : 'transparent',
+                      '&:hover': {
+                        backgroundColor: activeTab === 'moderation' ? 'success.dark' : 'action.hover',
+                      }
+                    }}
+                    startIcon={<CheckCircleIcon />}
+                  >
+                    Moderasi
                   </Button>
                 </>
               )}
@@ -928,6 +1327,330 @@ const Forum = () => {
                 >
                   Jelajahi Diskusi
                 </Button>
+              </Box>
+            </Paper>
+          )}
+
+          {/* Reports Tab - Admin Only - Enhanced Version */}
+          {activeTab === 'reports' && isAdmin && (
+            <>
+              <Box sx={{ mb: 4 }}>
+                <Typography variant="h5" component="h2" gutterBottom fontWeight={700}>
+                  Manajemen Laporan Forum
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                  Kelola laporan konten dari pengguna dan ambil tindakan yang sesuai untuk menjaga komunitas tetap sehat.
+                </Typography>
+              </Box>
+
+              {/* Stats Cards */}
+              <Grid container spacing={2} sx={{ mb: 4 }}>
+                <Grid item xs={6} sm={3}>
+                  <Card sx={{ backgroundColor: theme.palette.grey[100] }}>
+                    <CardContent sx={{ p: 2 }}>
+                      <Typography variant="subtitle2" color="text.secondary">Total Laporan</Typography>
+                      <Typography variant="h4" fontWeight={700}>{reportStats.total}</Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={6} sm={3}>
+                  <Card sx={{ backgroundColor: theme.palette.warning.light }}>
+                    <CardContent sx={{ p: 2 }}>
+                      <Typography variant="subtitle2" color="text.secondary">Menunggu</Typography>
+                      <Typography variant="h4" fontWeight={700} color="warning.dark">{reportStats.pending}</Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={6} sm={3}>
+                  <Card sx={{ backgroundColor: theme.palette.success.light }}>
+                    <CardContent sx={{ p: 2 }}>
+                      <Typography variant="subtitle2" color="text.secondary">Teratasi</Typography>
+                      <Typography variant="h4" fontWeight={700} color="success.dark">{reportStats.resolved}</Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={6} sm={3}>
+                  <Card sx={{ backgroundColor: theme.palette.grey[200] }}>
+                    <CardContent sx={{ p: 2 }}>
+                      <Typography variant="subtitle2" color="text.secondary">Ditolak</Typography>
+                      <Typography variant="h4" fontWeight={700} color="text.secondary">{reportStats.rejected}</Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              </Grid>
+
+              <Paper sx={{ p: 3, mb: 4 }}>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                    <TextField
+                      select
+                      label="Filter Status"
+                      value={reportFilter}
+                      onChange={(e) => setReportFilter(e.target.value)}
+                      sx={{ minWidth: 180 }}
+                      size="small"
+                      InputProps={{
+                        startAdornment: <FilterListIcon fontSize="small" sx={{ mr: 1, color: 'action.active' }} />
+                      }}
+                    >
+                      <MenuItem value="all">Semua Laporan</MenuItem>
+                      <MenuItem value="pending">Menunggu Tindakan</MenuItem>
+                      <MenuItem value="resolved">Telah Diatasi</MenuItem>
+                      <MenuItem value="rejected">Ditolak</MenuItem>
+                    </TextField>
+                    
+                    {/* Tambah filter sortir laporan */}
+                    <TextField
+                      select
+                      label="Urutkan"
+                      value={reportSortOrder}
+                      onChange={(e) => setReportSortOrder(e.target.value)}
+                      sx={{ minWidth: 150 }}
+                      size="small"
+                      InputProps={{
+                        startAdornment: <SortIcon fontSize="small" sx={{ mr: 1, color: 'action.active' }} />
+                      }}
+                    >
+                      <MenuItem value="newest">Terbaru</MenuItem>
+                      <MenuItem value="oldest">Terlama</MenuItem>
+                    </TextField>
+                  </Box>
+                  
+                  {reportStats.total > 0 && (
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      onClick={handleDeleteAllReports}
+                      startIcon={<DeleteIcon />}
+                    >
+                      Hapus Semua Laporan
+                    </Button>
+                  )}
+                  
+                  {reportFilter === 'pending' && reportStats.pending > 0 && (
+                    <Typography variant="body2" color="warning.main" fontWeight={500}>
+                      <WarningIcon fontSize="small" sx={{ verticalAlign: 'middle', mr: 1 }} />
+                      {reportStats.pending} laporan menunggu tindakan
+                    </Typography>
+                  )}
+                </Box>
+              </Paper>
+
+              {/* Main reports rendering section */}
+              {loadingReports ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+                  <CircularProgress />
+                </Box>
+              ) : getFilteredReports().length === 0 ? (
+                <Paper sx={{ p: 4, textAlign: 'center' }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                    <FlagIcon sx={{ fontSize: 60, color: 'text.secondary', opacity: 0.3 }} />
+                    <Typography variant="h6" gutterBottom>
+                      Tidak Ada Laporan
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary">
+                      {reportFilter === 'all' 
+                        ? 'Tidak ada laporan konten yang ditemukan saat ini.' 
+                        : `Tidak ada laporan dengan status "${
+                            reportFilter === 'pending' ? 'menunggu tindakan' : 
+                            reportFilter === 'resolved' ? 'telah diatasi' : 
+                            'ditolak'
+                          }" saat ini.`
+                      }
+                    </Typography>
+                  </Box>
+                </Paper>
+              ) : (
+                <Grid container spacing={3}>
+                  {getPaginatedThreads(getFilteredReports(), reportsPage).map((report) => (
+                    <Grid item xs={12} key={`report-${report.id}`}>
+                      <Paper
+                        elevation={0}
+                        sx={{
+                          p: 3,
+                          borderRadius: '12px',
+                          border: '1px solid',
+                          borderColor: report.status === 'reported' 
+                            ? 'warning.light' 
+                            : report.status === 'resolved' 
+                              ? 'success.light'
+                              : 'divider',
+                          boxShadow: report.status === 'reported' ? '0 0 0 2px rgba(255,152,0,0.2)' : 'none'
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                          <Box>
+                            <Typography variant="h6" gutterBottom>
+                              Laporan {report.reportType === 'comment' ? 'Komentar' : 'Thread'}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              Dilaporkan oleh <strong>{report.reported_by.name}</strong> • {formatDateTime(report.reported_at)}
+                            </Typography>
+                          </Box>
+                          <Chip
+                            label={
+                              report.status === 'reported'
+                                ? 'Menunggu Tindakan'
+                                : report.status === 'resolved'
+                                ? 'Telah Diatasi'
+                                : 'Ditolak'
+                            }
+                            color={
+                              report.status === 'reported'
+                                ? 'warning'
+                                : report.status === 'resolved'
+                                ? 'success'
+                                : 'default'
+                            }
+                            size="small"
+                          />
+                        </Box>
+
+                        <Divider sx={{ my: 2 }} />
+
+                        <Box sx={{ mb: 2 }}>
+                          <Typography variant="body2" color="text.secondary" gutterBottom>
+                            <strong>Pada thread:</strong> {report.thread?.judul || 'Thread tidak tersedia'}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" gutterBottom>
+                            <strong>Alasan Laporan:</strong>
+                          </Typography>
+                          <Typography variant="body1" sx={{ mb: 2 }}>
+                            {report.report_reason}
+                          </Typography>
+                        </Box>
+
+                        <Paper
+                          variant="outlined"
+                          sx={{ p: 2, mb: 3, backgroundColor: 'grey.50' }}
+                        >
+                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                            <Avatar 
+                              src={report.user?.avatar} 
+                              alt={report.user?.name || 'Pengguna'} 
+                              sx={{ mr: 2 }} 
+                            />
+                            <Box>
+                              <Typography variant="subtitle2">
+                                {report.user?.name || 'Pengguna'}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Penulis {report.reportType === 'comment' ? 'Komentar' : 'Thread'}
+                              </Typography>
+                            </Box>
+                          </Box>
+                          
+                          <Typography variant="body1" sx={{ 
+                            whiteSpace: 'pre-wrap',
+                            mb: 0,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 3,
+                            WebkitBoxOrient: 'vertical',
+                          }}>
+                            {report.reportType === 'comment' ? report.konten : 
+                             (report.thread?.judul ? `${report.thread.judul} - ${report.description || 'Tidak ada deskripsi'}` : 
+                             'Konten tidak tersedia')}
+                          </Typography>
+                        </Paper>
+
+                        {report.status === 'reported' && (
+                          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                            <Button
+                              variant="outlined"
+                              color="info"
+                              onClick={() => handleOpenPreviewDialog(report)}
+                            >
+                              Lihat Detail
+                            </Button>
+                            <Button
+                              variant="contained"
+                              color="success"
+                              onClick={() => handleReportAction(report.id, 'approve')}
+                              startIcon={<CheckCircleIcon />}
+                            >
+                              Setujui Laporan
+                            </Button>
+                            <Button
+                              variant="contained"
+                              color="error"
+                              onClick={() => handleReportAction(report.id, 'delete')}
+                              startIcon={<DeleteIcon />}
+                            >
+                              Hapus {report.reportType === 'comment' ? 'Komentar' : 'Thread'}
+                            </Button>
+                          </Box>
+                        )}
+                        
+                        {(report.status === 'resolved' || report.status === 'rejected') && report.resolution_note && (
+                          <Box sx={{ mt: 2, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                            <Typography variant="body2" color="text.secondary" gutterBottom>
+                              <strong>Catatan Resolusi:</strong>
+                            </Typography>
+                            <Typography variant="body2">
+                              {report.resolution_note} • {formatDateTime(report.resolved_at)}
+                            </Typography>
+                          </Box>
+                        )}
+                      </Paper>
+                    </Grid>
+                  ))}
+                </Grid>
+              )}
+
+              {/* Pagination for Reports */}
+              {getTotalPages(getFilteredReports().length) > 1 && (
+                <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+                  <Pagination 
+                    count={getTotalPages(getFilteredReports().length)} 
+                    page={reportsPage}
+                    onChange={(e, page) => setReportsPage(page)}
+                    color="primary"
+                    showFirstButton
+                    showLastButton
+                  />
+                </Box>
+              )}
+            </>
+          )}
+          
+          {/* Moderation Tab - Admin Only */}
+          {activeTab === 'moderation' && isAdmin && (
+            <Paper sx={{ p: 4, textAlign: 'center' }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                <CheckCircleIcon sx={{ fontSize: 60, color: 'success.main', opacity: 0.8 }} />
+                <Typography variant="h6" gutterBottom>
+                  Panel Moderasi Forum
+                </Typography>
+                <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 600, mx: 'auto', mb: 2 }}>
+                  Fitur lanjutan untuk moderasi forum sedang dalam pengembangan. Di sini Anda akan dapat melihat statistik forum, tindakan moderasi yang telah diambil, dan alat bantu moderasi lainnya.
+                </Typography>
+
+                <Grid container spacing={3} sx={{ mt: 2, maxWidth: 800, mx: 'auto' }}>
+                  <Grid item xs={12} sm={6}>
+                    <Paper elevation={2} sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                      <Typography variant="h6" gutterBottom fontWeight={600}>Statistik Forum</Typography>
+                      <Typography variant="body2" sx={{ mb: 2, flexGrow: 1 }}>
+                        Lihat statistik mendetail tentang diskusi di forum
+                      </Typography>
+                      <Button variant="outlined" color="primary" onClick={() => navigate('/admin/forum-stats')}>
+                        Buka Statistik
+                      </Button>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Paper elevation={2} sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                      <Typography variant="h6" gutterBottom fontWeight={600}>Log Aktivitas</Typography>
+                      <Typography variant="body2" sx={{ mb: 2, flexGrow: 1 }}>
+                        Lihat riwayat semua aktivitas moderasi yang telah dilakukan
+                      </Typography>
+                      <Button variant="outlined" color="primary" onClick={() => navigate('/admin/activity-log')}>
+                        Buka Log
+                      </Button>
+                    </Paper>
+                  </Grid>
+                </Grid>
               </Box>
             </Paper>
           )}
@@ -1140,7 +1863,7 @@ const Forum = () => {
                             boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
                             position: 'relative' // Add position relative for absolute positioning of delete button
                           }}
-                          onClick={() => handleThreadClick(thread.id)}
+                          onClick={() => handleDeleteThread(e, thread.id)}
                         >
                           {/* Delete button */}
                           <IconButton 
@@ -1327,6 +2050,160 @@ const Forum = () => {
             </>
           )}
         </ErrorBoundary>
+
+        {/* Enhanced Preview Dialog */}
+        <Dialog
+          open={previewDialogOpen}
+          onClose={handleClosePreviewDialog}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle sx={{ 
+            pb: 1, 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            borderBottom: '1px solid',
+            borderColor: 'divider'
+          }}>
+            <Typography variant="h6">Detail Konten yang Dilaporkan</Typography>
+            <Chip 
+              label={
+                previewContent && previewContent.status === 'reported'
+                  ? 'Menunggu Tindakan'
+                  : previewContent && previewContent.status === 'resolved'
+                  ? 'Telah Diatasi'
+                  : 'Ditolak'
+              }
+              color={
+                previewContent && previewContent.status === 'reported'
+                  ? 'warning'
+                  : previewContent && previewContent.status === 'resolved'
+                  ? 'success'
+                  : 'default'
+              }
+              size="small"
+            />
+          </DialogTitle>
+          <DialogContent>
+            {previewContent && (
+              <>
+                <Box sx={{ mb: 4, mt: 2 }}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} md={6}>
+                      <Box>
+                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                          Dilaporkan oleh:
+                        </Typography>
+                        <Typography variant="body1">
+                          {previewContent.reportedBy}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {formatDateTime(previewContent.reportedAt)}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <Box>
+                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                          Pada thread:
+                        </Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          {previewContent.threadTitle}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  </Grid>
+                </Box>
+                
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="h6" gutterBottom color="error" sx={{ display: 'flex', alignItems: 'center' }}>
+                    <FlagIcon sx={{ mr: 1, fontSize: 20 }} />
+                    Alasan Laporan
+                  </Typography>
+                  <Paper variant="outlined" sx={{ p: 2, bgcolor: 'error.lightest', borderColor: 'error.light' }}>
+                    <Typography variant="body1">
+                      {previewContent.reportReason}
+                    </Typography>
+                  </Paper>
+                </Box>
+                
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+                    {previewContent.reportType === 'comment' ? (
+                      <>
+                        <CommentIcon sx={{ mr: 1, fontSize: 20 }} />
+                        Komentar yang Dilaporkan
+                      </>
+                    ) : (
+                      <>
+                        <ForumIcon sx={{ mr: 1, fontSize: 20 }} />
+                        Thread yang Dilaporkan
+                      </>
+                    )}
+                  </Typography>
+                  <Paper variant="outlined" sx={{ p: 3, mb: 2, bgcolor: 'grey.50' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <Avatar sx={{ mr: 2 }}>
+                        {previewContent.authorName ? previewContent.authorName.charAt(0) : '?'}
+                      </Avatar>
+                      <Typography variant="subtitle1" fontWeight={500}>
+                        {previewContent.authorName || 'Pengguna'}
+                      </Typography>
+                    </Box>
+                    <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+                      {previewContent.content}
+                    </Typography>
+                  </Paper>
+                </Box>
+                
+                {previewContent.status !== 'reported' && previewContent.resolutionNote && (
+                  <Box sx={{ mt: 3, p: 2, bgcolor: 'background.default', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Catatan Resolusi:
+                    </Typography>
+                    <Typography variant="body2">
+                      {previewContent.resolutionNote} • {formatDateTime(previewContent.resolvedAt)}
+                    </Typography>
+                  </Box>
+                )}
+              </>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ p: 2, pt: 0, justifyContent: 'space-between' }}>
+            <Button onClick={handleClosePreviewDialog}>
+              Tutup
+            </Button>
+            
+            {previewContent && previewContent.status === 'reported' && (
+              <Box>
+                <Button 
+                  onClick={() => handleReportAction(previewContent.id, 'approve')}
+                  variant="contained"
+                  color="success"
+                  sx={{ mr: 1 }}
+                >
+                  Setujui Laporan
+                </Button>
+                <Button 
+                  onClick={() => handleReportAction(previewContent.id, 'delete')}
+                  variant="contained"
+                  color="error"
+                  sx={{ mr: 1 }}
+                >
+                  Hapus {previewContent.reportType === 'comment' ? 'Komentar' : 'Thread'}
+                </Button>
+                <Button 
+                  onClick={() => handleReportAction(previewContent.id, 'reject')}
+                  variant="outlined"
+                  color="error"
+                >
+                  Tolak Laporan
+                </Button>
+              </Box>
+            )}
+          </DialogActions>
+        </Dialog>
       </Container>
     </Box>
   );

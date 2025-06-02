@@ -30,20 +30,6 @@ class ForumViewController extends Controller
                 ], Response::HTTP_NOT_FOUND);
             }
             
-            // Gunakan session untuk mencegah multiple increment dari user yang sama dalam satu sesi
-            $sessionKey = "thread_viewed_{$threadId}";
-            if ($request->session()->has($sessionKey)) {
-                // Thread sudah dilihat dalam sesi ini, kembalikan view count saat ini
-                Log::info("Thread {$threadId} already viewed in this session, skipping increment");
-                return response()->json([
-                    'message' => 'View count tidak diubah (sudah dilihat)',
-                    'data' => [
-                        'thread_id' => $threadId,
-                        'view_count' => (int)$thread->view_count
-                    ]
-                ], Response::HTTP_OK);
-            }
-            
             // Tambahkan log untuk debugging
             Log::info("Incrementing view count for thread {$threadId}, current count: {$thread->view_count}");
 
@@ -63,9 +49,6 @@ class ForumViewController extends Controller
                 $currentViews = (int)$thread->view_count;
                 $thread->view_count = $currentViews + 1;
                 $thread->save();
-                
-                // Tandai thread sebagai sudah dilihat dalam sesi ini
-                $request->session()->put($sessionKey, true);
                 
                 DB::commit();
                 

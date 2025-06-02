@@ -17,7 +17,17 @@ import {
   IconButton,
   Chip,
   Rating,
-  Tooltip
+  Tooltip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  FormControl,
+  FormControlLabel,
+  RadioGroup,
+  Radio,
+  MenuItem
 } from '@mui/material';
 import {
   ArrowBack,
@@ -32,12 +42,14 @@ import {
   CalendarToday as CalendarTodayIcon,
   Category as CategoryIcon,
   Visibility as VisibilityIcon,
-  Star as StarIcon
+  Star as StarIcon,
+  Flag as FlagIcon
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { useAuth } from '../hooks/useAuth';
 import api from '../services/api';
+import Alert from '@mui/material/Alert';
 
 const formatDateTime = (isoString) => {
   try {
@@ -141,6 +153,16 @@ const DetailForum = () => {
   const [isThreadContentExpanded, setIsThreadContentExpanded] = useState(false);
   const [userRating, setUserRating] = useState(0);
   const [viewCountUpdated, setViewCountUpdated] = useState(false);
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportDescription, setReportDescription] = useState('');
+  const [reportingCommentId, setReportingCommentId] = useState(null);
+  const [reportingComment, setReportingComment] = useState(null);
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const [reportThreadDialogOpen, setReportThreadDialogOpen] = useState(false);
+  const [reportThreadReason, setReportThreadReason] = useState('');
+  const [reportThreadDescription, setReportThreadDescription] = useState('');
+  const [isSubmittingThreadReport, setIsSubmittingThreadReport] = useState(false);
 
   // Definisikan loadComments sebagai fungsi di level komponen 
   // agar bisa diakses dari manapun dalam komponen
@@ -373,41 +395,40 @@ const DetailForum = () => {
         
         const threadData = response.data.thread;
         
-        // Jika view count belum diupdate, panggil API increment view
+        // Jika view count belum diupdate, panggil API increment view secara asinkron
+        // tanpa menunggu hasilnya agar tidak menghambat rendering thread
         if (!viewCountUpdated) {
           try {
-            // Panggil API untuk increment view count
-            const viewResponse = await api.post(`/forum-threads/${id}/view`);
-            console.log('View count incremented for thread:', id, viewResponse.data);
-            
-            // Set flag bahwa view sudah diupdate
-            setViewCountUpdated(true);
-            
-            // Gunakan view count dari response API
-            if (viewResponse.data && viewResponse.data.data && viewResponse.data.data.view_count) {
-              // Update threadData dengan nilai view_count yang dikembalikan dari server
-              threadData.view_count = viewResponse.data.data.view_count;
-            }
-          } catch (viewError) {
-            console.error('Error incrementing view count:', viewError);
-            
-            // Coba API publik sebagai fallback
-            try {
-              if (!viewCountUpdated) {
-                const publicViewResponse = await api.post(`/public/forum-threads/${id}/view`);
-                console.log('View count incremented via public API:', id, publicViewResponse.data);
+            console.log('Attempting to increment view count for thread:', id);
+            // Panggil API untuk increment view count tanpa await
+            api.post(`/forum-threads/${id}/view`)
+              .then(viewResponse => {
+                console.log('View count incremented for thread:', id, viewResponse.data);
                 
                 // Set flag bahwa view sudah diupdate
                 setViewCountUpdated(true);
+              })
+              .catch(viewError => {
+                console.error('Error incrementing view count, trying public API:', viewError);
                 
-                // Gunakan view count dari response API publik
-                if (publicViewResponse.data && publicViewResponse.data.data && publicViewResponse.data.data.view_count) {
-                  threadData.view_count = publicViewResponse.data.data.view_count;
-                }
-              }
-            } catch (publicViewError) {
-              console.error('Error incrementing view count via public API:', publicViewError);
-            }
+                // Coba API publik sebagai fallback
+                api.post(`/public/forum-threads/${id}/view`)
+                  .then(publicViewResponse => {
+                    console.log('View count incremented via public API:', id, publicViewResponse.data);
+                    
+                    // Set flag bahwa view sudah diupdate
+                    setViewCountUpdated(true);
+                  })
+                  .catch(publicViewError => {
+                    console.error('Error incrementing view count via public API:', publicViewError);
+                    // Gagal menambah view count, tapi tetap tampilkan thread
+                    setViewCountUpdated(true); // Tandai sudah mencoba untuk mencegah percobaan berulang
+                  });
+              });
+          } catch (error) {
+            console.error('Unexpected error when trying to increment view count:', error);
+            // Gagal menambah view count, tapi tetap tampilkan thread
+            setViewCountUpdated(true);
           }
         }
         
@@ -444,25 +465,25 @@ const DetailForum = () => {
         console.log('Trying public API as fallback');
         try {
           const publicResponse = await api.get(`/public/forum-threads/${id}`);
+          console.log('Public API response:', publicResponse.data);
+          
           if (publicResponse.data && publicResponse.data.thread) {
             const threadData = publicResponse.data.thread;
             
-            // Jika view count belum diupdate, coba increment melalui API publik
+            // Jika view count belum diupdate, coba increment melalui API publik secara asinkron
             if (!viewCountUpdated) {
-              try {
-                const publicViewResponse = await api.post(`/public/forum-threads/${id}/view`);
-                console.log('View count incremented via public API fallback:', id, publicViewResponse.data);
-                
-                // Set flag bahwa view sudah diupdate
-                setViewCountUpdated(true);
-                
-                // Gunakan view count dari response API
-                if (publicViewResponse.data && publicViewResponse.data.data && publicViewResponse.data.data.view_count) {
-                  threadData.view_count = publicViewResponse.data.data.view_count;
-                }
-              } catch (publicViewError) {
-                console.error('Error incrementing view count via public API fallback:', publicViewError);
-              }
+              api.post(`/public/forum-threads/${id}/view`)
+                .then(publicViewResponse => {
+                  console.log('View count incremented via public API fallback:', id, publicViewResponse.data);
+                  
+                  // Set flag bahwa view sudah diupdate
+                  setViewCountUpdated(true);
+                })
+                .catch(publicViewError => {
+                  console.error('Error incrementing view count via public API fallback:', publicViewError);
+                  // Gagal menambah view count, tapi tetap tampilkan thread
+                  setViewCountUpdated(true);
+                });
             }
             
             processThreadData(threadData);
@@ -1353,6 +1374,245 @@ const DetailForum = () => {
     }
   };
 
+  // Function to handle opening the report dialog
+  const handleOpenReportDialog = (comment) => {
+    if (!isAuthenticated) {
+      // Redirect to login if not authenticated
+      Swal.fire({
+        title: 'Login Diperlukan',
+        text: 'Anda harus login terlebih dahulu untuk melaporkan komentar.',
+        icon: 'info',
+        confirmButtonText: 'Login',
+        showCancelButton: true,
+        cancelButtonText: 'Batal'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate('/login', { state: { from: `/detail-forum/${id}` } });
+        }
+      });
+      return;
+    }
+    
+    // Set the comment to report
+    setReportingCommentId(comment.id);
+    setReportingComment(comment);
+    setReportReason('');
+    setReportDescription('');
+    setReportDialogOpen(true);
+  };
+
+  // Function to handle closing the report dialog
+  const handleCloseReportDialog = () => {
+    setReportDialogOpen(false);
+    setReportingCommentId(null);
+    setReportingComment(null);
+    setReportReason('');
+    setReportDescription('');
+  };
+
+  // Function to handle submitting a report
+  const handleSubmitReport = async () => {
+    if (!reportReason) {
+      Swal.fire({
+        title: 'Alasan Diperlukan',
+        text: 'Silakan pilih alasan untuk melaporkan komentar ini.',
+        icon: 'warning'
+      });
+      return;
+    }
+
+    setIsSubmittingReport(true);
+
+    try {
+      console.log('Mengirim laporan untuk komentar ID:', reportingCommentId);
+      console.log('Alasan:', reportReason);
+      console.log('Deskripsi:', reportDescription);
+      
+      // Call API to submit comment report
+      const response = await api.post(`/forum-threads/${id}/comments/${reportingCommentId}/report`, {
+        reason: reportReason,
+        description: reportDescription
+      });
+      
+      console.log('Report response:', response.data);
+      
+      // Close the dialog
+      handleCloseReportDialog();
+      
+      // Show success message
+      Swal.fire({
+        title: 'Laporan Terkirim',
+        text: 'Terima kasih telah melaporkan konten yang tidak pantas. Tim moderator kami akan segera meninjau laporan Anda.',
+        icon: 'success'
+      });
+      
+    } catch (error) {
+      console.error('Error submitting report:', error);
+      
+      let errorMessage = 'Gagal mengirim laporan. Silakan coba lagi nanti.';
+      
+      if (error.response) {
+        console.error('Error response:', error.response);
+        
+        if (error.response.status === 500) {
+          errorMessage = 'Terjadi kesalahan pada server saat mengirim laporan. Sistem pelaporan mungkin belum diaktifkan sepenuhnya atau memerlukan konfigurasi lebih lanjut.';
+        } else if (error.response.status === 422) {
+          errorMessage = 'Format laporan tidak valid. Pastikan alasan laporan dipilih dengan benar.';
+        } else if (error.response.status === 404) {
+          errorMessage = 'Komentar yang dilaporkan tidak ditemukan atau mungkin telah dihapus.';
+        } else if (error.response.status === 401) {
+          errorMessage = 'Sesi login Anda telah berakhir. Silakan login kembali untuk melaporkan komentar.';
+          
+          // Optionally redirect to login page after confirmation
+          Swal.fire({
+            title: 'Error',
+            text: errorMessage,
+            icon: 'error',
+            confirmButtonText: 'Login',
+            showCancelButton: true,
+            cancelButtonText: 'Batal'
+          }).then((result) => {
+            if (result.isConfirmed) {
+              navigate('/login', { state: { from: `/detail-forum/${id}` } });
+            }
+            handleCloseReportDialog();
+          });
+          return; // Return early to prevent showing another Swal dialog
+        }
+        
+        // Check if error response has a specific error message
+        if (error.response.data && error.response.data.error) {
+          errorMessage = error.response.data.error;
+        }
+      }
+      
+      Swal.fire({
+        title: 'Error',
+        text: errorMessage,
+        icon: 'error'
+      });
+    } finally {
+      setIsSubmittingReport(false);
+    }
+  };
+
+  // Function untuk melaporkan thread
+  const handleOpenReportThreadDialog = () => {
+    if (!isAuthenticated) {
+      // Redirect to login if not authenticated
+      Swal.fire({
+        title: 'Login Diperlukan',
+        text: 'Anda harus login terlebih dahulu untuk melaporkan thread.',
+        icon: 'info',
+        confirmButtonText: 'Login',
+        showCancelButton: true,
+        cancelButtonText: 'Batal'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate('/login', { state: { from: `/detail-forum/${id}` } });
+        }
+      });
+      return;
+    }
+    
+    setReportThreadReason('');
+    setReportThreadDescription('');
+    setReportThreadDialogOpen(true);
+  };
+
+  // Function untuk menutup dialog laporan thread
+  const handleCloseReportThreadDialog = () => {
+    setReportThreadDialogOpen(false);
+    setReportThreadReason('');
+    setReportThreadDescription('');
+  };
+
+  // Function untuk submit laporan thread
+  const handleSubmitThreadReport = async () => {
+    if (!reportThreadReason) {
+      Swal.fire({
+        title: 'Alasan Diperlukan',
+        text: 'Silakan pilih alasan untuk melaporkan thread ini.',
+        icon: 'warning'
+      });
+      return;
+    }
+
+    setIsSubmittingThreadReport(true);
+
+    try {
+      console.log('Mengirim laporan untuk thread ID:', id);
+      console.log('Alasan:', reportThreadReason);
+      console.log('Deskripsi:', reportThreadDescription);
+      
+      // Call API to submit thread report
+      const response = await api.post(`/forum-threads/${id}/report`, {
+        reason: reportThreadReason,
+        description: reportThreadDescription
+      });
+      
+      console.log('Report response:', response.data);
+      
+      // Close the dialog
+      handleCloseReportThreadDialog();
+      
+      // Show success message
+      Swal.fire({
+        title: 'Laporan Terkirim',
+        text: 'Terima kasih telah melaporkan thread ini. Tim moderator kami akan segera meninjau laporan Anda.',
+        icon: 'success'
+      });
+      
+    } catch (error) {
+      console.error('Error submitting thread report:', error);
+      
+      let errorMessage = 'Gagal mengirim laporan. Silakan coba lagi nanti.';
+      
+      if (error.response) {
+        console.error('Error response:', error.response);
+        
+        if (error.response.status === 500) {
+          errorMessage = 'Terjadi kesalahan pada server saat mengirim laporan. Sistem pelaporan mungkin belum diaktifkan sepenuhnya atau memerlukan konfigurasi lebih lanjut.';
+        } else if (error.response.status === 422) {
+          errorMessage = 'Format laporan tidak valid. Pastikan alasan laporan dipilih dengan benar.';
+        } else if (error.response.status === 404) {
+          errorMessage = 'Thread yang dilaporkan tidak ditemukan atau mungkin telah dihapus.';
+        } else if (error.response.status === 401) {
+          errorMessage = 'Sesi login Anda telah berakhir. Silakan login kembali untuk melaporkan thread.';
+          
+          // Optionally redirect to login page after confirmation
+          Swal.fire({
+            title: 'Error',
+            text: errorMessage,
+            icon: 'error',
+            confirmButtonText: 'Login',
+            showCancelButton: true,
+            cancelButtonText: 'Batal'
+          }).then((result) => {
+            if (result.isConfirmed) {
+              navigate('/login', { state: { from: `/detail-forum/${id}` } });
+            }
+            handleCloseReportThreadDialog();
+          });
+          return; // Return early to prevent showing another Swal dialog
+        }
+        
+        // Check if error response has a specific error message
+        if (error.response.data && error.response.data.error) {
+          errorMessage = error.response.data.error;
+        }
+      }
+      
+      Swal.fire({
+        title: 'Error',
+        text: errorMessage,
+        icon: 'error'
+      });
+    } finally {
+      setIsSubmittingThreadReport(false);
+    }
+  };
+
   return (
     <Box sx={{ backgroundColor: '#f9f9f9', py: { xs: 3, md: 5 } }}>
       <Container maxWidth="lg" sx={{ py: 0 }}>
@@ -1548,6 +1808,21 @@ const DetailForum = () => {
                     ))}
                   </Stack>
                 )}
+                
+                {/* Add Report Thread button */}
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
+                  {isAuthenticated && thread && user && user.id !== thread.authorId && (
+                    <Button
+                      variant="outlined"
+                      color="warning"
+                      startIcon={<FlagIcon />}
+                      onClick={handleOpenReportThreadDialog}
+                      size="small"
+                    >
+                      Laporkan Thread
+                    </Button>
+                  )}
+                </Box>
               </Paper>
             </Box>
             <Box sx={{ mb: 6 }}>
@@ -1802,6 +2077,30 @@ const DetailForum = () => {
                             </Box>
                           </Button>
                         )}
+
+                        {/* Add Report Button */}
+                        {isAuthenticated && !comment.isOwnComment && (
+                          <Button
+                            size="small"
+                            color="warning"
+                            onClick={() => handleOpenReportDialog(comment)}
+                            disabled={editingCommentId !== null}
+                            sx={{ 
+                              minWidth: { xs: 'auto', sm: '64px' }, 
+                              px: { xs: 1, sm: 2 },
+                              ml: { xs: 0, sm: 1 }
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              <Box sx={{ display: { xs: 'block', sm: 'none' } }}>
+                                <FlagIcon fontSize="small" />
+                              </Box>
+                              <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+                                Laporkan
+                              </Box>
+                            </Box>
+                          </Button>
+                        )}
                       </Box>
                     </Box>
                     
@@ -2052,6 +2351,30 @@ const DetailForum = () => {
                                 </Box>
                               </Button>
                             )}
+
+                            {/* Add Report Button for replies */}
+                            {isAuthenticated && !reply.isOwnComment && (
+                              <Button
+                                size="small"
+                                color="warning"
+                                onClick={() => handleOpenReportDialog(reply)}
+                                disabled={editingCommentId !== null}
+                                sx={{ 
+                                  minWidth: { xs: 'auto', sm: '64px' }, 
+                                  px: { xs: 1, sm: 2 },
+                                  ml: { xs: 0, sm: 1 }
+                                }}
+                              >
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  <Box sx={{ display: { xs: 'block', sm: 'none' } }}>
+                                    <FlagIcon fontSize="small" />
+                                  </Box>
+                                  <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+                                    Laporkan
+                                  </Box>
+                                </Box>
+                              </Button>
+                            )}
                           </Box>
                         </Box>
 
@@ -2141,6 +2464,136 @@ const DetailForum = () => {
             </Button>
           </Box>
         )}
+
+        {/* Add Report Dialog at the end of the component before the last closing tag */}
+        <Dialog open={reportDialogOpen} onClose={handleCloseReportDialog}>
+          <DialogTitle>Laporkan Komentar</DialogTitle>
+          <DialogContent>
+            <DialogContentText sx={{ mb: 2 }}>
+              Bantu kami menjaga forum ini agar tetap bermanfaat bagi semua orang dengan melaporkan konten yang tidak pantas.
+            </DialogContentText>
+            
+            {reportingComment && (
+              <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'grey.50' }}>
+                <Typography variant="caption" color="text.secondary">
+                  Komentar oleh {reportingComment.user.name}:
+                </Typography>
+                <Typography variant="body2">
+                  {reportingComment.text.length > 100 
+                    ? `${reportingComment.text.substring(0, 100)}...` 
+                    : reportingComment.text}
+                </Typography>
+              </Paper>
+            )}
+            
+            <FormControl fullWidth sx={{ mb: 3 }}>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Alasan Laporan*
+              </Typography>
+              <RadioGroup
+                value={reportReason}
+                onChange={(e) => setReportReason(e.target.value)}
+              >
+                <FormControlLabel value="inappropriate" control={<Radio />} label="Konten tidak pantas atau menyinggung" />
+                <FormControlLabel value="spam" control={<Radio />} label="Spam atau iklan" />
+                <FormControlLabel value="harassment" control={<Radio />} label="Pelecehan atau intimidasi" />
+                <FormControlLabel value="misinformation" control={<Radio />} label="Informasi salah atau menyesatkan" />
+                <FormControlLabel value="other" control={<Radio />} label="Lainnya" />
+              </RadioGroup>
+            </FormControl>
+            
+            <TextField
+              label="Deskripsi Tambahan (opsional)"
+              multiline
+              rows={3}
+              value={reportDescription}
+              onChange={(e) => setReportDescription(e.target.value)}
+              fullWidth
+              variant="outlined"
+              placeholder="Jelaskan lebih detail mengapa komentar ini harus ditinjau oleh moderator..."
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseReportDialog} disabled={isSubmittingReport}>
+              Batal
+            </Button>
+            <Button 
+              onClick={handleSubmitReport} 
+              variant="contained" 
+              color="warning" 
+              disabled={!reportReason || isSubmittingReport}
+              startIcon={isSubmittingReport ? <CircularProgress size={16} /> : <FlagIcon />}
+            >
+              {isSubmittingReport ? 'Mengirim...' : 'Kirim Laporan'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+        
+        {/* Add Thread Report Dialog */}
+        <Dialog open={reportThreadDialogOpen} onClose={handleCloseReportThreadDialog}>
+          <DialogTitle>Laporkan Thread</DialogTitle>
+          <DialogContent>
+            <DialogContentText sx={{ mb: 2 }}>
+              Bantu kami menjaga forum ini agar tetap bermanfaat bagi semua orang dengan melaporkan thread yang tidak pantas.
+            </DialogContentText>
+            
+            {thread && (
+              <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'grey.50' }}>
+                <Typography variant="caption" color="text.secondary">
+                  Thread oleh {thread.author}:
+                </Typography>
+                <Typography variant="body2" fontWeight="bold">
+                  {thread.title}
+                </Typography>
+              </Paper>
+            )}
+            
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Laporan akan ditinjau oleh tim moderator kami. Terima kasih telah membantu menjaga kualitas forum.
+            </Alert>
+            
+            <FormControl fullWidth sx={{ mb: 3 }}>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Alasan Laporan*
+              </Typography>
+              <RadioGroup
+                value={reportThreadReason}
+                onChange={(e) => setReportThreadReason(e.target.value)}
+              >
+                <FormControlLabel value="inappropriate" control={<Radio />} label="Konten tidak pantas atau menyinggung" />
+                <FormControlLabel value="spam" control={<Radio />} label="Spam atau iklan" />
+                <FormControlLabel value="harassment" control={<Radio />} label="Pelecehan atau intimidasi" />
+                <FormControlLabel value="misinformation" control={<Radio />} label="Informasi salah atau menyesatkan" />
+                <FormControlLabel value="other" control={<Radio />} label="Lainnya" />
+              </RadioGroup>
+            </FormControl>
+            
+            <TextField
+              label="Deskripsi Tambahan (opsional)"
+              multiline
+              rows={3}
+              value={reportThreadDescription}
+              onChange={(e) => setReportThreadDescription(e.target.value)}
+              fullWidth
+              variant="outlined"
+              placeholder="Jelaskan lebih detail mengapa thread ini harus ditinjau oleh moderator..."
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseReportThreadDialog} disabled={isSubmittingThreadReport}>
+              Batal
+            </Button>
+            <Button 
+              onClick={handleSubmitThreadReport} 
+              variant="contained" 
+              color="warning" 
+              disabled={!reportThreadReason || isSubmittingThreadReport}
+              startIcon={isSubmittingThreadReport ? <CircularProgress size={16} /> : <FlagIcon />}
+            >
+              {isSubmittingThreadReport ? 'Mengirim...' : 'Kirim Laporan'}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Container>
     </Box>
   );

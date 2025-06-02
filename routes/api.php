@@ -192,11 +192,33 @@ Route::prefix('v1')->group(function () {
         Route::get('/forum-threads/{threadId}/rating', [ForumRatingController::class, 'getUserRating']);
 
         // Forum thread view count
-        Route::post('/forum-threads/{threadId}/view', [ForumViewController::class, 'incrementView']);
+        Route::post('/forum-threads/{threadId}/view', [App\Http\Controllers\API\v1\ForumViewController::class, 'incrementView']);
+        
+        // Forum report routes
+        // Report a thread
+        Route::post('/forum-threads/{thread}/report', [App\Http\Controllers\API\v1\ForumReportController::class, 'reportThread']);
+        
+        // Report a comment
+        Route::post('/forum-threads/{thread}/comments/{comment}/report', [App\Http\Controllers\API\v1\ForumReportController::class, 'reportComment']);
+        
+        // Admin-only report routes
+        Route::middleware('role:admin')->group(function () {
+            // Get reports list
+            Route::get('/forum-reports', [App\Http\Controllers\API\v1\ForumReportController::class, 'index']);
+            
+            // Get report statistics
+            Route::get('/forum-reports/statistics', [App\Http\Controllers\API\v1\ForumReportController::class, 'statistics']);
+            
+            // Moderate a report
+            Route::patch('/forum-reports/{report}/moderate', [App\Http\Controllers\API\v1\ForumReportController::class, 'moderate']);
+            
+            // Delete all reports
+            Route::delete('/forum-reports/all', [App\Http\Controllers\API\v1\ForumReportController::class, 'deleteAll']);
+        });
     });
 
     // Forum thread view count - public route
-    Route::post('/public/forum-threads/{threadId}/view', [\App\Http\Controllers\API\v1\ForumViewController::class, 'incrementView']);
+    Route::post('/public/forum-threads/{threadId}/view', [App\Http\Controllers\API\v1\ForumViewController::class, 'incrementView']);
 });
 
 // GIS Routes untuk peta pengepul sampah

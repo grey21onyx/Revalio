@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class ForumComment extends Model
 {
@@ -110,5 +111,13 @@ class ForumComment extends Model
     public function replies(): HasMany
     {
         return $this->hasMany(ForumComment::class, 'parent_komentar_id', 'komentar_id');
+    }
+
+    /**
+     * Get the reports for this comment
+     */
+    public function reports(): MorphMany
+    {
+        return $this->morphMany(ForumReport::class, 'reportable', 'reportable_type', 'reportable_id');
     }
 } 

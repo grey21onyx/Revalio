@@ -1,6 +1,7 @@
-import React from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { Box, CircularProgress } from '@mui/material';
 
 // Auth components
 import ProtectedRoute from '../components/auth/ProtectedRoute';
@@ -49,25 +50,76 @@ import CMS from '../pages/DashboardAdmin/CMS';
 // Layout
 import MainLayout from '../components/layout/MainLayout';
 import AuthLayout from '../components/layout/AuthLayout';
+import AdminLayout from '../components/layout/AdminLayout';
 
 // Admin Route Component - Protects routes that require admin privileges
 const AdminRoute = ({ children }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
+  const [checking, setChecking] = useState(true);
   
   React.useEffect(() => {
-    // Check if user is authenticated and has admin role
-    if (!isAuthenticated) {
-      navigate('/login', { replace: true });
-      return;
-    }
+    const checkAdminAccess = async () => {
+      setChecking(true);
+      
+      // Jika sedang loading auth state, tunggu
+      if (isLoading) return;
+      
+      // Check if user is authenticated and has admin role
+      if (!isAuthenticated) {
+        navigate('/login', { replace: true });
+        return;
+      }
+      
+      const isAdmin = user?.role === 'admin' || user?.is_admin;
+      if (!isAdmin) {
+        navigate('/home', { replace: true, state: { message: 'Access denied. Admin privileges required.' } });
+        return;
+      }
+      
+      setChecking(false);
+    };
     
-    const isAdmin = user?.role === 'admin' || user?.is_admin;
-    if (!isAdmin) {
-      navigate('/home', { replace: true, state: { message: 'Access denied. Admin privileges required.' } });
-    }
-  }, [isAuthenticated, user, navigate]);
+    checkAdminAccess();
+  }, [isAuthenticated, user, navigate, isLoading]);
 
+  // Show loading indicator while checking admin status
+  if (isLoading || checking) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  return children;
+};
+
+// User Route Component - Protects routes for regular users, preventing admin access
+const UserRoute = ({ children }) => {
+  const { user, isAuthenticated, isLoading } = useAuth();
+  
+  // Tampilkan loading saat memeriksa status autentikasi
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+  
+  // Jika tidak terotentikasi, arahkan ke login
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  // Cek jika user adalah admin, redirect ke dashboard admin
+  const isAdmin = user?.role === 'admin' || user?.is_admin;
+  if (isAdmin) {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+  
+  // Jika user biasa, render children
   return children;
 };
 
@@ -105,7 +157,26 @@ const AppRoutes = () => {
 
       {/* Main App Routes - untuk user yang SUDAH login */}
       <Route element={<ProtectedRoute />}>
-        <Route element={<MainLayout />}>
+        {/* Admin Routes - dengan AdminLayout */}
+        <Route path="/admin" element={
+          <AdminRoute>
+            <AdminLayout />
+          </AdminRoute>
+        }>
+          <Route path="dashboard" element={<HomeAdmin />} />
+          <Route path="data-sampah" element={<ManajemenDataSampah />} />
+          <Route path="harga-sampah" element={<KelolaHargaSampah />} />
+          <Route path="forum-diskusi" element={<Forum />} />
+          <Route path="lokasi-pengepul" element={<ManajemenLokasi />} />
+          <Route path="cms" element={<CMS />} />
+        </Route>
+
+        {/* Regular User Routes - hanya untuk pengguna biasa */}
+        <Route element={
+          <UserRoute>
+            <MainLayout />
+          </UserRoute>
+        }>
           {/* Dashboard/Home */}
           <Route path="/home" element={<Home />} />
           
@@ -128,48 +199,11 @@ const AppRoutes = () => {
           {/* Profile */}
           <Route path="/profile" element={<Profile />} />
 
-          {/* Route untuk peta lokasi pengepul sampah (publik dan admin) */}
+          {/* Route untuk peta lokasi pengepul sampah */}
           <Route path="/peta-pengepul" element={<WasteBuyerMap />} />
 
           {/* About */}
           <Route path="/about" element={<About />} />
-          
-          {/* Admin Routes */}
-          <Route path="/admin/dashboard" element={
-            <AdminRoute>
-              <HomeAdmin />
-            </AdminRoute>
-          } />
-          
-          <Route path="/admin/data-sampah" element={
-            <AdminRoute>
-              <ManajemenDataSampah />
-            </AdminRoute>
-          } />
-          
-          <Route path="/admin/harga-sampah" element={
-            <AdminRoute>
-              <KelolaHargaSampah />
-            </AdminRoute>
-          } />
-          
-          <Route path="/admin/forum-diskusi" element={
-            <AdminRoute>
-              <Forum />
-            </AdminRoute>
-          } />
-          
-          <Route path="/admin/lokasi-pengepul" element={
-            <AdminRoute>
-              <ManajemenLokasi />
-            </AdminRoute>
-          } />
-          
-          <Route path="/admin/cms" element={
-            <AdminRoute>
-              <CMS />
-            </AdminRoute>
-          } />
         </Route>
       </Route>
       

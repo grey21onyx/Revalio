@@ -33,6 +33,8 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.min.css';
 
 // Import komponen ScrollToTop
 import ScrollToTop from '../components/ui/ScrollToTop';
@@ -227,6 +229,27 @@ const Home = () => {
     community: null,
     stats: null
   });
+
+  // Check for login success
+  useEffect(() => {
+    // Check if user just logged in
+    const loginSuccess = sessionStorage.getItem('loginSuccess');
+    if (loginSuccess === 'true') {
+      // Show success alert
+      setTimeout(() => {
+        Swal.fire({
+          icon: 'success',
+          title: 'Login Berhasil',
+          text: 'Selamat datang kembali di Revalio',
+          showConfirmButton: false,
+          timer: 1500
+        });
+      }, 500);
+      
+      // Clear the flag
+      sessionStorage.removeItem('loginSuccess');
+    }
+  }, []);
   
   // Fungsi untuk mengambil data sampah unggulan
   const fetchWasteItems = async () => {
@@ -545,8 +568,34 @@ const Home = () => {
 
   // Tambahkan fungsi handleLogout
   const handleLogout = () => {
-    logout();
-    navigate('/login');
+    // Tampilkan konfirmasi logout dengan SweetAlert
+    Swal.fire({
+      title: 'Logout',
+      text: 'Apakah Anda yakin ingin keluar dari akun?',
+      icon: 'question', 
+      showCancelButton: true,
+      confirmButtonColor: theme.palette.primary.main,
+      cancelButtonColor: theme.palette.error.main,
+      confirmButtonText: 'Ya, Logout',
+      cancelButtonText: 'Batal'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Proses logout
+        logout();
+        
+        // Tampilkan notifikasi sukses
+        Swal.fire({
+          title: 'Berhasil Logout',
+          text: 'Anda telah berhasil keluar dari sistem',
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false
+        }).then(() => {
+          // Arahkan ke halaman login
+          navigate('/login');
+        });
+      }
+    });
   };
 
   useEffect(() => {
@@ -710,7 +759,6 @@ const Home = () => {
       return () => {};
     }
   }, []);
-
 
   return (
     <Box sx={{ backgroundColor: '#f8f9fa', minHeight: '100vh' }}>

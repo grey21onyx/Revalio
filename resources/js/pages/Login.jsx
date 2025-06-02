@@ -8,7 +8,8 @@ import {
   IconButton,
   Alert,
   Checkbox,
-  FormControlLabel
+  FormControlLabel,
+  CircularProgress
 } from '@mui/material';
 import {
   ArrowBack,
@@ -21,8 +22,6 @@ import {
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import { useAuth } from '../contexts/AuthContext';
-import Swal from 'sweetalert2';
-import 'sweetalert2/dist/sweetalert2.min.css';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -86,30 +85,31 @@ const Login = () => {
     
     try {
       // Call login and wait for it to complete
-      await login({ 
+      const userData = await login({ 
         email: formData.email, 
         password: formData.password
       });
       
-      // Show success alert
-      await Swal.fire({
-        icon: 'success',
-        title: 'Login Berhasil',
-        text: '',
-        showConfirmButton: false,
-        timer: 1500
-      });
+      // Store login success info in sessionStorage for the target page to display
+      sessionStorage.setItem('loginSuccess', 'true');
       
-      // Manual redirect after alert
-      navigate(fromLocation.pathname || '/home');
+      // Determine redirect path based on user role
+      const isAdmin = userData?.role === 'admin' || userData?.is_admin;
+      
+      // Admin selalu ke dashboard admin, user biasa ke home atau intended path
+      if (isAdmin) {
+        navigate('/admin/dashboard', { replace: true });
+      } else {
+        // User biasa diarahkan ke halaman yang dituju sebelumnya jika ada
+        const redirectPath = fromLocation.pathname === '/admin/dashboard' ? '/home' : fromLocation.pathname;
+        navigate(redirectPath, { replace: true });
+      }
       
     } catch (err) {
       console.error('Login error:', err);
-      Swal.fire({
-        icon: 'error',
-        title: 'Login Gagal',
-        text: error || 'Terjadi kesalahan saat login'
-      });
+      // Show error alert directly in login page
+      const errorMessage = error || 'Terjadi kesalahan saat login';
+      setErrors({ ...errors, general: errorMessage });
     }
   };
 
@@ -133,6 +133,12 @@ const Login = () => {
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
+        </Alert>
+      )}
+      
+      {errors.general && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {errors.general}
         </Alert>
       )}
       

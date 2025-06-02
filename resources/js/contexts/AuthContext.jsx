@@ -158,10 +158,8 @@ export const AuthProvider = ({ children }) => {
       setUser(userInfo);
       setSuccess('Login berhasil');
       
-      // Redirect ke halaman utama
-      navigate('/');
-      
-      return response.data;
+      // Return user data untuk digunakan oleh komponen Login
+      return userInfo;
     } catch (err) {
       console.error('Login error:', err);
       

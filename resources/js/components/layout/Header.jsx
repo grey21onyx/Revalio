@@ -30,8 +30,10 @@ import {
   PersonAdd as PersonAddIcon
 } from '@mui/icons-material';
 import RecyclingIcon from '@mui/icons-material/Recycling';
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.min.css';
 
-const Header = ({ toggleSidebar }) => {
+const Header = ({ toggleSidebar, isAdminLayout = false }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
@@ -45,6 +47,9 @@ const Header = ({ toggleSidebar }) => {
 
   const isMenuOpen = Boolean(anchorEl);
   const isMobileMenuOpen = Boolean(mobileMoreAnchorEl);
+
+  // Tentukan apakah user adalah admin berdasarkan prop atau data user
+  const isAdmin = isAdminLayout || (user?.role === 'admin' || user?.is_admin);
 
   // Effect untuk update foto profil saat user berubah
   useEffect(() => {
@@ -85,8 +90,37 @@ const Header = ({ toggleSidebar }) => {
   };
 
   const handleLogout = () => {
-    logout();
+    // Tutup menu dropdown terlebih dahulu
     handleMenuClose();
+    
+    // Tampilkan konfirmasi logout dengan SweetAlert
+    Swal.fire({
+      title: 'Logout',
+      text: 'Apakah Anda yakin ingin keluar dari akun?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: theme.palette.primary.main,
+      cancelButtonColor: theme.palette.error.main,
+      confirmButtonText: 'Ya, Logout',
+      cancelButtonText: 'Batal'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Proses logout
+        logout();
+        
+        // Tampilkan notifikasi sukses
+        Swal.fire({
+          title: 'Berhasil Logout',
+          text: 'Anda telah berhasil keluar dari sistem',
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false
+        }).then(() => {
+          // Arahkan ke halaman login setelah notifikasi
+          navigate('/login');
+        });
+      }
+    });
   };
 
   // Handle image load error

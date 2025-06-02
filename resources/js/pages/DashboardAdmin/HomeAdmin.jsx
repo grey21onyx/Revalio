@@ -33,11 +33,14 @@ import {
   Comment as CommentIcon,
   ArrowForward as ArrowForwardIcon,
   Warning as WarningIcon,
-  CheckCircle as CheckCircleIcon
+  CheckCircle as CheckCircleIcon,
+  Info as InfoIcon
 } from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.min.css';
 
 // Create SectionHeading component similar to Home.jsx
 const SectionHeading = ({ title, subtitle, actionText, actionLink }) => {
@@ -126,6 +129,27 @@ const HomeAdmin = () => {
   });
   const [recentActivities, setRecentActivities] = useState([]);
   const [flaggedContent, setFlaggedContent] = useState([]);
+
+  // Check for login success
+  useEffect(() => {
+    // Check if user just logged in
+    const loginSuccess = sessionStorage.getItem('loginSuccess');
+    if (loginSuccess === 'true') {
+      // Show success alert
+      setTimeout(() => {
+        Swal.fire({
+          icon: 'success',
+          title: 'Login Berhasil',
+          text: 'Selamat datang di Dashboard Admin',
+          showConfirmButton: false,
+          timer: 1500
+        });
+      }, 500);
+      
+      // Clear the flag
+      sessionStorage.removeItem('loginSuccess');
+    }
+  }, []);
 
   // Format relative time for activities
   const formatTimeAgo = (dateString) => {
@@ -265,8 +289,34 @@ const HomeAdmin = () => {
 
   // Handle logout
   const handleLogout = () => {
-    logout();
-    navigate('/login');
+    // Tampilkan konfirmasi logout dengan SweetAlert
+    Swal.fire({
+      title: 'Logout',
+      text: 'Apakah Anda yakin ingin keluar dari akun admin?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: theme.palette.primary.main,
+      cancelButtonColor: theme.palette.error.main,
+      confirmButtonText: 'Ya, Logout',
+      cancelButtonText: 'Batal'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Proses logout
+        logout();
+        
+        // Tampilkan notifikasi sukses
+        Swal.fire({
+          title: 'Berhasil Logout',
+          text: 'Anda telah berhasil keluar dari sistem admin',
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false
+        }).then(() => {
+          // Arahkan ke halaman login
+          navigate('/login');
+        });
+      }
+    });
   };
 
   // Get status chip for activities

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Box,
   Drawer,
@@ -53,16 +53,17 @@ const adminMenuItems = [
 
 const drawerWidth = 240;
 
-const Sidebar = ({ open, onClose }) => {
+const Sidebar = ({ open, onClose, isAdminLayout = false }) => {
   const theme = useTheme();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const location = useLocation();
-  const { user } = useAuth();
   
-  // Check if user is admin
-  const isAdmin = user?.role === 'admin' || user?.is_admin;
+  // Check if user is admin or force admin menu if isAdminLayout is true
+  const isAdmin = isAdminLayout || (user?.role === 'admin' || user?.is_admin);
   
-  // Choose which menu items to display based on user role
+  // Choose which menu items to display based on user role or layout type
   const menuItems = isAdmin ? adminMenuItems : userMenuItems;
 
   const drawer = (

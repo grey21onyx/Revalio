@@ -5,9 +5,9 @@ import { CircularProgress, Box } from '@mui/material';
 import LandingPage from '../../pages/LandingPage';
 
 const RootRoute = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
 
-  // Jika sedang loading, tampilkan indikator loading
+  // Tampilkan loading hanya saat autentikasi sedang diperiksa
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -16,8 +16,14 @@ const RootRoute = () => {
     );
   }
 
-  // Jika user sudah terautentikasi, redirect ke halaman home (dashboard)
+  // Jika user sudah terautentikasi, redirect sesuai peran
   if (isAuthenticated) {
+    // Jika user adalah admin, redirect ke dashboard admin
+    const isAdmin = user?.role === 'admin' || user?.is_admin;
+    if (isAdmin) {
+      return <Navigate to="/admin/dashboard" replace />;
+    }
+    // Jika user biasa, redirect ke halaman home
     return <Navigate to="/home" replace />;
   }
 

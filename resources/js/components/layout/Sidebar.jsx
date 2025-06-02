@@ -21,11 +21,17 @@ import {
   MonetizationOn as MonetisasiIcon,
   Forum as ForumIcon,
   Info as InfoIcon,
-  LocationOn as LocationIcon
+  LocationOn as LocationIcon,
+  Dashboard as DashboardIcon,
+  Category as CategoryIcon,
+  PriceChange as PriceIcon,
+  Article as ArticleIcon,
+  AdminPanelSettings as AdminIcon
 } from '@mui/icons-material';
+import { useAuth } from '../../contexts/AuthContext';
 
-// Definisi menu
-const menuItems = [
+// Definisi menu untuk user biasa
+const userMenuItems = [
   { name: 'Beranda', path: '/', icon: <HomeIcon /> },
   { name: 'Katalog Sampah', path: '/katalog', icon: <KatalogIcon /> },
   { name: 'Daur Ulang', path: '/daur-ulang', icon: <DaurUlangIcon /> },
@@ -35,12 +41,29 @@ const menuItems = [
   { name: 'Peta Pengepul', path: '/peta-pengepul', icon: <LocationIcon /> },
 ];
 
+// Definisi menu untuk admin
+const adminMenuItems = [
+  { name: 'Beranda', path: '/admin/dashboard', icon: <DashboardIcon /> },
+  { name: 'Manajemen Data Sampah', path: '/admin/data-sampah', icon: <CategoryIcon /> },
+  { name: 'Kelola Harga Sampah', path: '/admin/harga-sampah', icon: <PriceIcon /> },
+  { name: 'Forum Diskusi', path: '/admin/forum-diskusi', icon: <ForumIcon /> },
+  { name: 'Manajemen Lokasi Pengepul', path: '/admin/lokasi-pengepul', icon: <LocationIcon /> },
+  { name: 'CMS', path: '/admin/cms', icon: <ArticleIcon /> },
+];
+
 const drawerWidth = 240;
 
 const Sidebar = ({ open, onClose }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const location = useLocation();
+  const { user } = useAuth();
+  
+  // Check if user is admin
+  const isAdmin = user?.role === 'admin' || user?.is_admin;
+  
+  // Choose which menu items to display based on user role
+  const menuItems = isAdmin ? adminMenuItems : userMenuItems;
 
   const drawer = (
     <Box sx={{ mt: 2 }}>
@@ -50,10 +73,13 @@ const Sidebar = ({ open, onClose }) => {
           fontWeight: 600, 
           mx: 3, 
           my: 2, 
-          color: theme.palette.primary.main 
+          color: theme.palette.primary.main,
+          display: 'flex',
+          alignItems: 'center',
         }}
       >
-        MENU UTAMA
+        {isAdmin && <AdminIcon sx={{ mr: 1 }} />}
+        {isAdmin ? 'MENU ADMIN' : 'MENU UTAMA'}
       </Typography>
       <List>
         {menuItems.map((item) => (
@@ -95,40 +121,44 @@ const Sidebar = ({ open, onClose }) => {
           </ListItem>
         ))}
       </List>
-      <Divider sx={{ my: 2 }} />
-      <List>
-        <ListItem disablePadding>
-          <ListItemButton
-            component={Link}
-            to="/about"
-            selected={location.pathname === '/about'}
-            sx={{
-              mx: 1,
-              borderRadius: 1,
-              color: 'inherit',
-              '&:hover': {
-                backgroundColor: theme.palette.primary.main,
-                color: '#fff',
-                '& .MuiListItemIcon-root': {
-                  color: '#fff',
-                },
-              },
-              '&.Mui-selected': {
-                backgroundColor: theme.palette.primary.light,
-                color: 'black',
-                '& .MuiListItemIcon-root': {
-                  color: 'black',
-                },
-              },
-            }}
-          >
-            <ListItemIcon sx={{ minWidth: 40 }}>
-              <InfoIcon />
-            </ListItemIcon>
-            <ListItemText primary="Tentang Revalio" />
-          </ListItemButton>
-        </ListItem>
-      </List>
+      {!isAdmin && (
+        <>
+          <Divider sx={{ my: 2 }} />
+          <List>
+            <ListItem disablePadding>
+              <ListItemButton
+                component={Link}
+                to="/about"
+                selected={location.pathname === '/about'}
+                sx={{
+                  mx: 1,
+                  borderRadius: 1,
+                  color: 'inherit',
+                  '&:hover': {
+                    backgroundColor: theme.palette.primary.main,
+                    color: '#fff',
+                    '& .MuiListItemIcon-root': {
+                      color: '#fff',
+                    },
+                  },
+                  '&.Mui-selected': {
+                    backgroundColor: theme.palette.primary.light,
+                    color: 'black',
+                    '& .MuiListItemIcon-root': {
+                      color: 'black',
+                    },
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 40 }}>
+                  <InfoIcon />
+                </ListItemIcon>
+                <ListItemText primary="Tentang Revalio" />
+              </ListItemButton>
+            </ListItem>
+          </List>
+        </>
+      )}
     </Box>
   );
 

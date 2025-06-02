@@ -1,5 +1,6 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 // Auth components
 import ProtectedRoute from '../components/auth/ProtectedRoute';
@@ -38,9 +39,37 @@ import SampahPlastik from '../pages/EdukasiSampahKategori/SampahPlastik';
 import SampahKertas from '../pages/EdukasiSampahKategori/SampahKertas';
 import SampahLogam from '../pages/EdukasiSampahKategori/SampahLogam';
 
+// Admin pages
+import HomeAdmin from '../pages/DashboardAdmin/HomeAdmin';
+import ManajemenDataSampah from '../pages/DashboardAdmin/ManajemenDataSampah';
+import KelolaHargaSampah from '../pages/DashboardAdmin/KelolaHargaSampah';
+import ManajemenLokasi from '../pages/DashboardAdmin/ManajemenLokasi';
+import CMS from '../pages/DashboardAdmin/CMS';
+
 // Layout
 import MainLayout from '../components/layout/MainLayout';
 import AuthLayout from '../components/layout/AuthLayout';
+
+// Admin Route Component - Protects routes that require admin privileges
+const AdminRoute = ({ children }) => {
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  
+  React.useEffect(() => {
+    // Check if user is authenticated and has admin role
+    if (!isAuthenticated) {
+      navigate('/login', { replace: true });
+      return;
+    }
+    
+    const isAdmin = user?.role === 'admin' || user?.is_admin;
+    if (!isAdmin) {
+      navigate('/home', { replace: true, state: { message: 'Access denied. Admin privileges required.' } });
+    }
+  }, [isAuthenticated, user, navigate]);
+
+  return children;
+};
 
 const AppRoutes = () => {
   return (
@@ -104,6 +133,43 @@ const AppRoutes = () => {
 
           {/* About */}
           <Route path="/about" element={<About />} />
+          
+          {/* Admin Routes */}
+          <Route path="/admin/dashboard" element={
+            <AdminRoute>
+              <HomeAdmin />
+            </AdminRoute>
+          } />
+          
+          <Route path="/admin/data-sampah" element={
+            <AdminRoute>
+              <ManajemenDataSampah />
+            </AdminRoute>
+          } />
+          
+          <Route path="/admin/harga-sampah" element={
+            <AdminRoute>
+              <KelolaHargaSampah />
+            </AdminRoute>
+          } />
+          
+          <Route path="/admin/forum-diskusi" element={
+            <AdminRoute>
+              <Forum />
+            </AdminRoute>
+          } />
+          
+          <Route path="/admin/lokasi-pengepul" element={
+            <AdminRoute>
+              <ManajemenLokasi />
+            </AdminRoute>
+          } />
+          
+          <Route path="/admin/cms" element={
+            <AdminRoute>
+              <CMS />
+            </AdminRoute>
+          } />
         </Route>
       </Route>
       

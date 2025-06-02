@@ -93,6 +93,11 @@ const Header = ({ toggleSidebar }) => {
   const handleImageError = () => {
     console.error('Error loading profile image');
     
+    // Prevent infinite loop of error handling attempts
+    if (imageError) {
+      return;
+    }
+    
     // Coba cari sumber gambar alternatif
     if (user) {
       // Jika foto_profil gagal, coba gunakan avatar jika ada
@@ -105,13 +110,10 @@ const Header = ({ toggleSidebar }) => {
         return;
       }
       
-      // Jika masih gagal, coba gunakan default image
-      const defaultImagePath = '/storage/profiles/default.jpg';
-      if (!profileImage || profileImage !== defaultImagePath) {
-        console.log('Trying default profile image:', defaultImagePath);
-        setProfileImage(defaultImagePath);
-        return;
-      }
+      // Jika masih gagal, coba gunakan path default tanpa cek file
+      setImageError(true);
+      setProfileImage(null);
+      return;
     }
     
     // Jika semua upaya gagal, tandai sebagai error

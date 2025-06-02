@@ -156,6 +156,20 @@ const Forum = () => {
   // Add these to the state variables section (near the top of the component)
   const [reportSortOrder, setReportSortOrder] = useState('newest'); // 'newest' or 'oldest'
 
+  // Add this function near the top of the component
+  const getAvatarUrl = (user) => {
+    if (!user || !user.avatar) return null;
+    
+    // Handle different formats of avatar URL
+    if (user.avatar.startsWith('http')) {
+      return user.avatar;
+    } else if (user.avatar.startsWith('/storage/')) {
+      return user.avatar;
+    } else {
+      return `/storage/${user.avatar}`;
+    }
+  };
+
   // Fetch threads from API
   useEffect(() => {
     const fetchThreads = async () => {
@@ -850,6 +864,7 @@ const Forum = () => {
       reportedAt: report.reported_at,
       authorName: report.user?.name || 'Pengguna tidak diketahui',
       authorId: report.user?.id,
+      authorAvatar: report.user?.avatar || null,
       status: report.status,
       resolutionNote: report.resolution_note,
       resolvedAt: report.resolved_at
@@ -1526,10 +1541,17 @@ const Forum = () => {
                         >
                           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                             <Avatar 
-                              src={report.user?.avatar} 
+                              src={report.user?.avatar ? getAvatarUrl(report.user) : null} 
                               alt={report.user?.name || 'Pengguna'} 
-                              sx={{ mr: 2 }} 
-                            />
+                              sx={{ mr: 2 }}
+                              // Add error handling for avatar
+                              onError={(e) => {
+                                e.target.src = ''; // Clear src to show fallback
+                                e.target.onerror = null; // Prevent infinite error loops
+                              }}
+                            >
+                              {report.user?.name ? report.user.name.charAt(0).toUpperCase() : 'U'}
+                            </Avatar>
                             <Box>
                               <Typography variant="subtitle2">
                                 {report.user?.name || 'Pengguna'}
@@ -2144,7 +2166,13 @@ const Forum = () => {
                   </Typography>
                   <Paper variant="outlined" sx={{ p: 3, mb: 2, bgcolor: 'grey.50' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <Avatar sx={{ mr: 2 }}>
+                      <Avatar sx={{ mr: 2 }}
+                        src={previewContent.authorName ? getAvatarUrl({ avatar: previewContent.authorAvatar }) : null}
+                        onError={(e) => {
+                          e.target.src = '';
+                          e.target.onerror = null;
+                        }}
+                      >
                         {previewContent.authorName ? previewContent.authorName.charAt(0) : '?'}
                       </Avatar>
                       <Typography variant="subtitle1" fontWeight={500}>

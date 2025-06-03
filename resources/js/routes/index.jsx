@@ -114,12 +114,15 @@ const UserRoute = ({ children }) => {
   }
   
   // Cek jika user adalah admin, redirect ke dashboard admin
+  // KECUALI untuk halaman Profile yang dapat diakses oleh semua tipe pengguna
   const isAdmin = user?.role === 'admin' || user?.is_admin;
-  if (isAdmin) {
+  const currentPath = window.location.pathname;
+  
+  if (isAdmin && currentPath !== '/profile') {
     return <Navigate to="/admin/dashboard" replace />;
   }
   
-  // Jika user biasa, render children
+  // Jika user biasa atau admin mengakses profile, render children
   return children;
 };
 
@@ -169,6 +172,7 @@ const AppRoutes = () => {
           <Route path="forum-diskusi" element={<Forum />} />
           <Route path="lokasi-pengepul" element={<ManajemenLokasi />} />
           <Route path="cms" element={<CMS />} />
+          <Route path="profile" element={<Profile />} />
         </Route>
 
         {/* Regular User Routes - hanya untuk pengguna biasa */}

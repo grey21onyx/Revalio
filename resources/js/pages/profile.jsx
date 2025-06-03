@@ -49,9 +49,10 @@ import {
   Security as SecurityIcon,
   VerifiedUser as VerifiedUserIcon,
   Visibility as VisibilityIcon,
-  VisibilityOff as VisibilityOffIcon
+  VisibilityOff as VisibilityOffIcon,
+  ArrowBack
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import Swal from 'sweetalert2';
 import axiosInstance from '../config/axios';
@@ -99,7 +100,8 @@ const BASE_URL = window.location.origin;
 const Profile = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const { isAuthenticated, user, refreshUser } = useAuth();
+  const location = useLocation();
+  const { isAuthenticated, user, logout, refreshUser } = useAuth();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [tabValue, setTabValue] = useState(0);
   const [editMode, setEditMode] = useState(false);
@@ -152,6 +154,9 @@ const Profile = () => {
   
   // Loading state for profile update
   const [isUpdateLoading, setIsUpdateLoading] = useState(false);
+  
+  // Determine if we're in admin context based on the URL path
+  const isAdminContext = location.pathname.startsWith('/admin');
   
   // Toggle password visibility handlers
   const toggleCurrentPasswordVisibility = () => {
@@ -480,7 +485,7 @@ const Profile = () => {
     }
   };
 
-  // Handle logout
+  // Handle logout with proper redirect based on user context
   const handleLogout = () => {
     Swal.fire({
       title: 'Keluar Akun',
@@ -497,10 +502,20 @@ const Profile = () => {
           useAuth().logout();
         }
         
-        // Redirect to home
-        navigate('/');
+        // Redirect based on context
+        navigate('/login');
       }
     });
+  };
+
+  // Handle back navigation
+  const handleBack = () => {
+    // Navigate back to the appropriate dashboard
+    if (isAdminContext) {
+      navigate('/admin/dashboard');
+    } else {
+      navigate('/home');
+    }
   };
 
   // Jika belum terautentikasi, tidak perlu render halaman
@@ -528,6 +543,16 @@ const Profile = () => {
           onSave={handleCropComplete}
           aspect={1}
         />
+      
+        {/* Back Button */}
+        <Button
+          variant="outlined"
+          startIcon={<ArrowBack />}
+          onClick={handleBack}
+          sx={{ mb: 3 }}
+        >
+          {isAdminContext ? 'Dashboard Admin' : 'Dashboard'}
+        </Button>
       
         {/* Header */}
         <Paper elevation={0} sx={{ 

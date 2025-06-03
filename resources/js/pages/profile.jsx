@@ -487,23 +487,35 @@ const Profile = () => {
 
   // Handle logout with proper redirect based on user context
   const handleLogout = () => {
+    // Tutup menu dropdown terlebih dahulu
+    // handleMenuClose();
+    
+    // Tampilkan konfirmasi logout dengan SweetAlert
     Swal.fire({
-      title: 'Keluar Akun',
-      text: 'Apakah Anda yakin ingin keluar?',
+      title: 'Logout',
+      text: 'Apakah Anda yakin ingin keluar dari akun?',
       icon: 'question',
       showCancelButton: true,
-      confirmButtonText: 'Ya, Keluar',
+      cancelButtonColor: theme.palette.error.main,
+      confirmButtonColor: theme.palette.primary.main,
       cancelButtonText: 'Batal',
-      reverseButtons: true
+      confirmButtonText: 'Ya, Logout'
     }).then((result) => {
       if (result.isConfirmed) {
-        // Call logout from auth context
-        if (useAuth().logout) {
-          useAuth().logout();
-        }
+        // Proses logout
+        logout();
         
-        // Redirect based on context
-        navigate('/login');
+        // Tampilkan notifikasi sukses
+        Swal.fire({
+          title: 'Berhasil Logout',
+          text: 'Anda telah berhasil keluar dari sistem',
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false
+        }).then(() => {
+          // Arahkan ke halaman login setelah notifikasi
+          navigate('/login');
+        });
       }
     });
   };
@@ -848,7 +860,7 @@ const Profile = () => {
                         <TextField
                           fullWidth
                           label="Status Akun"
-                          value="Aktif"
+                          value=" "
                           InputProps={{
                             readOnly: true,
                             startAdornment: (
@@ -877,13 +889,13 @@ const Profile = () => {
                           InputProps={{
                             readOnly: !editMode,
                             startAdornment: (
-                              <InputAdornment position="start">
-                                <HomeIcon color="action" />
+                              <InputAdornment position="top">
+                                <HomeIcon   color="action" />
                               </InputAdornment>
                             ),
                           }}
                           multiline
-                          rows={3}
+                          rows={1}
                           variant={editMode ? "outlined" : "filled"}
                           margin="normal"
                           sx={{ mb: 2 }}

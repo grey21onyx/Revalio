@@ -101,8 +101,8 @@ const Header = ({ toggleSidebar, isAdminLayout = false }) => {
       showCancelButton: true,
       confirmButtonColor: theme.palette.primary.main,
       cancelButtonColor: theme.palette.error.main,
-      confirmButtonText: 'Ya, Logout',
-      cancelButtonText: 'Batal'
+      cancelButtonText: 'Batal',
+      confirmButtonText: 'Ya, Logout'
     }).then((result) => {
       if (result.isConfirmed) {
         // Proses logout

@@ -206,7 +206,7 @@ const LandingPageNavbar = ({ navItems = [], scrollRefs = {} }) => {
                   variant="contained" 
                   sx={{ 
                     ml: 1,
-                    borderRadius: 8,
+                    borderRadius: 1,
                     px: 3,
                     fontWeight: 600,
                     boxShadow: '0 2px 10px rgba(0,0,0,0.2)',

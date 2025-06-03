@@ -647,7 +647,7 @@ const LandingPage = () => {
                     component={Link}
                     to="/register"
                     sx={{ 
-                      borderRadius: 8,
+                      borderRadius: 1,
                       px: { xs: 3, md: 5 },
                       py: 1.75,
                       fontSize: '1.1rem',
@@ -669,7 +669,7 @@ const LandingPage = () => {
                     component={Link}
                     to="/tentang"
                     sx={{ 
-                      borderRadius: 8,
+                      borderRadius: 1,
                       px: { xs: 3, md: 5 },
                       py: 1.75,
                       fontSize: '1.1rem',
@@ -899,7 +899,7 @@ const LandingPage = () => {
                     component={Link}
                     to="/tentang" // Halaman detail Tentang Kami
                     sx={{ 
-                      borderRadius: 8,
+                      borderRadius: 1,
                       px: 3,
                       py: 1.25,
                       fontWeight: 600
@@ -1038,7 +1038,7 @@ const LandingPage = () => {
                 to="/login" 
                 endIcon={<ArrowForwardIcon />}
                 sx={{ 
-                  borderRadius: 8,
+                  borderRadius: 1,
                   px: 4,
                   py: 1.5,
                   fontSize: '1rem',
@@ -1393,7 +1393,7 @@ const LandingPage = () => {
                       bgcolor: 'white',
                       color: theme.palette.primary.main,
                       '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.9)', transform: 'translateY(-3px)', boxShadow: '0 8px 15px rgba(0,0,0,0.2)' },
-                      borderRadius: 8, px: { xs: 3, md: 5 }, py: 1.5, fontSize: '1.1rem', fontWeight: 600, transition: 'all 0.3s', boxShadow: '0 4px 10px rgba(0,0,0,0.15)'
+                      borderRadius: 1, px: { xs: 3, md: 5 }, py: 1.5, fontSize: '1.1rem', fontWeight: 600, transition: 'all 0.3s', boxShadow: '0 4px 10px rgba(0,0,0,0.15)'
                     }}
                   >
                     Daftar Gratis
@@ -1406,7 +1406,7 @@ const LandingPage = () => {
                     sx={{
                       borderColor: 'white', color: 'white',
                       '&:hover': { borderColor: 'white', bgcolor: 'rgba(255, 255, 255, 0.1)', transform: 'translateY(-3px)' },
-                      borderRadius: 8, px: { xs: 3, md: 5 }, py: 1.5, fontSize: '1.1rem', fontWeight: 600, transition: 'all 0.3s', borderWidth: 2
+                      borderRadius: 1, px: { xs: 3, md: 5 }, py: 1.5, fontSize: '1.1rem', fontWeight: 600, transition: 'all 0.3s', borderWidth: 2
                     }}
                   >
                     Masuk

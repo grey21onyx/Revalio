@@ -240,6 +240,15 @@ const Header = ({ toggleSidebar, isAdminLayout = false }) => {
     }
   };
 
+  // Handle profile navigation based on user role
+  const handleProfileNavigation = () => {
+    handleMenuClose();
+    // Check if user is admin
+    const isUserAdmin = user?.role === 'admin' || user?.is_admin;
+    // Navigate to appropriate profile page
+    navigate(isUserAdmin ? '/admin/profile' : '/profile');
+  };
+
   // Profile menu
   const menuId = 'primary-search-account-menu';
   const renderMenu = (
@@ -258,7 +267,7 @@ const Header = ({ toggleSidebar, isAdminLayout = false }) => {
       open={isMenuOpen}
       onClose={handleMenuClose}
     >
-      <MenuItem onClick={() => { navigate('/profile'); handleMenuClose(); }}>
+      <MenuItem onClick={handleProfileNavigation}>
         <PersonIcon fontSize="small" sx={{ mr: 1 }} />
         Profil
       </MenuItem>
@@ -289,7 +298,7 @@ const Header = ({ toggleSidebar, isAdminLayout = false }) => {
     >
       {isAuthenticated ? (
         [
-          <MenuItem key="profile-mobile" onClick={handleProfileMenuOpen}>
+          <MenuItem key="profile-mobile" onClick={handleProfileNavigation}>
             <IconButton
               size="large"
               aria-label="account of current user"

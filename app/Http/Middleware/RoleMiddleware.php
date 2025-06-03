@@ -28,9 +28,18 @@ class RoleMiddleware
 
         $user = Auth::user();
         
-        foreach ($roles as $role) {
-            if ($user->hasRole($role)) {
-        return $next($request);
+        // Special handling for 'admin' role
+        if (in_array('admin', $roles)) {
+            // Check using both methods - custom role method and direct property
+            if ($user->role === 'admin' || $user->isadminByRole() || $user->is_admin) {
+                return $next($request);
+            }
+        } else {
+            // For non-admin roles, use the regular role check
+            foreach ($roles as $role) {
+                if ($user->hasRole($role)) {
+                    return $next($request);
+                }
             }
         }
 

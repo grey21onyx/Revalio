@@ -150,8 +150,13 @@ const Forum = () => {
     rejected: 0
   });
 
-  // Check if user is admin
-  const isAdmin = user && (user.role === 'admin' || user.user_type === 'admin');
+  // Check if user is admin - improved check
+  const isAdmin = user && (
+    user.role === 'admin' || 
+    user.user_type === 'admin' || 
+    user.is_admin === true || 
+    (user.roles && user.roles.some(role => role === 'admin' || role.name === 'admin' || role.slug === 'admin'))
+  );
 
   // Add these to the state variables section (near the top of the component)
   const [reportSortOrder, setReportSortOrder] = useState('newest'); // 'newest' or 'oldest'
@@ -443,20 +448,56 @@ const Forum = () => {
     return Math.ceil(itemsCount / ITEMS_PER_PAGE);
   };
 
-  // Handle tab change
+  // Debug function to check admin permissions and user data
+  const checkAdminPermissions = () => {
+    console.group('Admin Permission Check');
+    console.log('User object:', user);
+    console.log('Is authenticated:', isAuthenticated);
+    console.log('Admin status detected:', isAdmin);
+    
+    // Check individual admin flags
+    if (user) {
+      console.log('user.role === admin:', user.role === 'admin');
+      console.log('user.user_type === admin:', user.user_type === 'admin');
+      console.log('user.is_admin === true:', user.is_admin === true);
+      
+      // Check roles array if it exists
+      if (user.roles) {
+        console.log('user.roles:', user.roles);
+        console.log('Has admin in roles array:', user.roles.some(role => 
+          role === 'admin' || 
+          (typeof role === 'object' && (role.name === 'admin' || role.slug === 'admin'))
+        ));
+      } else {
+        console.log('user.roles array not found');
+      }
+    } else {
+      console.log('User object not available');
+    }
+    console.groupEnd();
+    
+    return isAdmin;
+  };
+  
+  // Add this within handleTabChange function, right after checking for admin-only tabs
   const handleTabChange = (tabValue) => {
     // Jika tab yang sama diklik lagi, refresh data
     const isTabChange = activeTab !== tabValue;
     
     // Check if the tab is admin-only and user is not admin
-    if ((tabValue === 'reports' || tabValue === 'moderation') && !isAdmin) {
-      Swal.fire({
-        title: 'Akses Dibatasi',
-        text: 'Hanya administrator yang dapat mengakses fitur moderasi forum.',
-        icon: 'warning',
-        confirmButtonText: 'Kembali ke Forum'
-      });
-      return; // Don't change tab
+    if ((tabValue === 'reports' || tabValue === 'moderation')) {
+      // Debug admin permissions when trying to access admin features
+      const hasAdminAccess = checkAdminPermissions();
+      
+      if (!hasAdminAccess) {
+        Swal.fire({
+          title: 'Akses Dibatasi',
+          text: 'Hanya administrator yang dapat mengakses fitur moderasi forum.',
+          icon: 'warning',
+          confirmButtonText: 'Kembali ke Forum'
+        });
+        return; // Don't change tab
+      }
     }
     
     setActiveTab(tabValue);
@@ -732,144 +773,260 @@ const Forum = () => {
     }
   };
 
-  // Fetch reported content for admin - enhanced version
-  const fetchReportedContent = async () => {
+  // Fetch reported content for admin with retry capability
+  const fetchReportedContent = async (retryCount = 0) => {
     if (!isAdmin) return;
     
     try {
       setLoadingReports(true);
       
       // Call API to get reports data
-      try {
-        const response = await api.get('/forum-reports');
-        console.log('Reports data:', response.data);
-        
-        if (response.data && Array.isArray(response.data.data)) {
-          // Set the reports
-          const reportsData = response.data.data;
-          
-          const commentReports = reportsData.filter(report => report.reportable_type === 'comment');
-          const threadReports = reportsData.filter(report => report.reportable_type === 'thread');
-          
-          console.log('Comment reports:', commentReports.length);
-          console.log('Thread reports:', threadReports.length);
-          
-          setReportedComments(commentReports);
-          setReportedThreads(threadReports);
-          
-          // Calculate report statistics
-          if (response.data.stats) {
-            setReportStats(response.data.stats);
-          } else {
-            // Calculate stats from data if not provided by API
-            const totalReports = reportsData.length;
-            const pendingReports = reportsData.filter(report => report.status === 'reported').length;
-            const resolvedReports = reportsData.filter(report => report.status === 'resolved').length;
-            const rejectedReports = reportsData.filter(report => report.status === 'rejected').length;
+      const response = await api.get('/forum-reports');
+      console.log('Reports data response:', response);
+      
+      // Check if the response has the expected structure
+      if (response && response.data) {
+        // Get the reports data array, handling different response formats
+        const reportsData = Array.isArray(response.data) 
+          ? response.data 
+          : (response.data.data && Array.isArray(response.data.data)) 
+            ? response.data.data
+            : [];
             
-            setReportStats({
-              total: totalReports,
-              pending: pendingReports,
-              resolved: resolvedReports,
-              rejected: rejectedReports
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching reports data:', error);
+        console.log('Processed reports data:', reportsData);
         
-        // Check if this is a 500 server error
-        if (error.response && error.response.status === 500) {
-          console.error('Server error details:', error.response.data);
-          
-          // Show a more descriptive message to the user
-          Swal.fire({
-            title: 'Server Error',
-            text: 'Terjadi kesalahan pada server saat mengambil data laporan. Fitur laporan mungkin belum diaktifkan atau memerlukan konfigurasi lebih lanjut.',
-            icon: 'error',
-            confirmButtonText: 'Kembali ke Forum',
-            showCancelButton: true,
-            cancelButtonText: 'Coba Lagi'
-          }).then((result) => {
-            if (result.isConfirmed) {
-              // Switch back to the main forum tab
-              handleTabChange('all');
-            } else {
-              // Try again
-              fetchReportedContent();
-            }
-          });
+        // Make sure reportable_type exists in each report, provide default if not
+        const processedReports = reportsData.map(report => ({
+          ...report,
+          reportable_type: report.reportable_type || 'unknown'
+        }));
+        
+        // Filter reports by type
+        const commentReports = processedReports.filter(report => 
+          report.reportable_type === 'comment' || 
+          report.reportable_type.toLowerCase().includes('comment')
+        );
+        
+        const threadReports = processedReports.filter(report => 
+          report.reportable_type === 'thread' || 
+          report.reportable_type.toLowerCase().includes('thread')
+        );
+        
+        console.log('Comment reports:', commentReports.length);
+        console.log('Thread reports:', threadReports.length);
+        
+        setReportedComments(commentReports);
+        setReportedThreads(threadReports);
+        
+        // Calculate report statistics
+        if (response.data.stats) {
+          setReportStats(response.data.stats);
         } else {
-          // Generic error for other cases
-          Swal.fire('Error', 'Gagal mengambil data laporan. Silakan coba lagi nanti.', 'error');
+          // Calculate stats from data if not provided by API
+          const totalReports = processedReports.length;
+          const pendingReports = processedReports.filter(report => report.status === 'reported').length;
+          const resolvedReports = processedReports.filter(report => report.status === 'resolved').length;
+          const rejectedReports = processedReports.filter(report => report.status === 'rejected').length;
+          
+          setReportStats({
+            total: totalReports,
+            pending: pendingReports,
+            resolved: resolvedReports,
+            rejected: rejectedReports
+          });
         }
-        
-        // Fallback to empty data in case of error
-        setReportedComments([]);
-        setReportedThreads([]);
-        setReportStats({
-          total: 0,
-          pending: 0,
-          resolved: 0,
-          rejected: 0
+      } else {
+        // Handle empty or malformed response
+        console.error('Invalid API response format:', response);
+        throw new Error('Unexpected API response format');
+      }
+    } catch (error) {
+      console.error('Error fetching reported content:', error);
+      
+      // Provide detailed error information in console
+      if (error.response) {
+        console.error('API response error details:', {
+          status: error.response.status,
+          headers: error.response.headers,
+          data: error.response.data
         });
       }
       
-      setLoadingReports(false);
-    } catch (error) {
-      console.error('Error fetching reported content:', error);
-      Swal.fire('Error', 'Gagal mengambil data laporan', 'error');
+      // Reset reports data
+      setReportedComments([]);
+      setReportedThreads([]);
+      setReportStats({
+        total: 0,
+        pending: 0,
+        resolved: 0,
+        rejected: 0
+      });
+      
+      // Handle specific error cases with meaningful feedback to user
+      if (error.response && error.response.status === 403) {
+        // If permission denied (403 Forbidden), might be an issue with admin role detection
+        if (retryCount < 2) {
+          // Try refreshing user data and retrying the request
+          Swal.fire({
+            title: 'Menyegarkan data pengguna...',
+            text: 'Mencoba ulang permintaan data laporan',
+            allowOutsideClick: false,
+            didOpen: () => {
+              Swal.showLoading();
+            }
+          });
+          
+          // Wait 2 seconds and retry
+          setTimeout(() => {
+            fetchReportedContent(retryCount + 1);
+          }, 2000);
+          return;
+        } else {
+          // After retries, show proper message to user
+          Swal.fire({
+            title: 'Akses Ditolak',
+            text: 'Terdapat masalah otorisasi pada akun admin Anda. Coba logout dan login kembali.',
+            icon: 'warning',
+            confirmButtonText: 'Kembali ke Forum',
+          }).then(() => {
+            handleTabChange('all');
+          });
+        }
+      } else if (error.response && error.response.status === 500) {
+        console.error('Server error details:', error.response.data);
+        
+        Swal.fire({
+          title: 'Server Error',
+          text: 'Terjadi kesalahan pada server saat mengambil data laporan.',
+          icon: 'error',
+          confirmButtonText: 'Kembali ke Forum',
+          showCancelButton: true,
+          cancelButtonText: 'Coba Lagi'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            handleTabChange('all');
+          } else {
+            fetchReportedContent(0); // Reset retry count for manual retry
+          }
+        });
+      } else if (error.response && error.response.status === 404) {
+        // API endpoint might not exist
+        Swal.fire({
+          title: 'Fitur Belum Tersedia',
+          text: 'API endpoint untuk laporan forum belum tersedia. Silakan hubungi administrator sistem.',
+          icon: 'warning',
+          confirmButtonText: 'Kembali ke Forum'
+        }).then(() => {
+          handleTabChange('all');
+        });
+      } else {
+        // Generic error for other cases
+        Swal.fire({
+          title: 'Gagal Memuat Data',
+          text: 'Gagal mengambil data laporan. Silakan coba lagi nanti.',
+          icon: 'error',
+          confirmButtonText: 'OK'
+        });
+      }
+    } finally {
       setLoadingReports(false);
     }
   };
 
   // Filter reported content - enhanced version
   const getFilteredReports = () => {
-    // Combine comment and thread reports
-    let allReports = [
-      ...reportedComments.map(report => ({ ...report, reportType: 'comment' })),
-      ...reportedThreads.map(report => ({ ...report, reportType: 'thread' }))
-    ];
-    
-    if (reportFilter !== 'all') {
-      // Map 'pending' filter to 'reported' status in our data model
-      const statusToFilter = reportFilter === 'pending' ? 'reported' : reportFilter;
-      allReports = allReports.filter(report => report.status === statusToFilter);
-    }
-    
-    // Sort by reported time
-    return allReports.sort((a, b) => {
-      const dateA = new Date(a.reported_at);
-      const dateB = new Date(b.reported_at);
+    try {
+      // Combine comment and thread reports, with defensive coding to handle null/undefined values
+      let allReports = [
+        ...(Array.isArray(reportedComments) ? reportedComments : []).map(report => ({ 
+          ...report, 
+          reportType: 'comment',
+          // Ensure these properties exist to avoid errors
+          status: report.status || 'unknown',
+          reported_at: report.reported_at || new Date().toISOString(),
+        })),
+        ...(Array.isArray(reportedThreads) ? reportedThreads : []).map(report => ({ 
+          ...report, 
+          reportType: 'thread',
+          // Ensure these properties exist to avoid errors
+          status: report.status || 'unknown',
+          reported_at: report.reported_at || new Date().toISOString(),
+        }))
+      ];
       
-      if (reportSortOrder === 'newest') {
-        return dateB - dateA; // Newest first
-      } else {
-        return dateA - dateB; // Oldest first
+      // If filter is specified, apply it
+      if (reportFilter !== 'all') {
+        // Map 'pending' filter to 'reported' status in our data model
+        const statusToFilter = reportFilter === 'pending' ? 'reported' : reportFilter;
+        allReports = allReports.filter(report => report.status === statusToFilter);
       }
-    });
+      
+      // Sort by reported time, with error handling for invalid dates
+      return allReports.sort((a, b) => {
+        let dateA, dateB;
+        
+        try {
+          dateA = new Date(a.reported_at);
+          if (isNaN(dateA.getTime())) dateA = new Date(0); // Default to epoch if invalid
+        } catch (e) {
+          console.warn('Invalid date format in report:', a.id);
+          dateA = new Date(0);
+        }
+        
+        try {
+          dateB = new Date(b.reported_at);
+          if (isNaN(dateB.getTime())) dateB = new Date(0); // Default to epoch if invalid
+        } catch (e) {
+          console.warn('Invalid date format in report:', b.id);
+          dateB = new Date(0);
+        }
+        
+        if (reportSortOrder === 'newest') {
+          return dateB - dateA; // Newest first
+        } else {
+          return dateA - dateB; // Oldest first
+        }
+      });
+    } catch (error) {
+      console.error('Error filtering reports:', error);
+      return []; // Return empty array on error
+    }
   };
 
   // Enhanced preview dialog
   const handleOpenPreviewDialog = (report) => {
-    setPreviewContent({
-      id: report.id,
-      reportType: report.reportType,
-      commentId: report.reportType === 'comment' ? report.comment_id : null,
-      threadId: report.thread_id,
-      threadTitle: report.thread?.judul || 'Thread tidak tersedia',
-      content: report.reportType === 'comment' ? report.konten : report.description || 'Tidak ada deskripsi',
-      reportReason: report.report_reason,
-      reportedBy: report.reported_by?.name || 'Pengguna tidak diketahui',
-      reportedAt: report.reported_at,
-      authorName: report.user?.name || 'Pengguna tidak diketahui',
-      authorId: report.user?.id,
-      authorAvatar: report.user?.avatar || null,
-      status: report.status,
-      resolutionNote: report.resolution_note,
-      resolvedAt: report.resolved_at
-    });
-    setPreviewDialogOpen(true);
+    try {
+      if (!report) {
+        console.error('No report data provided to preview dialog');
+        return;
+      }
+      
+      // Safely extract data with fallbacks for missing values
+      setPreviewContent({
+        id: report.id || 0,
+        reportType: report.reportType || 'unknown',
+        commentId: report.reportType === 'comment' ? (report.comment_id || report.id) : null,
+        threadId: report.thread_id || 0,
+        threadTitle: report.thread?.judul || 'Thread tidak tersedia',
+        content: report.reportType === 'comment' 
+          ? (report.konten || 'Konten tidak tersedia') 
+          : (report.description || 'Tidak ada deskripsi'),
+        reportReason: report.report_reason || 'Tidak ada alasan laporan',
+        reportedBy: report.reported_by?.name || 'Pengguna tidak diketahui',
+        reportedAt: report.reported_at || new Date().toISOString(),
+        authorName: report.user?.name || 'Pengguna tidak diketahui',
+        authorId: report.user?.id || 0,
+        authorAvatar: report.user?.avatar || null,
+        status: report.status || 'reported',
+        resolutionNote: report.resolution_note || '',
+        resolvedAt: report.resolved_at || null
+      });
+      
+      setPreviewDialogOpen(true);
+    } catch (error) {
+      console.error('Error opening preview dialog:', error);
+      Swal.fire('Error', 'Gagal menampilkan detail laporan', 'error');
+    }
   };
 
   // Function to handle closing the preview dialog
@@ -1456,184 +1613,222 @@ const Forum = () => {
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
                   <CircularProgress />
                 </Box>
-              ) : getFilteredReports().length === 0 ? (
-                <Paper sx={{ p: 4, textAlign: 'center' }}>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                    <FlagIcon sx={{ fontSize: 60, color: 'text.secondary', opacity: 0.3 }} />
-                    <Typography variant="h6" gutterBottom>
-                      Tidak Ada Laporan
-                    </Typography>
-                    <Typography variant="body1" color="text.secondary">
-                      {reportFilter === 'all' 
-                        ? 'Tidak ada laporan konten yang ditemukan saat ini.' 
-                        : `Tidak ada laporan dengan status "${
-                            reportFilter === 'pending' ? 'menunggu tindakan' : 
-                            reportFilter === 'resolved' ? 'telah diatasi' : 
-                            'ditolak'
-                          }" saat ini.`
-                      }
-                    </Typography>
-                  </Box>
-                </Paper>
-              ) : (
-                <Grid container spacing={3}>
-                  {getPaginatedThreads(getFilteredReports(), reportsPage).map((report) => (
-                    <Grid item xs={12} key={`report-${report.id}`}>
-                      <Paper
-                        elevation={0}
-                        sx={{
-                          p: 3,
-                          borderRadius: '12px',
-                          border: '1px solid',
-                          borderColor: report.status === 'reported' 
-                            ? 'warning.light' 
-                            : report.status === 'resolved' 
-                              ? 'success.light'
-                              : 'divider',
-                          boxShadow: report.status === 'reported' ? '0 0 0 2px rgba(255,152,0,0.2)' : 'none'
-                        }}
-                      >
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                          <Box>
-                            <Typography variant="h6" gutterBottom>
-                              Laporan {report.reportType === 'comment' ? 'Komentar' : 'Thread'}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              Dilaporkan oleh <strong>{report.reported_by.name}</strong> • {formatDateTime(report.reported_at)}
-                            </Typography>
-                          </Box>
-                          <Chip
-                            label={
-                              report.status === 'reported'
-                                ? 'Menunggu Tindakan'
-                                : report.status === 'resolved'
-                                ? 'Telah Diatasi'
-                                : 'Ditolak'
-                            }
-                            color={
-                              report.status === 'reported'
-                                ? 'warning'
-                                : report.status === 'resolved'
-                                ? 'success'
-                                : 'default'
-                            }
-                            size="small"
-                          />
-                        </Box>
-
-                        <Divider sx={{ my: 2 }} />
-
-                        <Box sx={{ mb: 2 }}>
-                          <Typography variant="body2" color="text.secondary" gutterBottom>
-                            <strong>Pada thread:</strong> {report.thread?.judul || 'Thread tidak tersedia'}
+              ) : (() => {
+                try {
+                  const filteredReports = getFilteredReports();
+                  
+                  if (filteredReports.length === 0) {
+                    return (
+                      <Paper sx={{ p: 4, textAlign: 'center' }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                          <FlagIcon sx={{ fontSize: 60, color: 'text.secondary', opacity: 0.3 }} />
+                          <Typography variant="h6" gutterBottom>
+                            Tidak Ada Laporan
                           </Typography>
-                          <Typography variant="body2" color="text.secondary" gutterBottom>
-                            <strong>Alasan Laporan:</strong>
-                          </Typography>
-                          <Typography variant="body1" sx={{ mb: 2 }}>
-                            {report.report_reason}
+                          <Typography variant="body1" color="text.secondary">
+                            {reportFilter === 'all' 
+                              ? 'Tidak ada laporan konten yang ditemukan saat ini.' 
+                              : `Tidak ada laporan dengan status "${
+                                  reportFilter === 'pending' ? 'menunggu tindakan' : 
+                                  reportFilter === 'resolved' ? 'telah diatasi' : 
+                                  'ditolak'
+                                }" saat ini.`
+                            }
                           </Typography>
                         </Box>
-
-                        <Paper
-                          variant="outlined"
-                          sx={{ p: 2, mb: 3, backgroundColor: 'grey.50' }}
-                        >
-                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                            <Avatar 
-                              src={report.user?.avatar ? getAvatarUrl(report.user) : null} 
-                              alt={report.user?.name || 'Pengguna'} 
-                              sx={{ mr: 2 }}
-                              // Add error handling for avatar
-                              onError={(e) => {
-                                e.target.src = ''; // Clear src to show fallback
-                                e.target.onerror = null; // Prevent infinite error loops
+                      </Paper>
+                    );
+                  }
+                  
+                  // Get paginated reports
+                  const paginatedReports = getPaginatedThreads(filteredReports, reportsPage);
+                  
+                  return (
+                    <>
+                      <Grid container spacing={3}>
+                        {paginatedReports.map((report) => (
+                          <Grid item xs={12} key={`report-${report.id || Math.random()}`}>
+                            <Paper
+                              elevation={0}
+                              sx={{
+                                p: 3,
+                                borderRadius: '12px',
+                                border: '1px solid',
+                                borderColor: report.status === 'reported' 
+                                  ? 'warning.light' 
+                                  : report.status === 'resolved' 
+                                    ? 'success.light'
+                                    : 'divider',
+                                boxShadow: report.status === 'reported' ? '0 0 0 2px rgba(255,152,0,0.2)' : 'none'
                               }}
                             >
-                              {report.user?.name ? report.user.name.charAt(0).toUpperCase() : 'U'}
-                            </Avatar>
-                            <Box>
-                              <Typography variant="subtitle2">
-                                {report.user?.name || 'Pengguna'}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                Penulis {report.reportType === 'comment' ? 'Komentar' : 'Thread'}
-                              </Typography>
-                            </Box>
-                          </Box>
-                          
-                          <Typography variant="body1" sx={{ 
-                            whiteSpace: 'pre-wrap',
-                            mb: 0,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            display: '-webkit-box',
-                            WebkitLineClamp: 3,
-                            WebkitBoxOrient: 'vertical',
-                          }}>
-                            {report.reportType === 'comment' ? report.konten : 
-                             (report.thread?.judul ? `${report.thread.judul} - ${report.description || 'Tidak ada deskripsi'}` : 
-                             'Konten tidak tersedia')}
-                          </Typography>
-                        </Paper>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                                <Box>
+                                  <Typography variant="h6" gutterBottom>
+                                    Laporan {report.reportType === 'comment' ? 'Komentar' : 'Thread'}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    Dilaporkan oleh <strong>{report.reported_by?.name || 'Pengguna'}</strong> • {formatDateTime(report.reported_at)}
+                                  </Typography>
+                                </Box>
+                                <Chip
+                                  label={
+                                    report.status === 'reported'
+                                      ? 'Menunggu Tindakan'
+                                      : report.status === 'resolved'
+                                      ? 'Telah Diatasi'
+                                      : 'Ditolak'
+                                  }
+                                  color={
+                                    report.status === 'reported'
+                                      ? 'warning'
+                                      : report.status === 'resolved'
+                                      ? 'success'
+                                      : 'default'
+                                  }
+                                  size="small"
+                                />
+                              </Box>
 
-                        {report.status === 'reported' && (
-                          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-                            <Button
-                              variant="outlined"
-                              color="info"
-                              onClick={() => handleOpenPreviewDialog(report)}
-                            >
-                              Lihat Detail
-                            </Button>
-                            <Button
-                              variant="contained"
-                              color="success"
-                              onClick={() => handleReportAction(report.id, 'approve')}
-                              startIcon={<CheckCircleIcon />}
-                            >
-                              Setujui Laporan
-                            </Button>
-                            <Button
-                              variant="contained"
-                              color="error"
-                              onClick={() => handleReportAction(report.id, 'delete')}
-                              startIcon={<DeleteIcon />}
-                            >
-                              Hapus {report.reportType === 'comment' ? 'Komentar' : 'Thread'}
-                            </Button>
-                          </Box>
-                        )}
-                        
-                        {(report.status === 'resolved' || report.status === 'rejected') && report.resolution_note && (
-                          <Box sx={{ mt: 2, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
-                            <Typography variant="body2" color="text.secondary" gutterBottom>
-                              <strong>Catatan Resolusi:</strong>
-                            </Typography>
-                            <Typography variant="body2">
-                              {report.resolution_note} • {formatDateTime(report.resolved_at)}
-                            </Typography>
-                          </Box>
-                        )}
-                      </Paper>
-                    </Grid>
-                  ))}
-                </Grid>
-              )}
+                              <Divider sx={{ my: 2 }} />
 
-              {/* Pagination for Reports */}
-              {getTotalPages(getFilteredReports().length) > 1 && (
-                <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
-                  <Pagination 
-                    count={getTotalPages(getFilteredReports().length)} 
-                    page={reportsPage}
-                    onChange={(e, page) => setReportsPage(page)}
-                    color="primary"
-                    showFirstButton
-                    showLastButton
-                  />
-                </Box>
-              )}
+                              <Box sx={{ mb: 2 }}>
+                                <Typography variant="body2" color="text.secondary" gutterBottom>
+                                  <strong>Pada thread:</strong> {report.thread?.judul || 'Thread tidak tersedia'}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary" gutterBottom>
+                                  <strong>Alasan Laporan:</strong>
+                                </Typography>
+                                <Typography variant="body1" sx={{ mb: 2 }}>
+                                  {report.report_reason || 'Tidak ada alasan yang diberikan'}
+                                </Typography>
+                              </Box>
+
+                              <Paper
+                                variant="outlined"
+                                sx={{ p: 2, mb: 3, backgroundColor: 'grey.50' }}
+                              >
+                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                  <Avatar 
+                                    src={report.user?.avatar ? getAvatarUrl(report.user) : null} 
+                                    alt={report.user?.name || 'Pengguna'} 
+                                    sx={{ mr: 2 }}
+                                    // Add error handling for avatar
+                                    onError={(e) => {
+                                      e.target.src = ''; // Clear src to show fallback
+                                      e.target.onerror = null; // Prevent infinite error loops
+                                    }}
+                                  >
+                                    {report.user?.name ? report.user.name.charAt(0).toUpperCase() : 'U'}
+                                  </Avatar>
+                                  <Box>
+                                    <Typography variant="subtitle2">
+                                      {report.user?.name || 'Pengguna'}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                      Penulis {report.reportType === 'comment' ? 'Komentar' : 'Thread'}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                                
+                                <Typography variant="body1" sx={{ 
+                                  whiteSpace: 'pre-wrap',
+                                  mb: 0,
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  display: '-webkit-box',
+                                  WebkitLineClamp: 3,
+                                  WebkitBoxOrient: 'vertical',
+                                }}>
+                                  {report.reportType === 'comment' ? (report.konten || 'Konten tidak tersedia') : 
+                                   (report.thread?.judul ? `${report.thread.judul} - ${report.description || 'Tidak ada deskripsi'}` : 
+                                   'Konten tidak tersedia')}
+                                </Typography>
+                              </Paper>
+
+                              {report.status === 'reported' && (
+                                <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                                  <Button
+                                    variant="outlined"
+                                    color="info"
+                                    onClick={() => handleOpenPreviewDialog(report)}
+                                  >
+                                    Lihat Detail
+                                  </Button>
+                                  <Button
+                                    variant="contained"
+                                    color="success"
+                                    onClick={() => handleReportAction(report.id, 'approve')}
+                                    startIcon={<CheckCircleIcon />}
+                                  >
+                                    Setujui Laporan
+                                  </Button>
+                                  <Button
+                                    variant="contained"
+                                    color="error"
+                                    onClick={() => handleReportAction(report.id, 'delete')}
+                                    startIcon={<DeleteIcon />}
+                                  >
+                                    Hapus {report.reportType === 'comment' ? 'Komentar' : 'Thread'}
+                                  </Button>
+                                </Box>
+                              )}
+                              
+                              {(report.status === 'resolved' || report.status === 'rejected') && report.resolution_note && (
+                                <Box sx={{ mt: 2, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                                    <strong>Catatan Resolusi:</strong>
+                                  </Typography>
+                                  <Typography variant="body2">
+                                    {report.resolution_note} • {formatDateTime(report.resolved_at)}
+                                  </Typography>
+                                </Box>
+                              )}
+                            </Paper>
+                          </Grid>
+                        ))}
+                      </Grid>
+
+                      {/* Pagination for Reports */}
+                      {getTotalPages(filteredReports.length) > 1 && (
+                        <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+                          <Pagination 
+                            count={getTotalPages(filteredReports.length)} 
+                            page={reportsPage}
+                            onChange={(e, page) => setReportsPage(page)}
+                            color="primary"
+                            showFirstButton
+                            showLastButton
+                          />
+                        </Box>
+                      )}
+                    </>
+                  );
+                } catch (error) {
+                  console.error('Error rendering reports:', error);
+                  return (
+                    <Paper sx={{ p: 4, textAlign: 'center' }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                        <WarningIcon sx={{ fontSize: 60, color: 'error.main', opacity: 0.8 }} />
+                        <Typography variant="h6" gutterBottom>
+                          Terjadi Kesalahan
+                        </Typography>
+                        <Typography variant="body1" color="text.secondary">
+                          Gagal menampilkan data laporan. Terjadi kesalahan teknis.
+                        </Typography>
+                        <Button 
+                          variant="contained" 
+                          color="primary" 
+                          onClick={() => handleTabChange('all')}
+                          sx={{ mt: 2 }}
+                        >
+                          Kembali ke Forum
+                        </Button>
+                      </Box>
+                    </Paper>
+                  );
+                }
+              })()}
             </>
           )}
           

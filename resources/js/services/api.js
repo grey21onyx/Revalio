@@ -116,13 +116,41 @@ api.interceptors.response.use(
       });
     } else if (error.response && error.response.status === 403) {
       // Forbidden - tidak memiliki izin
-      Swal.fire({
-        title: 'Akses Ditolak',
-        text: 'Anda tidak memiliki izin untuk melakukan operasi ini.',
-        icon: 'error',
-        timer: 3000,
-        showConfirmButton: false
+      console.error('Access denied details:', {
+        endpoint: originalRequest.url,
+        method: originalRequest.method,
+        headers: originalRequest.headers,
       });
+      
+      // Log any additional information from the response
+      if (error.response.data) {
+        console.error('Server response for 403:', error.response.data);
+      }
+      
+      // Check if this is an admin endpoint
+      const isAdminEndpoint = originalRequest.url.includes('admin') || 
+                             originalRequest.url.includes('-reports') ||
+                             originalRequest.url.includes('users/') ||
+                             originalRequest.url.includes('roles');
+      
+      if (isAdminEndpoint) {
+        // More specific message for admin endpoints
+        Swal.fire({
+          title: 'Akses Admin Ditolak',
+          text: 'Sistem tidak mengenali akun Anda sebagai admin untuk akses ini. Pastikan Anda memiliki hak akses yang benar.',
+          icon: 'error',
+          timer: 5000,
+        });
+      } else {
+        // General forbidden message
+        Swal.fire({
+          title: 'Akses Ditolak',
+          text: 'Anda tidak memiliki izin untuk melakukan operasi ini.',
+          icon: 'error',
+          timer: 3000,
+          showConfirmButton: false
+        });
+      }
     } else if (error.response && error.response.status === 422) {
       // Validation error - form tidak valid
       const errors = error.response.data.errors;

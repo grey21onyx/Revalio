@@ -17,8 +17,8 @@ class ForumReportController extends Controller
      */
     public function index(Request $request)
     {
-        // Hanya admin yang bisa melihat daftar laporan
-        if (Auth::user()->role !== 'admin') {
+        // Check if user is admin using both field methods
+        if (Auth::user()->role !== 'admin' && !Auth::user()->is_admin) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -246,8 +246,8 @@ class ForumReportController extends Controller
      */
     public function moderate(Request $request, $id)
     {
-        // Hanya admin yang bisa memperbarui status laporan
-        if (Auth::user()->role !== 'admin') {
+        // Check if user is admin using both field methods
+        if (Auth::user()->role !== 'admin' && !Auth::user()->is_admin) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
         
@@ -315,8 +315,8 @@ class ForumReportController extends Controller
      */
     public function statistics()
     {
-        // Hanya admin yang bisa melihat statistik laporan
-        if (Auth::user()->role !== 'admin') {
+        // Check if user is admin using both field methods
+        if (Auth::user()->role !== 'admin' && !Auth::user()->is_admin) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
         
@@ -337,8 +337,8 @@ class ForumReportController extends Controller
      */
     public function deleteAll()
     {
-        // Hanya admin yang bisa menghapus semua laporan
-        if (Auth::user()->role !== 'admin') {
+        // Check if user is admin using both field methods
+        if (Auth::user()->role !== 'admin' && !Auth::user()->is_admin) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
         

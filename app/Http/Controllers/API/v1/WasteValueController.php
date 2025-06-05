@@ -41,15 +41,27 @@ class WasteValueController extends Controller
                         // Support kedua struktur kolom 
                         $categoryName = $wasteType->wasteCategory ? $wasteType->wasteCategory->name : 'Uncategorized';
                         
+                        // Explicitly use waste_id as the ID to ensure consistency
                         return [
-                            'id' => $wasteType->id,
-                            'name' => $wasteType->name,
-                            'category_id' => $wasteType->waste_category_id,
+                            'id' => $wasteType->waste_id, // Use waste_id explicitly instead of id
+                            'waste_id' => $wasteType->waste_id, // Add explicitly for frontend normalization
+                            'waste_type_id' => $wasteType->waste_id, // Add explicitly for frontend normalization
+                            'name' => $wasteType->name ?? $wasteType->nama_sampah,
+                            'category_id' => $wasteType->waste_category_id ?? $wasteType->kategori_id,
                             'category_name' => $categoryName,
                             'price_per_kg' => $price,
+                            'price_per_unit' => $price, // Add for frontend compatibility
                             'last_updated' => $lastUpdated ? $lastUpdated->format('Y-m-d') : null,
                         ];
                     });
+
+                // Log to debug IDs being returned
+                \Log::debug('WasteValueController index - Sample IDs being returned:', [
+                    'first_few_ids' => $wasteTypes->take(3)->pluck('id')->toArray(),
+                    'id_types' => $wasteTypes->take(3)->map(function($item) { 
+                        return ['id' => $item['id'], 'type' => gettype($item['id'])]; 
+                    })->toArray()
+                ]);
                 
                 return response()->json([
                     'success' => true,
@@ -279,13 +291,8 @@ class WasteValueController extends Controller
     public function update(Request $request, $id)
     {
         try {
-            // Validate ID is not null
-            if (!$id || $id === 'null') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'ID jenis sampah tidak valid'
-                ], 400);
-            }
+            // Add debug logging for the incoming ID
+            \Log::debug("WasteValueController update - Processing update for ID: $id");
             
             $validator = Validator::make($request->all(), [
                 'price_per_kg' => 'required|numeric|min:0',
@@ -298,51 +305,118 @@ class WasteValueController extends Controller
                     'errors' => $validator->errors()
                 ], 422);
             }
-    
-            // Find waste type using proper primary key
-            if (Schema::hasColumn('waste_types', 'waste_id')) {
-                $wasteType = WasteType::where('waste_id', $id)->firstOrFail();
-                $wasteTypeId = $wasteType->waste_id;
+            
+            // Find the waste type using the proper ID field
+            $wasteType = null;
+            
+            // First try with waste_id (primary key in waste_types)
+            $wasteType = WasteType::where('waste_id', $id)->first();
+            
+            if (!$wasteType) {
+                // Log the failed lookup attempt
+                \Log::debug("WasteValueController update - Could not find waste type with waste_id=$id");
+                
+                // Try with regular id as fallback
+                $wasteType = WasteType::find($id);
+                
+                if (!$wasteType) {
+                    // Log the final failure and return error
+                    \Log::error("WasteValueController update - Failed to find waste type with any ID field: $id");
+                    
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Jenis sampah dengan ID '$id' tidak ditemukan"
+                    ], 404);
+                }
+                
+                \Log::debug("WasteValueController update - Found waste type using id field", [
+                    'waste_id' => $wasteType->waste_id,
+                    'id' => $wasteType->id
+                ]);
             } else {
-                $wasteType = WasteType::findOrFail($id);
-                $wasteTypeId = $wasteType->id;
+                \Log::debug("WasteValueController update - Found waste type using waste_id field", [
+                    'waste_id' => $wasteType->waste_id
+                ]);
             }
             
-            // Update waste value depending on table structure
+            // Get the waste ID to use consistently
+            $wasteTypeId = $wasteType->waste_id;
+            
+            // Check if updated fields are provided
+            if ($request->has('name')) {
+                // Update both fields for compatibility
+                if (Schema::hasColumn('waste_types', 'name')) {
+                    $wasteType->name = $request->name;
+                }
+                
+                if (Schema::hasColumn('waste_types', 'nama_sampah')) {
+                    $wasteType->nama_sampah = $request->name;
+                }
+            }
+            
+            // Check if category_id is provided
+            if ($request->has('category_id')) {
+                // Update both fields for compatibility
+                if (Schema::hasColumn('waste_types', 'waste_category_id')) {
+                    $wasteType->waste_category_id = $request->category_id;
+                }
+                
+                if (Schema::hasColumn('waste_types', 'kategori_id')) {
+                    $wasteType->kategori_id = $request->category_id;
+                }
+            }
+            
+            // Save any changes to waste type
+            $wasteType->save();
+            
+            // Now update the price in waste_values
+            $price = $request->price_per_kg;
+            
+            // Try to find existing waste value with the right ID field
             if (Schema::hasTable('waste_values_new')) {
+                // Check if there's an existing value entry
                 $wasteValue = WasteValue::where('waste_type_id', $wasteTypeId)->first();
                 
+                // Log waste value lookup
+                \Log::debug("WasteValueController update - Looking up waste value", [
+                    'waste_type_id' => $wasteTypeId,
+                    'found_waste_value' => $wasteValue ? true : false
+                ]);
+                
                 if (!$wasteValue) {
-                    // Create if not exists
+                    // Create new waste value if none exists
+                    \Log::info("WasteValueController update - Creating new waste value for waste_type_id=$wasteTypeId");
                     $wasteValue = new WasteValue();
                     $wasteValue->waste_type_id = $wasteTypeId;
-                    $wasteValue->price_per_unit = $request->price_per_kg;
                     $wasteValue->is_active = true;
-                    $wasteValue->save();
-                } else {
-                    // Update if exists
-                    $wasteValue->price_per_unit = $request->price_per_kg;
-                    $wasteValue->save();
                 }
-            } else {
-                // Fallback to old structure
-                $wasteValue = DB::table('waste_values')
+                
+                // Update price
+                $wasteValue->price_per_unit = $price;
+                $wasteValue->save();
+                
+                \Log::info("WasteValueController update - Updated waste value", [
+                    'waste_value_id' => $wasteValue->id,
+                    'waste_type_id' => $wasteValue->waste_type_id,
+                    'new_price' => $wasteValue->price_per_unit
+                ]);
+            } else if (Schema::hasTable('waste_values')) {
+                // Try old table format
+                $updated = DB::table('waste_values')
                     ->where('waste_id', $wasteTypeId)
-                    ->first();
+                    ->update([
+                        'harga_minimum' => $price,
+                        'harga_maksimum' => $price,
+                        'tanggal_update' => now(),
+                        'updated_at' => now()
+                    ]);
                     
-                if ($wasteValue) {
-                    DB::table('waste_values')
-                        ->where('waste_id', $wasteTypeId)
-                        ->update([
-                            'harga_minimum' => $request->price_per_kg,
-                            'harga_maksimum' => $request->price_per_kg,
-                            'updated_at' => now()
-                        ]);
-                } else {
+                if (!$updated) {
+                    // Insert if not existing
                     DB::table('waste_values')->insert([
                         'waste_id' => $wasteTypeId,
-                        'harga_minimum' => $request->price_per_kg,
-                        'harga_maksimum' => $request->price_per_kg,
+                        'harga_minimum' => $price,
+                        'harga_maksimum' => $price,
                         'satuan' => 'kg',
                         'tanggal_update' => now(),
                         'created_at' => now(),
@@ -351,43 +425,44 @@ class WasteValueController extends Controller
                 }
             }
             
-            // Get category name
+            // Prepare a response with consistent fields
             $categoryName = '';
-            $categoryId = null;
-            
-            // Use kategori_id consistently
-            $categoryId = $wasteType->kategori_id ?? $wasteType->waste_category_id;
-            $category = DB::table('waste_categories')
-                ->where('kategori_id', $categoryId)
-                ->first();
-                
-            if ($category) {
-                // Use name if available, otherwise use nama_kategori
-                $categoryName = $category->name ?? $category->nama_kategori ?? '';
+            if ($wasteType->wasteCategory) {
+                $categoryName = $wasteType->wasteCategory->name;
+            } else if ($wasteType->category) {
+                $categoryName = $wasteType->category->name;
             }
-    
+            
+            $result = [
+                'id' => $wasteTypeId,  // Use waste_id consistently
+                'waste_id' => $wasteTypeId,  // Add for frontend normalization
+                'waste_type_id' => $wasteTypeId,  // Add for frontend normalization
+                'name' => $wasteType->name ?? $wasteType->nama_sampah,
+                'category_id' => $wasteType->waste_category_id ?? $wasteType->kategori_id,
+                'category_name' => $categoryName,
+                'price_per_kg' => $price,
+                'price_per_unit' => $price,  // Add for frontend compatibility
+                'last_updated' => now()->format('Y-m-d'),
+            ];
+            
+            \Log::debug("WasteValueController update - Returning successful response", [
+                'result' => $result
+            ]);
+            
             return response()->json([
                 'success' => true,
                 'message' => 'Harga sampah berhasil diperbarui',
-                'data' => [
-                    'id' => $wasteTypeId,
-                    'name' => $wasteType->name ?? $wasteType->nama_sampah,
-                    'category_id' => $categoryId,
-                    'category_name' => $categoryName,
-                    'price_per_kg' => $request->price_per_kg,
-                    'last_updated' => now()->format('Y-m-d')
-                ]
+                'data' => $result
             ]);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data jenis sampah tidak ditemukan'
-            ], 404);
         } catch (\Exception $e) {
-            \Log::error('Error in WasteValueController@update: ' . $e->getMessage());
+            \Log::error("WasteValueController update - Error: {$e->getMessage()}", [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+                'message' => 'Terjadi kesalahan saat memperbarui harga: ' . $e->getMessage(),
             ], 500);
         }
     }

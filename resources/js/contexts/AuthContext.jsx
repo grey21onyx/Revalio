@@ -121,42 +121,144 @@ export const AuthProvider = ({ children }) => {
     try {
       // Ambil CSRF token terlebih dahulu sebelum login
       console.log('Fetching CSRF token before login...');
-      await fetchCsrfCookie();
+      try {
+        await fetchCsrfCookie();
+        console.log('CSRF token fetched successfully');
+      } catch (csrfError) {
+        console.error('Failed to fetch CSRF token:', csrfError);
+        // Continue anyway - some servers don't require CSRF for API endpoints
+      }
       
       console.log('Attempting login with credentials:', { ...credentials, password: '******' });
-      // Gunakan API service dengan baseURL: '/api/v1' daripada axios langsung
-      console.log('Using api service instead of axios directly for consistent endpoints');
       
-      // Ganti axios.post dengan api.post (tanpa /v1/ karena sudah ada di baseURL)
-      const response = await api.post('/login', credentials);
-      console.log('Login response:', response.data);
+      // Explicitly set headers for authentication request
+      const customHeaders = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest' // IMPORTANT: Laravel treats requests with this header as AJAX
+      };
       
-      // Ekstrak data dari response
-      const responseData = response.data.data || {};
-      const { access_token, token, user: userData } = responseData;
+      // Use a direct request to /auth/login to avoid redirect issues
+      console.log('Using api service for login with proper Laravel-compatible headers');
       
-      // Gunakan token dari response.data.data
-      const authToken = access_token || token;
-      const userInfo = userData || responseData;
+      const axiosResponse = await api.post('/auth/login', credentials, { headers: customHeaders });
       
-      // Cek jika token ada
+      console.log('Login response status:', axiosResponse.status);
+      console.log('Login response headers:', axiosResponse.headers);
+      console.log('Login response data:', axiosResponse.data);
+      
+      // Extract data using more flexible path traversal
+      let authToken, userInfo;
+      
+      // Find token in various possible response structures
+      if (axiosResponse.data.data?.access_token) {
+        authToken = axiosResponse.data.data.access_token;
+      } else if (axiosResponse.data.data?.token) {
+        authToken = axiosResponse.data.data.token;
+      } else if (axiosResponse.data.access_token) {
+        authToken = axiosResponse.data.access_token;
+      } else if (axiosResponse.data.token) {
+        authToken = axiosResponse.data.token;
+      }
+      
+      // Find user info in various possible response structures
+      if (axiosResponse.data.data?.user) {
+        userInfo = axiosResponse.data.data.user;
+      } else if (axiosResponse.data.user) {
+        userInfo = axiosResponse.data.user;
+      } else if (axiosResponse.data.data && axiosResponse.data.data.id) {
+        userInfo = axiosResponse.data.data;
+      } else if (axiosResponse.data.id) {
+        userInfo = axiosResponse.data;
+      }
+      
+      // Check if token exists
       if (!authToken) {
-        console.error('No token found in response:', response.data);
+        console.error('No token found in response:', axiosResponse.data);
         throw new Error('Token tidak ditemukan dalam respons');
       }
+      
+      console.log('Auth token received:', {
+        length: authToken.length,
+        preview: `${authToken.substring(0, 10)}...${authToken.substring(authToken.length - 10)}`,
+      });
+      
+      // Make sure user info has a valid ID field
+      if (!userInfo || (!userInfo.id && !userInfo.user_id)) {
+        console.warn('No complete user info found in response, fetching from /user endpoint');
+        
+        // Set token temporarily to make the user request
+        api.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+        
+        try {
+          // Fetch user data directly
+          const userResponse = await api.get('/user');
+          userInfo = userResponse.data.user || userResponse.data;
+          console.log('Fetched user data from /user endpoint:', userInfo);
+        } catch (userError) {
+          console.error('Failed to fetch user data:', userError);
+          // Continue with whatever user info we have
+        }
+      }
+      
+      // Ensure user object has the id field
+      if (userInfo && !userInfo.id && userInfo.user_id) {
+        userInfo.id = userInfo.user_id; // Ensure we have an id field
+      }
+      
+      // Final validation of user info
+      console.log('User info before saving to localStorage:', {
+        id: userInfo?.id,
+        user_id: userInfo?.user_id,
+        name: userInfo?.name,
+        email: userInfo?.email
+      });
       
       // Simpan token
       localStorage.setItem('userToken', authToken);
       
-      // Simpan user data
+      // Configure API service with token for future requests
+      api.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+      // Adding the X-Requested-With header helps Laravel identify AJAX requests
+      api.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+      
+      // Also set it on the global axios instance for consistency
+      axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+      axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+      
+      // Simpan user data - ensure it has the id field
       localStorage.setItem('userData', JSON.stringify(userInfo));
       
       console.log('Auth data saved to localStorage');
+      console.log('User data saved:', userInfo);
       
       // Set state
       setIsAuthenticated(true);
       setUser(userInfo);
       setSuccess('Login berhasil');
+      
+      // Immediately fetch the user profile to verify authentication and get complete user data
+      try {
+        console.log('Fetching user profile to verify authentication...');
+        const profileResponse = await api.get('/user');
+        console.log('User profile verification result:', profileResponse.data);
+        
+        const profileData = profileResponse.data.user || profileResponse.data;
+        
+        // Update user info with the most accurate data from the profile endpoint
+        if (profileData && profileData.id) {
+          // Update user state and localStorage with the most accurate data
+          setUser(profileData);
+          localStorage.setItem('userData', JSON.stringify(profileData));
+          console.log('User data updated with profile information:', profileData);
+          
+          // Use this updated info for the return value
+          userInfo = profileData;
+        }
+      } catch (profileError) {
+        console.error('Failed to verify authentication with profile:', profileError);
+        // Continue anyway - the login was successful
+      }
       
       // Return user data untuk digunakan oleh komponen Login
       return userInfo;

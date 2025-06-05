@@ -396,4 +396,94 @@ class AuthController extends Controller
             ]
         ]);
     }
+
+    /**
+     * Check if the user is authenticated and return user data
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function check(Request $request)
+    {
+        // Debug auth header and token
+        $authHeader = $request->header('Authorization');
+        $token = null;
+        if ($authHeader && strpos($authHeader, 'Bearer ') === 0) {
+            $token = substr($authHeader, 7);
+        }
+        
+        // Debug information
+        logger()->info('Auth check called', [
+            'has_auth_header' => !empty($authHeader),
+            'token_present' => !empty($token),
+            'token_length' => $token ? strlen($token) : 0,
+            'is_authenticated' => Auth::check(),
+            'user_id' => Auth::id(),
+            'request_ip' => $request->ip(),
+        ]);
+
+        // Check if user is authenticated
+        if (Auth::check()) {
+            $user = Auth::user();
+            logger()->info('User authenticated in check endpoint', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+            ]);
+            
+            // Return user data with more details
+            return response()->json([
+                'authenticated' => true,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->roles->pluck('name'),
+                    'profile' => [
+                        'id' => $user->profile ? $user->profile->id : null,
+                        'avatar' => $user->profile ? $user->profile->avatar : null,
+                    ]
+                ]
+            ]);
+        }
+
+        // Try to get user from token directly as a last resort
+        if ($token) {
+            try {
+                $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+                if ($tokenModel) {
+                    $tokenUser = $tokenModel->tokenable;
+                    if ($tokenUser) {
+                        logger()->info('User found via token in check endpoint', [
+                            'user_id' => $tokenUser->id,
+                            'email' => $tokenUser->email,
+                            'token_id' => $tokenModel->id,
+                        ]);
+                        
+                        return response()->json([
+                            'authenticated' => true,
+                            'user' => [
+                                'id' => $tokenUser->id,
+                                'name' => $tokenUser->name,
+                                'email' => $tokenUser->email,
+                                'role' => $tokenUser->roles->pluck('name'),
+                                'profile' => [
+                                    'id' => $tokenUser->profile ? $tokenUser->profile->id : null,
+                                    'avatar' => $tokenUser->profile ? $tokenUser->profile->avatar : null,
+                                ]
+                            ],
+                            'note' => 'User authenticated via token lookup, not session'
+                        ]);
+                    }
+                }
+            } catch (\Exception $e) {
+                logger()->error('Error looking up token in check endpoint', [
+                    'error' => $e->getMessage(),
+                    'token_length' => strlen($token)
+                ]);
+            }
+        }
+
+        logger()->warning('User not authenticated in check endpoint');
+        return response()->json(['authenticated' => false]);
+    }
 }

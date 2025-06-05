@@ -5,6 +5,9 @@ namespace App\Providers;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use App\Models\User;
+use Laravel\Sanctum\Sanctum;
+use Laravel\Sanctum\PersonalAccessToken;
+use Illuminate\Support\Facades\Log;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -22,6 +25,8 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->registerPolicies();
+
         // Resolve any permission request through the user's permissions
         Gate::before(function (User $user, $ability) {
             // admin has all permissions
@@ -41,5 +46,27 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('role', function (User $user, $role) {
             return $user->hasRole($role);
         });
+
+        // Add debug for Sanctum token retrieval
+        Sanctum::authenticateAccessTokensUsing(
+            function (PersonalAccessToken $accessToken, bool $isValid) {
+                if ($isValid) {
+                    Log::info('Sanctum token validated successfully', [
+                        'token_id' => $accessToken->id,
+                        'token_name' => $accessToken->name,
+                        'user_id' => $accessToken->tokenable_id,
+                        'tokenable_type' => $accessToken->tokenable_type
+                    ]);
+                } else {
+                    Log::warning('Sanctum token validation failed', [
+                        'token_id' => $accessToken->id,
+                        'token_name' => $accessToken->name,
+                        'user_id' => $accessToken->tokenable_id,
+                    ]);
+                }
+                
+                return $isValid && $accessToken->created_at->gt(now()->subDays(30));
+            }
+        );
     }
 }

@@ -94,7 +94,97 @@ return new class extends Migration
 
         // Migrate data from waste_values to waste_values_new if needed
         if (Schema::hasTable('waste_values') && Schema::hasTable('waste_values_new')) {
-            // Removed the data migration code to prevent auto-creation of waste values
+            // Get all waste values from old table
+            $oldValues = DB::table('waste_values')->get();
+            
+            \Log::info('Migrating ' . count($oldValues) . ' waste values from waste_values to waste_values_new');
+            
+            foreach ($oldValues as $oldValue) {
+                // Verify waste_id exists and is valid
+                if (empty($oldValue->waste_id)) {
+                    \Log::warning('Skipping waste value with empty waste_id', ['value_id' => $oldValue->nilai_id]);
+                    continue;
+                }
+                
+                // Check if waste type exists
+                $wasteTypeExists = DB::table('waste_types')->where('waste_id', $oldValue->waste_id)->exists();
+                if (!$wasteTypeExists) {
+                    \Log::warning('Skipping waste value - waste type not found', ['waste_id' => $oldValue->waste_id]);
+                    continue;
+                }
+                
+                // Check if already migrated
+                $exists = DB::table('waste_values_new')
+                    ->where('waste_type_id', $oldValue->waste_id)
+                    ->exists();
+                
+                if (!$exists) {
+                    // Insert into new table
+                    try {
+                        DB::table('waste_values_new')->insert([
+                            'waste_type_id' => $oldValue->waste_id,
+                            'price_per_unit' => $oldValue->harga_minimum,
+                            'is_active' => true,
+                            'created_at' => $oldValue->created_at ?? now(),
+                            'updated_at' => $oldValue->updated_at ?? now()
+                        ]);
+                        
+                        \Log::info('Migrated waste value', [
+                            'old_id' => $oldValue->nilai_id,
+                            'waste_id' => $oldValue->waste_id
+                        ]);
+                    } catch (\Exception $e) {
+                        \Log::error('Failed to migrate waste value', [
+                            'error' => $e->getMessage(),
+                            'waste_id' => $oldValue->waste_id
+                        ]);
+                    }
+                }
+            }
+        }
+        
+        // Fix any inconsistencies in waste_types
+        if (Schema::hasTable('waste_types')) {
+            // Update status_aktif if null
+            DB::statement('UPDATE waste_types SET status_aktif = true WHERE status_aktif IS NULL');
+            
+            // Try to fix any inconsistent name/description fields
+            DB::statement("
+                UPDATE waste_types 
+                SET name = nama_sampah 
+                WHERE name IS NULL AND nama_sampah IS NOT NULL
+            ");
+            
+            DB::statement("
+                UPDATE waste_types 
+                SET nama_sampah = name 
+                WHERE nama_sampah IS NULL AND name IS NOT NULL
+            ");
+            
+            DB::statement("
+                UPDATE waste_types 
+                SET description = deskripsi 
+                WHERE description IS NULL AND deskripsi IS NOT NULL
+            ");
+            
+            DB::statement("
+                UPDATE waste_types 
+                SET deskripsi = description 
+                WHERE deskripsi IS NULL AND description IS NOT NULL
+            ");
+            
+            // Set kategori_id = waste_category_id where inconsistent
+            DB::statement("
+                UPDATE waste_types 
+                SET kategori_id = waste_category_id 
+                WHERE waste_category_id IS NOT NULL AND (kategori_id IS NULL OR kategori_id != waste_category_id)
+            ");
+            
+            DB::statement("
+                UPDATE waste_types 
+                SET waste_category_id = kategori_id 
+                WHERE kategori_id IS NOT NULL AND (waste_category_id IS NULL OR waste_category_id != kategori_id)
+            ");
         }
 
         // Migrate data from user_waste_tracking to user_waste_trackings if needed

@@ -123,87 +123,245 @@ const KelolaHargaSampah = () => {
     }
   };
 
-  // Fetch waste types and categories
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(prev => ({ ...prev, fetch: true }));
-      setError(null);
-      
-      try {
-        // Set default categories jika perlu
-        let categoryData = [];
+  // Handle refresh data
+  const handleRefreshData = async () => {
+    Swal.fire({
+      title: 'Sinkronisasi Data',
+      text: 'Menyinkronkan data dengan database...',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
         
-        // Fetch categories
-        try {
-          const categoriesResponse = await api.get('/waste-categories');
+        // Make direct API calls instead of using fetchData()
+        // This ensures we get fresh data without any caching issues
+        Promise.all([
+          api.get('/waste-categories'),
+          api.get('/waste-values')
+        ]).then(([categoriesResponse, valuesResponse]) => {
+          console.log('Direct API call results:', {
+            categories: categoriesResponse.data,
+            values: valuesResponse.data
+          });
           
-          if (categoriesResponse.data.success) {
-            if (Array.isArray(categoriesResponse.data.data) && categoriesResponse.data.data.length > 0) {
-              categoryData = categoriesResponse.data.data;
-              setCategories(categoryData);
-            } else {
-              console.warn('Tidak ada kategori sampah ditemukan dari API. Menggunakan kategori default.');
-              
-              // Set kategori default untuk menghindari error render
-              categoryData = [
-                { id: 1, name: 'PLASTIK', description: 'Sampah berbahan plastik' },
-                { id: 2, name: 'LOGAM', description: 'Sampah berbahan logam' },
-                { id: 3, name: 'KERTAS', description: 'Sampah berbahan kertas' },
-                { id: 4, name: 'LIMBAH BIODIESEL', description: 'Sampah limbah biodiesel' }
-              ];
-              setCategories(categoryData);
-            }
+          // Process categories
+          let categoryData = [];
+          if (categoriesResponse.data.success && Array.isArray(categoriesResponse.data.data)) {
+            categoryData = categoriesResponse.data.data;
+            setCategories(categoryData);
           } else {
-            throw new Error('Respons API kategori tidak valid.');
+            console.warn('Invalid categories response, using defaults');
+            categoryData = [
+              { id: 1, name: 'PLASTIK', description: 'Sampah berbahan plastik' },
+              { id: 2, name: 'LOGAM', description: 'Sampah berbahan logam' },
+              { id: 3, name: 'KERTAS', description: 'Sampah berbahan kertas' },
+              { id: 4, name: 'LIMBAH BIODIESEL', description: 'Sampah limbah biodiesel' }
+            ];
+            setCategories(categoryData);
           }
-        } catch (catError) {
-          console.error('Error fetching categories:', catError);
           
-          // Gunakan kategori default jika terjadi error
-          categoryData = [
-            { id: 1, name: 'PLASTIK', description: 'Sampah berbahan plastik' },
-            { id: 2, name: 'LOGAM', description: 'Sampah berbahan logam' },
-            { id: 3, name: 'KERTAS', description: 'Sampah berbahan kertas' },
-            { id: 4, name: 'LIMBAH BIODIESEL', description: 'Sampah limbah biodiesel' }
-          ];
-          setCategories(categoryData);
-        }
-        
-        // Fetch waste types with values
-        try {
-          const wasteValuesResponse = await api.get('/waste-values');
-          
-          if (wasteValuesResponse.data.success) {
-            const wasteData = wasteValuesResponse.data.data || [];
+          // Process waste values/types
+          if (valuesResponse.data.success && Array.isArray(valuesResponse.data.data)) {
+            const wasteData = valuesResponse.data.data;
             
-            // Pastikan setiap waste type memiliki kategori yang valid
+            // Check for potential issues with the API response
+            const hasIssues = wasteData.some(waste => !waste.id || !waste.waste_id || waste.id !== waste.waste_id);
+            
+            if (hasIssues) {
+              console.warn('API response has inconsistent ID fields!', 
+                wasteData.filter(w => !w.id || !w.waste_id || w.id !== waste.waste_id).slice(0, 3));
+            }
+            
+            // IMPORTANT: Do a direct mapping with minimal transformation
+            // Just ensure we have consistent field names without creating temporary IDs
             const processedWasteData = wasteData.map(waste => {
-              // Jika tidak memiliki kategori, tetapkan default
-              if (!waste.category_id || !categoryData.find(cat => cat.id === waste.category_id)) {
-                return { ...waste, category_id: 1, category_name: 'Plastik' };
-              }
-              return waste;
+              // Log each waste item's ID fields for debugging
+              console.log('Processing waste item:', {
+                id: waste.id,
+                waste_id: waste.waste_id,
+                waste_type_id: waste.waste_type_id,
+                name: waste.name || waste.nama_sampah
+              });
+              
+              // Get the most appropriate ID without creating temporary ones
+              // Use a direct approach that prioritizes waste_id
+              const bestId = waste.waste_id || waste.id || waste.waste_type_id;
+              
+              // Get category data
+              const categoryId = waste.category_id || waste.kategori_id || 1;
+              const categoryName = waste.category_name || 
+                              waste.kategori_name || 
+                              categoryData.find(cat => cat.id === categoryId)?.name ||
+                              'Uncategorized';
+                              
+              // Create a normalized object with consistent field names
+              return {
+                ...waste, // Keep all original properties
+                // Ensure these key fields are consistently available
+                id: bestId, 
+                waste_id: bestId,
+                waste_type_id: bestId,
+                name: waste.name || waste.nama_sampah || 'Unnamed',
+                category_id: categoryId,
+                category_name: categoryName,
+                price_per_kg: waste.price_per_kg || waste.price_per_unit || waste.harga_minimum || 0,
+                
+                // Add debugging flag to track if this was fixed
+                _was_fixed: bestId !== waste.id || bestId !== (waste.waste_id || null) || bestId !== (waste.waste_type_id || null)
+              };
             });
             
+            // Check for any remaining issues with data
+            const stillHasIssues = processedWasteData.some(item => 
+              !item.id || String(item.id).startsWith('temp-'));
+              
+            if (stillHasIssues) {
+              console.error('DATA STILL HAS ISSUES AFTER PROCESSING!', 
+                processedWasteData.filter(item => !item.id || String(item.id).startsWith('temp-')));
+              
+              // Show error message instructing to run migrations
+              Swal.fire({
+                icon: 'warning',
+                title: 'Peringatan: Data Tidak Konsisten',
+                html: '<p>Beberapa data masih memiliki masalah setelah sinkronisasi.</p>' +
+                      '<p>Disarankan untuk menjalankan migrasi database untuk memperbaiki masalah ini:<br>' +
+                      '<code>php artisan migrate --path=database/migrations/2025_06_05_142445_fix_waste_tables_structure.php</code></p>',
+                confirmButtonText: 'Mengerti'
+              });
+            } else {
+              console.log('Refreshed waste data with no issues:', processedWasteData.slice(0, 3));
+              
+              // Show success
+              Swal.fire({
+                icon: 'success',
+                title: 'Data Tersinkronisasi!',
+                text: `${processedWasteData.length} jenis sampah berhasil diperbarui dari database.`,
+                timer: 2000,
+                timerProgressBar: true
+              });
+            }
+            
+            // Update state with the processed data
             setWasteTypes(processedWasteData);
             setFilteredWasteTypes(processedWasteData);
           } else {
-            throw new Error('Respons API waste values tidak valid.');
+            throw new Error('Data sinkronisasi tidak valid');
           }
-        } catch (wasteError) {
-          console.error('Error fetching waste values:', wasteError);
-          setWasteTypes([]);
-          setFilteredWasteTypes([]);
-        }
-        
-        setIsLoading(prev => ({ ...prev, fetch: false }));
-      } catch (err) {
-        console.error('Error in fetchData:', err);
-        setError(err.message || err.response?.data?.message || 'Terjadi kesalahan saat memuat data. Silakan coba lagi.');
-        setIsLoading(prev => ({ ...prev, fetch: false }));
+        }).catch(error => {
+          console.error('Error refreshing data:', error);
+          Swal.fire({
+            icon: 'error',
+            title: 'Gagal Sinkronisasi',
+            text: 'Terjadi kesalahan saat memperbarui data. Silakan coba lagi.'
+          });
+        });
       }
-    };
+    });
+  };
+
+  // Fetch waste types and categories
+  const fetchData = async () => {
+    setIsLoading(prev => ({ ...prev, fetch: true }));
+    setError(null);
     
+    try {
+      // Set default categories if needed
+      let categoryData = [];
+      
+      // Fetch categories
+      try {
+        const categoriesResponse = await api.get('/waste-categories');
+        
+        if (categoriesResponse.data.success) {
+          if (Array.isArray(categoriesResponse.data.data) && categoriesResponse.data.data.length > 0) {
+            categoryData = categoriesResponse.data.data;
+            setCategories(categoryData);
+          } else {
+            console.warn('No waste categories found from API. Using default categories.');
+            
+            // Set default categories to avoid render errors
+            categoryData = [
+              { id: 1, name: 'PLASTIK', description: 'Sampah berbahan plastik' },
+              { id: 2, name: 'LOGAM', description: 'Sampah berbahan logam' },
+              { id: 3, name: 'KERTAS', description: 'Sampah berbahan kertas' },
+              { id: 4, name: 'LIMBAH BIODIESEL', description: 'Sampah limbah biodiesel' }
+            ];
+            setCategories(categoryData);
+          }
+        } else {
+          throw new Error('Invalid categories API response.');
+        }
+      } catch (catError) {
+        console.error('Error fetching categories:', catError);
+        
+        // Use default categories if an error occurs
+        categoryData = [
+          { id: 1, name: 'PLASTIK', description: 'Sampah berbahan plastik' },
+          { id: 2, name: 'LOGAM', description: 'Sampah berbahan logam' },
+          { id: 3, name: 'KERTAS', description: 'Sampah berbahan kertas' },
+          { id: 4, name: 'LIMBAH BIODIESEL', description: 'Sampah limbah biodiesel' }
+        ];
+        setCategories(categoryData);
+      }
+      
+      // Fetch waste types with values - using the improved logic from handleRefreshData
+      try {
+        const wasteValuesResponse = await api.get('/waste-values');
+        
+        if (wasteValuesResponse.data.success) {
+          const wasteData = wasteValuesResponse.data.data || [];
+          
+          // Log raw data for debugging
+          console.log('Raw waste types data from API:', wasteData.slice(0, 2));
+          
+          // Use the same improved mapping approach as handleRefreshData
+          const processedWasteData = wasteData.map(waste => {
+            // Get the most appropriate ID without creating temporary ones
+            const bestId = waste.id || waste.waste_id || waste.waste_type_id;
+            
+            // Get category information
+            const categoryId = waste.category_id || waste.kategori_id || 1;
+            const categoryName = waste.category_name || 
+                            waste.kategori_name || 
+                            categoryData.find(cat => cat.id === categoryId)?.name ||
+                            'Uncategorized';
+            
+            // Create a normalized object with consistent field names
+            return { 
+              ...waste, // Keep all original properties
+              // Ensure these key fields are consistently available
+              id: bestId, 
+              waste_id: bestId,
+              waste_type_id: bestId,
+              name: waste.name || waste.nama_sampah || 'Unnamed',
+              category_id: categoryId,
+              category_name: categoryName,
+              price_per_kg: waste.price_per_kg || waste.price_per_unit || waste.harga_minimum || 0
+            };
+          });
+          
+          console.log('Normalized waste types data:', processedWasteData.slice(0, 2));
+          
+          setWasteTypes(processedWasteData);
+          setFilteredWasteTypes(processedWasteData);
+        } else {
+          throw new Error('Invalid waste values API response.');
+        }
+      } catch (wasteError) {
+        console.error('Error fetching waste values:', wasteError);
+        setWasteTypes([]);
+        setFilteredWasteTypes([]);
+      }
+      
+      setIsLoading(prev => ({ ...prev, fetch: false }));
+    } catch (err) {
+      console.error('Error in fetchData:', err);
+      setError(err.message || err.response?.data?.message || 'An error occurred while loading data. Please try again.');
+      setIsLoading(prev => ({ ...prev, fetch: false }));
+    }
+  };
+
+  // Fetch waste types and categories on component mount
+  useEffect(() => {
     fetchData();
   }, []);
 
@@ -302,6 +460,17 @@ const KelolaHargaSampah = () => {
     
     if (!validateForm()) return;
     
+    // Check if editing an item with a temporary ID
+    if (isEditing && formData.id && String(formData.id).startsWith('temp-')) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Tidak dapat memperbarui',
+        html: 'Data ini belum tersimpan sepenuhnya di database dan tidak dapat diperbarui.<br><br>Silakan melakukan refresh data terlebih dahulu, atau tambahkan data baru.',
+        confirmButtonText: 'Mengerti'
+      });
+      return;
+    }
+    
     setIsLoading(prev => ({ ...prev, submit: true }));
     
     try {
@@ -377,11 +546,39 @@ const KelolaHargaSampah = () => {
 
   // Handle edit
   const handleEdit = (wasteType) => {
+    console.log('Editing waste type:', wasteType);
+    
+    // Get the correct ID
+    const wasteTypeId = wasteType.id || wasteType.waste_id || wasteType.waste_type_id;
+    
+    if (!wasteTypeId) {
+      console.error('Edit failed: Invalid waste ID (null or undefined)', wasteType);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Tidak dapat mengedit data. ID jenis sampah tidak valid.'
+      });
+      return;
+    }
+    
+    // Get the right field names based on what's available
+    const wasteName = wasteType.name || wasteType.nama_sampah || '';
+    const categoryId = wasteType.category_id || wasteType.kategori_id || wasteType.waste_category_id || '';
+    const price = wasteType.price_per_kg || wasteType.price_per_unit || wasteType.harga_minimum || 0;
+    
+    // Log the extracted data for debugging
+    console.log('Edit data prepared:', { 
+      id: wasteTypeId, 
+      name: wasteName, 
+      category_id: categoryId, 
+      price: price 
+    });
+    
     setFormData({
-      id: wasteType.id || null,
-      name: wasteType.name || '',
-      category_id: wasteType.category_id ? wasteType.category_id.toString() : '',
-      price_per_kg: wasteType.price_per_kg ? wasteType.price_per_kg.toString() : '0',
+      id: wasteTypeId,
+      name: wasteName,
+      category_id: categoryId ? categoryId.toString() : '',
+      price_per_kg: price ? price.toString() : '0',
     });
     setIsEditing(true);
     setFormDialogOpen(true);
@@ -389,15 +586,53 @@ const KelolaHargaSampah = () => {
 
   // Handle delete
   const handleDelete = (wasteTypeId) => {
-    // Validasi ID tidak boleh null
-    if (!wasteTypeId) {
+    // More comprehensive validation for wasteTypeId
+    const isInvalidId = wasteTypeId === undefined || wasteTypeId === null || 
+                       wasteTypeId === '' || wasteTypeId === 0;
+    
+    // Check for temporary ID format
+    const isTemporaryId = typeof wasteTypeId === 'string' && wasteTypeId.startsWith('temp-');
+    
+    // Log detailed information about the ID to help with debugging
+    console.log('Delete attempt:', {
+      wasteTypeId,
+      type: typeof wasteTypeId,
+      isInvalidId,
+      isTemporaryId
+    });
+    
+    if (isInvalidId) {
+      console.error('Delete failed: Invalid waste ID:', wasteTypeId);
+      
+      // Try to get more debug info to help identify the issue
+      console.log('Current waste types data sample:', wasteTypes.slice(0, 3));
+      console.log('First few waste IDs:', wasteTypes.slice(0, 5).map(wt => ({
+        id: wt.id,
+        waste_id: wt.waste_id,
+        waste_type_id: wt.waste_type_id
+      })));
+      
       Swal.fire({
         icon: 'error',
         title: 'Gagal!',
-        text: 'ID jenis sampah tidak valid. Silakan coba lagi.'
+        text: 'ID jenis sampah tidak valid. Silakan coba refresh halaman dan coba lagi.'
       });
       return;
     }
+
+    if (isTemporaryId) {
+      console.error('Delete failed: Attempted to delete a waste type with temporary ID:', wasteTypeId);
+      
+      Swal.fire({
+        icon: 'warning',
+        title: 'Tidak dapat dihapus',
+        html: 'Data ini belum tersimpan sepenuhnya di database.<br><br>Silakan refresh halaman dan coba lagi, atau tambahkan data baru.',
+        confirmButtonText: 'Mengerti'
+      });
+      return;
+    }
+
+    console.log('Attempting to delete waste type with ID:', wasteTypeId);
 
     Swal.fire({
       title: 'Konfirmasi Hapus',
@@ -413,10 +648,18 @@ const KelolaHargaSampah = () => {
         setIsLoading(prev => ({ ...prev, delete: true }));
         
         try {
-          const response = await api.delete(`/waste-values/${wasteTypeId}`);
+          const wasteTypeIdStr = String(wasteTypeId);
+          console.log('Sending delete request for waste type with ID:', wasteTypeIdStr);
+          
+          const response = await api.delete(`/waste-values/${wasteTypeIdStr}`);
           
           if (response.data.success) {
-            setWasteTypes(prev => prev.filter(item => item.id !== wasteTypeId));
+            // Remove the deleted item from state
+            setWasteTypes(prev => prev.filter(item => {
+              const itemId = item.id || item.waste_id || item.waste_type_id;
+              // Ensure we're comparing the same types (convert both to strings)
+              return String(itemId) !== wasteTypeIdStr;
+            }));
           
             Swal.fire({
               icon: 'success',
@@ -431,10 +674,32 @@ const KelolaHargaSampah = () => {
           }
         } catch (err) {
           console.error('Error deleting waste type:', err);
+          console.error('Error details:', err.response?.data);
+          
+          // Provide a more specific error message based on the HTTP status code
+          let errorMessage = 'Terjadi kesalahan saat menghapus data.';
+          
+          if (err.response) {
+            switch (err.response.status) {
+              case 404:
+                errorMessage = 'Data tidak ditemukan. Mungkin sudah dihapus sebelumnya.';
+                break;
+              case 403:
+                errorMessage = 'Anda tidak memiliki izin untuk menghapus data ini.';
+                break;
+              case 500:
+                errorMessage = 'Terjadi kesalahan pada server. Silakan coba lagi nanti.';
+                break;
+              default:
+                errorMessage = err.response.data?.message || 'Terjadi kesalahan saat menghapus data.';
+            }
+          }
+          
           Swal.fire({
             icon: 'error',
             title: 'Gagal!',
-            text: err.response?.data?.message || err.message || 'Terjadi kesalahan saat menghapus data. Silakan coba lagi.'
+            text: errorMessage,
+            footer: 'Silakan refresh halaman dan coba lagi.'
           });
         } finally {
           setIsLoading(prev => ({ ...prev, delete: false }));
@@ -702,6 +967,26 @@ const KelolaHargaSampah = () => {
             </Alert>
           )}
           
+          {/* Show warning when temporary IDs are detected */}
+          {!isLoading.fetch && wasteTypes.some(wt => String(wt.id || '').startsWith('temp-')) && (
+            <Alert severity="warning" sx={{ m: 2 }}>
+              <AlertTitle>Perhatian</AlertTitle>
+              <Typography variant="body2">
+                Beberapa data memiliki ID sementara dan perlu disinkronkan dengan database.
+              </Typography>
+              <Button
+                variant="outlined"
+                color="warning"
+                size="small"
+                startIcon={<RefreshIcon />}
+                onClick={handleRefreshData}
+                sx={{ mt: 1, textTransform: 'none' }}
+              >
+                Sinkronisasi Data Sekarang
+              </Button>
+            </Alert>
+          )}
+          
           {isLoading.fetch ? (
             <Box sx={{ p: 4, textAlign: 'center' }}>
               <CircularProgress />
@@ -718,14 +1003,34 @@ const KelolaHargaSampah = () => {
               <Button 
                 variant="contained" 
                 startIcon={<AddIcon />} 
-                sx={{ mt: 2 }} 
+                sx={{ mt: 2, mr: 1 }} 
                 onClick={handleAddNew}
               >
                 Tambah Jenis Sampah
               </Button>
+              <Button
+                variant="outlined"
+                startIcon={<RefreshIcon />}
+                sx={{ mt: 2 }}
+                onClick={handleRefreshData}
+              >
+                Refresh Data
+              </Button>
             </Box>
           ) : (
             <>
+              {/* Table Header with Refresh Button */}
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+                <Button
+                  variant="outlined"
+                  startIcon={<RefreshIcon />}
+                  onClick={handleRefreshData}
+                  size="small"
+                >
+                  Refresh Data
+                </Button>
+              </Box>
+              
               <TableContainer>
                 <Table aria-label="waste types table">
                   <TableHead>
@@ -740,58 +1045,111 @@ const KelolaHargaSampah = () => {
                   <TableBody>
                     {filteredWasteTypes
                       .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                      .map((wasteType, index) => (
-                        <TableRow key={wasteType.id ? wasteType.id : `waste-type-${index}`} hover>
-                          <TableCell>{wasteType.name || 'Unnamed'}</TableCell>
-                          <TableCell>
-                            {wasteType.category_name ? (
-                              <Chip 
-                                label={wasteType.category_name} 
-                                size="small" 
-                                color={
-                                  wasteType.category_name === 'PLASTIK' ? 'primary' : 
-                                  wasteType.category_name === 'KERTAS' ? 'secondary' :
-                                  wasteType.category_name === 'LOGAM' ? 'warning' :
-                                  wasteType.category_name === 'LIMBAH BIODIESEL' ? 'success' :
-                                  'info'
-                                }
-                                variant="outlined"
-                              />
-                            ) : (
-                              <Chip 
-                                label="Tidak Terkategori" 
-                                size="small" 
-                                color="default"
-                                variant="outlined"
-                              />
-                            )}
-                          </TableCell>
-                          <TableCell align="right" sx={{ fontWeight: 700 }}>
-                            {formatCurrency(wasteType.price_per_kg || 0)}
-                          </TableCell>
-                          <TableCell>{wasteType.last_updated ? formatDate(wasteType.last_updated) : '-'}</TableCell>
-                          <TableCell align="center">
-                            <Tooltip title="Edit Harga">
-                              <IconButton 
-                                color="primary" 
-                                size="small"
-                                onClick={() => handleEdit(wasteType)}
-                              >
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Hapus Jenis Sampah">
-                              <IconButton 
-                                color="error" 
-                                size="small" 
-                                onClick={() => handleDelete(wasteType.id)}
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          </TableCell>
-                        </TableRow>
-                    ))}
+                      .map((wasteType, index) => {
+                        // Get the correct ID for this waste type
+                        const wasteTypeId = wasteType.id || wasteType.waste_id || wasteType.waste_type_id;
+                        
+                        // Check if this is a temporary ID (can't be edited or deleted)
+                        // Also check if ID is null, undefined, empty string, or 0
+                        const isInvalidId = !wasteTypeId || wasteTypeId === 0 || wasteTypeId === '';
+                        const isTemporaryId = isInvalidId || 
+                                              (typeof wasteTypeId === 'string' && wasteTypeId.startsWith('temp-'));
+                        
+                        // Log for debugging (only for first item)
+                        if (index === 0) {
+                          console.log('First waste type data structure:', wasteType);
+                          console.log('ID evaluation:', { 
+                            wasteTypeId, 
+                            isInvalidId,
+                            isTemporaryId,
+                            idType: typeof wasteTypeId
+                          });
+                        }
+                        
+                        return (
+                          <TableRow 
+                            key={wasteTypeId ? `waste-type-${wasteTypeId}` : `waste-type-index-${index}`}
+                            hover
+                            sx={isTemporaryId ? { 
+                              bgcolor: 'rgba(255, 244, 229, 0.7)',
+                              '&:hover': { bgcolor: 'rgba(255, 244, 229, 0.9)' } 
+                            } : {}}
+                          >
+                            <TableCell>
+                              {wasteType.name || wasteType.nama_sampah || 'Unnamed'}
+                              {isTemporaryId && (
+                                <Chip
+                                  label="Perlu Sync"
+                                  size="small"
+                                  color="warning"
+                                  sx={{ ml: 1, height: 20, '& .MuiChip-label': { px: 1, fontSize: '0.65rem' } }}
+                                />
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {wasteType.category_name || wasteType.kategori_name ? (
+                                <Chip 
+                                  label={wasteType.category_name || wasteType.kategori_name} 
+                                  size="small" 
+                                  color={
+                                    (wasteType.category_name || wasteType.kategori_name).toUpperCase() === 'PLASTIK' ? 'primary' : 
+                                    (wasteType.category_name || wasteType.kategori_name).toUpperCase() === 'KERTAS' ? 'secondary' :
+                                    (wasteType.category_name || wasteType.kategori_name).toUpperCase() === 'LOGAM' ? 'warning' :
+                                    (wasteType.category_name || wasteType.kategori_name).toUpperCase() === 'LIMBAH BIODIESEL' ? 'success' :
+                                    'info'
+                                  }
+                                  variant="outlined"
+                                />
+                              ) : (
+                                <Chip 
+                                  label="Tidak Terkategori" 
+                                  size="small" 
+                                  color="default"
+                                  variant="outlined"
+                                />
+                              )}
+                            </TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 700 }}>
+                              {formatCurrency(wasteType.price_per_kg || wasteType.price_per_unit || wasteType.harga_minimum || 0)}
+                            </TableCell>
+                            <TableCell>
+                              {isTemporaryId ? (
+                                <Typography variant="body2" color="text.secondary" fontStyle="italic">
+                                  Belum tersimpan
+                                </Typography>
+                              ) : (
+                                wasteType.last_updated ? formatDate(wasteType.last_updated) : (wasteType.updated_at ? formatDate(wasteType.updated_at) : '-')
+                              )}
+                            </TableCell>
+                            <TableCell align="center">
+                              <Tooltip title={isTemporaryId ? "Data perlu disinkronkan terlebih dahulu" : "Edit Harga"}>
+                                <span>
+                                  <IconButton 
+                                    color="primary" 
+                                    size="small"
+                                    onClick={() => handleEdit(wasteType)}
+                                    disabled={isTemporaryId}
+                                  >
+                                    <EditIcon fontSize="small" />
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
+                              <Tooltip title={isTemporaryId ? "Data perlu disinkronkan terlebih dahulu" : "Hapus Jenis Sampah"}>
+                                <span>
+                                  <IconButton 
+                                    color="error" 
+                                    size="small" 
+                                    onClick={() => handleDelete(wasteTypeId)}
+                                    disabled={isTemporaryId}
+                                  >
+                                    <DeleteIcon fontSize="small" />
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                   </TableBody>
                 </Table>
               </TableContainer>

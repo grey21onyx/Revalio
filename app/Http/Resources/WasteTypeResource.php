@@ -31,11 +31,11 @@ class WasteTypeResource extends JsonResource
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'kategori_id' => $this->kategori_id,
-            // Tambahkan harga dari relasi wasteValues
-            'harga_minimum' => $latestValue ? (float) $latestValue->harga_minimum : null,
-            'harga_maksimum' => $latestValue ? (float) $latestValue->harga_maksimum : null,
-            'satuan_harga' => $latestValue ? $latestValue->satuan : null,
-            'tanggal_update_harga' => $latestValue ? $latestValue->tanggal_update : null,
+            // Tambahkan harga dari relasi wasteValues dengan null check
+            'harga_minimum' => $latestValue && isset($latestValue->harga_minimum) ? (float) $latestValue->harga_minimum : null,
+            'harga_maksimum' => $latestValue && isset($latestValue->harga_maksimum) ? (float) $latestValue->harga_maksimum : null,
+            'satuan_harga' => $latestValue && isset($latestValue->satuan) ? $latestValue->satuan : null,
+            'tanggal_update_harga' => $latestValue && isset($latestValue->tanggal_update) ? $latestValue->tanggal_update : null,
             'kategori' => $this->whenLoaded('category', function() {
                 return new WasteCategoryResource($this->category);
             }),

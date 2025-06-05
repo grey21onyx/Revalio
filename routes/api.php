@@ -25,6 +25,8 @@ use App\Http\Controllers\API\v1\ForumRatingController;
 use App\Http\Controllers\API\v1\ForumViewController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
+use Laravel\Sanctum\PersonalAccessToken;
 
 /*
 |--------------------------------------------------------------------------
@@ -83,6 +85,17 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/social/{provider}/callback', [AuthController::class, 'socialLoginCallback']);
     Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
+    
+    // Authentication diagnostic routes
+    Route::get('/waste-tracking/diagnostic', [UserWasteTrackingController::class, 'diagnosticCheck']);
+    Route::get('/auth-test', function () {
+        return response()->json([
+            'is_authenticated' => Auth::check(),
+            'user' => Auth::check() ? Auth::user()->only(['id', 'name', 'email']) : null,
+            'token_valid' => request()->bearerToken() ? !empty(\Laravel\Sanctum\PersonalAccessToken::findToken(request()->bearerToken())) : false,
+            'timestamp' => now()->format('Y-m-d H:i:s'),
+        ]);
+    })->middleware('auth:sanctum');
     
     // Routes that require authentication
     Route::middleware('auth:sanctum')->group(function () {
@@ -240,11 +253,40 @@ Route::prefix('v1')->group(function () {
     // Public route for waste types
     Route::get('/waste-tracking/waste-types', [UserWasteTrackingController::class, 'getWasteTypes']);
     
+    // Special endpoint for tracking-specific waste types
+    Route::get('/waste-tracking/types-for-tracking', [UserWasteTrackingController::class, 'getWasteTypesForTracking']);
+    
+    // Diagnostic endpoint that can work with or without authentication
+    Route::get('/waste-tracking/diagnostic', [UserWasteTrackingController::class, 'diagnosticCheck']);
+    
     // Routes that require authentication
     Route::middleware('auth:sanctum')->group(function () {
-        // User waste tracking operations
+        // User waste tracking operations - ensure all have explicit API routes
         Route::apiResource('user-waste-trackings', UserWasteTrackingController::class);
         Route::get('/user-waste-trackings/export/{format}', [UserWasteTrackingController::class, 'export']);
         Route::get('/user-waste-trackings/summary', [UserWasteTrackingController::class, 'getSummary']);
     });
+});
+
+// Add a test auth endpoint to diagnose auth issues
+Route::middleware('auth:sanctum')->get('/v1/auth-test', function (Request $request) {
+    $user = Auth::user();
+    return response()->json([
+        'success' => true,
+        'is_authenticated' => Auth::check(),
+        'user' => $user ? [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email
+        ] : null,
+        'token_info' => [
+            'has_bearer_token' => !empty($request->bearerToken()),
+            'token_preview' => !empty($request->bearerToken()) ? substr($request->bearerToken(), 0, 10).'...' : null
+        ],
+        'request_info' => [
+            'headers' => collect($request->headers->all())->map(function($item) {
+                return is_array($item) ? implode(', ', $item) : $item;
+            })->toArray()
+        ]
+    ]);
 });

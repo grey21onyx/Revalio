@@ -13,6 +13,12 @@ Aplikasi ini tidak berfungsi sebagai tempat jual beli, melainkan sebagai panduan
 - Tracking Volume Sampah
 - Edukasi tentang Dampak Lingkungan
 
+## Lihat Demo Aplikasi
+[Lihat Demo Revalio](https://youtu.be/ZTxGYFIn-v8?si=720Ym5P-ZQPfAzgd)
+
+## Dokumentasi Sistem Revalio
+[Lihat Dokumentasi Sistem Revalio](https://drive.google.com/drive/folders/17ROywsJdtEVfdPcQ2h6CL7gV2H7OGEtR?usp=sharing)
+
 ## ✨ Fitur Utama
 
 ### 📋 Katalog Sampah Bernilai

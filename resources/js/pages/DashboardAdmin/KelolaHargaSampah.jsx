@@ -51,26 +51,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import Swal from 'sweetalert2';
 import api from '../../services/api';
 
-// Dummy data for categories and waste types
-const dummyCategories = [
-  { id: 1, name: 'Plastik', description: 'Semua jenis sampah berbahan plastik' },
-  { id: 2, name: 'Kertas', description: 'Sampah berbahan kertas, kardus, dan sejenisnya' },
-  { id: 3, name: 'Kaca', description: 'Sampah berbahan kaca atau gelas' },
-  { id: 4, name: 'Logam', description: 'Sampah berbahan logam seperti besi, aluminium, dll' },
-  { id: 5, name: 'Elektronik', description: 'Sampah perangkat elektronik dan komponennya' }
-];
-
-const dummyWasteTypes = [
-  { id: 1, name: 'Botol Plastik PET', category_id: 1, category_name: 'Plastik', price_per_kg: 3000, last_updated: '2023-06-15' },
-  { id: 2, name: 'Kardus', category_id: 2, category_name: 'Kertas', price_per_kg: 2500, last_updated: '2023-06-10' },
-  { id: 3, name: 'Kaleng Aluminium', category_id: 4, category_name: 'Logam', price_per_kg: 15000, last_updated: '2023-06-12' },
-  { id: 4, name: 'Botol Kaca', category_id: 3, category_name: 'Kaca', price_per_kg: 1000, last_updated: '2023-06-01' },
-  { id: 5, name: 'Baterai Bekas', category_id: 5, category_name: 'Elektronik', price_per_kg: 5000, last_updated: '2023-05-20' },
-  { id: 6, name: 'Plastik HDPE', category_id: 1, category_name: 'Plastik', price_per_kg: 4000, last_updated: '2023-06-08' },
-  { id: 7, name: 'Kertas HVS', category_id: 2, category_name: 'Kertas', price_per_kg: 3000, last_updated: '2023-06-05' },
-  { id: 8, name: 'Kabel Tembaga', category_id: 4, category_name: 'Logam', price_per_kg: 35000, last_updated: '2023-06-13' },
-];
-
 const KelolaHargaSampah = () => {
   const theme = useTheme();
   const navigate = useNavigate();
@@ -109,23 +89,38 @@ const KelolaHargaSampah = () => {
 
   // Format date helper
   const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    
     try {
       const date = new Date(dateString);
       return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     } catch (error) {
       console.error('Error formatting date:', error);
-      return dateString;
+      return dateString || '-';
     }
   };
 
   // Format currency helper
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('id-ID', { 
-      style: 'currency', 
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
+    // Tangani NaN, undefined, dan null
+    if (amount === null || amount === undefined || isNaN(amount)) {
+      return "Rp 0";
+    }
+    
+    try {
+      // Pastikan amount adalah number
+      const numAmount = Number(amount);
+      
+      return new Intl.NumberFormat('id-ID', { 
+        style: 'currency', 
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(numAmount);
+    } catch (error) {
+      console.error('Error formatting currency:', error);
+      return "Rp 0"; // Fallback jika error
+    }
   };
 
   // Fetch waste types and categories
@@ -135,17 +130,76 @@ const KelolaHargaSampah = () => {
       setError(null);
       
       try {
-        // In a real application, we would fetch from the API
-        // Simulate API call with setTimeout
-        setTimeout(() => {
-          setCategories(dummyCategories);
-          setWasteTypes(dummyWasteTypes);
-          setFilteredWasteTypes(dummyWasteTypes);
-          setIsLoading(prev => ({ ...prev, fetch: false }));
-        }, 1000);
+        // Set default categories jika perlu
+        let categoryData = [];
+        
+        // Fetch categories
+        try {
+          const categoriesResponse = await api.get('/waste-categories');
+          
+          if (categoriesResponse.data.success) {
+            if (Array.isArray(categoriesResponse.data.data) && categoriesResponse.data.data.length > 0) {
+              categoryData = categoriesResponse.data.data;
+              setCategories(categoryData);
+            } else {
+              console.warn('Tidak ada kategori sampah ditemukan dari API. Menggunakan kategori default.');
+              
+              // Set kategori default untuk menghindari error render
+              categoryData = [
+                { id: 1, name: 'PLASTIK', description: 'Sampah berbahan plastik' },
+                { id: 2, name: 'LOGAM', description: 'Sampah berbahan logam' },
+                { id: 3, name: 'KERTAS', description: 'Sampah berbahan kertas' },
+                { id: 4, name: 'LIMBAH BIODIESEL', description: 'Sampah limbah biodiesel' }
+              ];
+              setCategories(categoryData);
+            }
+          } else {
+            throw new Error('Respons API kategori tidak valid.');
+          }
+        } catch (catError) {
+          console.error('Error fetching categories:', catError);
+          
+          // Gunakan kategori default jika terjadi error
+          categoryData = [
+            { id: 1, name: 'PLASTIK', description: 'Sampah berbahan plastik' },
+            { id: 2, name: 'LOGAM', description: 'Sampah berbahan logam' },
+            { id: 3, name: 'KERTAS', description: 'Sampah berbahan kertas' },
+            { id: 4, name: 'LIMBAH BIODIESEL', description: 'Sampah limbah biodiesel' }
+          ];
+          setCategories(categoryData);
+        }
+        
+        // Fetch waste types with values
+        try {
+          const wasteValuesResponse = await api.get('/waste-values');
+          
+          if (wasteValuesResponse.data.success) {
+            const wasteData = wasteValuesResponse.data.data || [];
+            
+            // Pastikan setiap waste type memiliki kategori yang valid
+            const processedWasteData = wasteData.map(waste => {
+              // Jika tidak memiliki kategori, tetapkan default
+              if (!waste.category_id || !categoryData.find(cat => cat.id === waste.category_id)) {
+                return { ...waste, category_id: 1, category_name: 'Plastik' };
+              }
+              return waste;
+            });
+            
+            setWasteTypes(processedWasteData);
+            setFilteredWasteTypes(processedWasteData);
+          } else {
+            throw new Error('Respons API waste values tidak valid.');
+          }
+        } catch (wasteError) {
+          console.error('Error fetching waste values:', wasteError);
+          setWasteTypes([]);
+          setFilteredWasteTypes([]);
+        }
+        
+        setIsLoading(prev => ({ ...prev, fetch: false }));
       } catch (err) {
-        console.error('Error fetching data:', err);
-        setError('Terjadi kesalahan saat memuat data. Silakan coba lagi.');
+        console.error('Error in fetchData:', err);
+        setError(err.message || err.response?.data?.message || 'Terjadi kesalahan saat memuat data. Silakan coba lagi.');
         setIsLoading(prev => ({ ...prev, fetch: false }));
       }
     };
@@ -157,8 +211,14 @@ const KelolaHargaSampah = () => {
   useEffect(() => {
     if (wasteTypes.length > 0) {
       const filtered = wasteTypes.filter(wasteType => {
-        const matchesSearch = wasteType.name.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesCategory = categoryFilter === '' || wasteType.category_id === parseInt(categoryFilter);
+        // Add null checks for name property
+        const wasteName = wasteType?.name || '';
+        const matchesSearch = wasteName.toLowerCase().includes((searchQuery || '').toLowerCase());
+        
+        // Add null check for category_id
+        const wasteCategory = wasteType?.category_id || 0;
+        const matchesCategory = categoryFilter === '' || wasteCategory === parseInt(categoryFilter);
+        
         return matchesSearch && matchesCategory;
       });
       
@@ -170,10 +230,24 @@ const KelolaHargaSampah = () => {
   // Handle form change
   const handleFormChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    // Khusus untuk price_per_kg, pastikan nilainya positif
+    if (name === 'price_per_kg') {
+      // Parse value ke number jika memungkinkan
+      const numValue = parseFloat(value);
+      
+      // Jika value valid dan lebih besar dari 0, gunakan value, jika tidak kosongkan
+      if (value === '' || isNaN(numValue)) {
+        setFormData(prev => ({ ...prev, [name]: '' }));
+      } else {
+        // Pastikan nilai tidak negatif dan tidak terlalu besar
+        const sanitizedValue = Math.max(0, Math.min(numValue, 1000000000)).toString();
+        setFormData(prev => ({ ...prev, [name]: sanitizedValue }));
+      }
+    } else {
+      // Untuk input lainnya
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
     
     // Clear error for this field if it exists
     if (formErrors[name]) {
@@ -194,12 +268,28 @@ const KelolaHargaSampah = () => {
     
     if (!formData.category_id) {
       errors.category_id = 'Kategori harus dipilih';
+    } else if (isNaN(parseInt(formData.category_id))) {
+      errors.category_id = 'Kategori tidak valid';
     }
     
     if (!formData.price_per_kg) {
       errors.price_per_kg = 'Harga per kg harus diisi';
-    } else if (isNaN(formData.price_per_kg) || parseFloat(formData.price_per_kg) <= 0) {
-      errors.price_per_kg = 'Harga harus berupa angka positif';
+    } else {
+      const price = parseFloat(formData.price_per_kg);
+      if (isNaN(price)) {
+        errors.price_per_kg = 'Harga harus berupa angka';
+      } else if (price <= 0) {
+        errors.price_per_kg = 'Harga harus lebih dari 0';
+      } else if (price > 1000000000) {
+        errors.price_per_kg = 'Harga maksimal adalah 1 miliar rupiah';
+      }
+    }
+    
+    // Validasi tambahan jika mode edit
+    if (isEditing && !formData.id) {
+      // Tidak menampilkan error pada form untuk ini
+      // tapi mencegah submit
+      errors._general = 'ID jenis sampah tidak valid';
     }
     
     setFormErrors(errors);
@@ -216,45 +306,52 @@ const KelolaHargaSampah = () => {
     
     try {
       const data = {
-        ...formData,
-        price_per_kg: parseFloat(formData.price_per_kg),
-        category_name: categories.find(c => c.id === parseInt(formData.category_id))?.name || '',
-        last_updated: new Date().toISOString().split('T')[0]
+        name: formData.name,
+        category_id: parseInt(formData.category_id),
+        price_per_kg: parseFloat(formData.price_per_kg)
       };
       
-      // In a real application, we would call the API to add/update
+      let response;
+      
       if (isEditing) {
-        // Update existing waste type
-        setWasteTypes(prev => 
-          prev.map(item => item.id === data.id ? data : item)
-        );
+        // Validasi ID tidak boleh null saat edit
+        if (!formData.id) {
+          throw new Error('ID jenis sampah tidak valid');
+        }
         
-        Swal.fire({
-          icon: 'success',
-          title: 'Berhasil!',
-          text: `Harga ${data.name} telah diperbarui.`,
-          timer: 2000,
-          timerProgressBar: true,
-          showConfirmButton: false
-        });
+        // Update existing waste type price
+        response = await api.put(`/waste-values/${formData.id}`, data);
+        
+        if (response.data.success) {
+          setWasteTypes(prev => 
+            prev.map(item => item.id === formData.id ? response.data.data : item)
+          );
+          
+          Swal.fire({
+            icon: 'success',
+            title: 'Berhasil!',
+            text: `Harga ${data.name} telah diperbarui.`,
+            timer: 2000,
+            timerProgressBar: true,
+            showConfirmButton: false
+          });
+        }
       } else {
-        // Add new waste type
-        const newId = Math.max(...wasteTypes.map(item => item.id)) + 1;
-        const newWasteType = {
-          ...data,
-          id: newId
-        };
+        // Add new waste type with price
+        response = await api.post('/waste-values', data);
         
-        setWasteTypes(prev => [newWasteType, ...prev]);
-        
-        Swal.fire({
-          icon: 'success',
-          title: 'Berhasil!',
-          text: `Jenis sampah ${data.name} telah ditambahkan.`,
-          timer: 2000,
-          timerProgressBar: true,
-          showConfirmButton: false
-        });
+        if (response.data.success) {
+          setWasteTypes(prev => [response.data.data, ...prev]);
+          
+          Swal.fire({
+            icon: 'success',
+            title: 'Berhasil!',
+            text: `Jenis sampah ${data.name} telah ditambahkan.`,
+            timer: 2000,
+            timerProgressBar: true,
+            showConfirmButton: false
+          });
+        }
       }
       
       setFormDialogOpen(false);
@@ -271,7 +368,7 @@ const KelolaHargaSampah = () => {
       Swal.fire({
         icon: 'error',
         title: 'Gagal!',
-        text: 'Terjadi kesalahan saat menyimpan data. Silakan coba lagi.'
+        text: err.response?.data?.message || err.message || 'Terjadi kesalahan saat menyimpan data. Silakan coba lagi.'
       });
     } finally {
       setIsLoading(prev => ({ ...prev, submit: false }));
@@ -281,10 +378,10 @@ const KelolaHargaSampah = () => {
   // Handle edit
   const handleEdit = (wasteType) => {
     setFormData({
-      id: wasteType.id,
-      name: wasteType.name,
-      category_id: wasteType.category_id.toString(),
-      price_per_kg: wasteType.price_per_kg.toString(),
+      id: wasteType.id || null,
+      name: wasteType.name || '',
+      category_id: wasteType.category_id ? wasteType.category_id.toString() : '',
+      price_per_kg: wasteType.price_per_kg ? wasteType.price_per_kg.toString() : '0',
     });
     setIsEditing(true);
     setFormDialogOpen(true);
@@ -292,6 +389,16 @@ const KelolaHargaSampah = () => {
 
   // Handle delete
   const handleDelete = (wasteTypeId) => {
+    // Validasi ID tidak boleh null
+    if (!wasteTypeId) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal!',
+        text: 'ID jenis sampah tidak valid. Silakan coba lagi.'
+      });
+      return;
+    }
+
     Swal.fire({
       title: 'Konfirmasi Hapus',
       text: 'Apakah Anda yakin ingin menghapus jenis sampah ini?',
@@ -301,28 +408,33 @@ const KelolaHargaSampah = () => {
       cancelButtonColor: theme.palette.grey[500],
       confirmButtonText: 'Ya, Hapus',
       cancelButtonText: 'Batal'
-    }).then((result) => {
+    }).then(async (result) => {
       if (result.isConfirmed) {
         setIsLoading(prev => ({ ...prev, delete: true }));
         
         try {
-          // In a real application, we would call the API to delete
-          setWasteTypes(prev => prev.filter(item => item.id !== wasteTypeId));
+          const response = await api.delete(`/waste-values/${wasteTypeId}`);
           
-          Swal.fire({
-            icon: 'success',
-            title: 'Terhapus!',
-            text: 'Jenis sampah berhasil dihapus.',
-            timer: 2000,
-            timerProgressBar: true,
-            showConfirmButton: false
-          });
+          if (response.data.success) {
+            setWasteTypes(prev => prev.filter(item => item.id !== wasteTypeId));
+          
+            Swal.fire({
+              icon: 'success',
+              title: 'Terhapus!',
+              text: 'Jenis sampah berhasil dihapus.',
+              timer: 2000,
+              timerProgressBar: true,
+              showConfirmButton: false
+            });
+          } else {
+            throw new Error(response.data.message || 'Gagal menghapus jenis sampah');
+          }
         } catch (err) {
           console.error('Error deleting waste type:', err);
           Swal.fire({
             icon: 'error',
             title: 'Gagal!',
-            text: 'Terjadi kesalahan saat menghapus data. Silakan coba lagi.'
+            text: err.response?.data?.message || err.message || 'Terjadi kesalahan saat menghapus data. Silakan coba lagi.'
           });
         } finally {
           setIsLoading(prev => ({ ...prev, delete: false }));
@@ -353,29 +465,52 @@ const KelolaHargaSampah = () => {
     setPage(0);
   };
 
-  // Handle bulk price update (for demo - increases all prices by 5%)
+  // Handle bulk price update
   const handleBulkUpdate = () => {
     Swal.fire({
       title: 'Perbarui Semua Harga',
-      text: 'Tindakan ini akan menaikkan semua harga sebesar 5%. Lanjutkan?',
-      icon: 'question',
+      text: 'Masukkan persentase kenaikan harga (gunakan angka negatif untuk menurunkan):',
+      input: 'number',
+      inputAttributes: {
+        step: 1,
+        min: -50,
+        max: 100
+      },
+      inputValue: 5,
       showCancelButton: true,
-      confirmButtonText: 'Ya, Perbarui',
-      cancelButtonText: 'Batal'
+      confirmButtonText: 'Perbarui',
+      cancelButtonText: 'Batal',
+      showLoaderOnConfirm: true,
+      preConfirm: async (percentage) => {
+        try {
+          const response = await api.post('/waste-values/bulk-update', {
+            percentage: parseInt(percentage)
+          });
+          
+          if (response.data.success) {
+            // Refresh waste values after bulk update
+            const wasteValuesResponse = await api.get('/waste-values');
+            if (wasteValuesResponse.data.success) {
+              setWasteTypes(wasteValuesResponse.data.data);
+              setFilteredWasteTypes(wasteValuesResponse.data.data);
+            }
+            return response.data;
+          }
+          
+          throw new Error(response.data.message);
+        } catch (error) {
+          Swal.showValidationMessage(
+            `Request failed: ${error.response?.data?.message || error.message}`
+          );
+        }
+      },
+      allowOutsideClick: () => !Swal.isLoading()
     }).then((result) => {
       if (result.isConfirmed) {
-        const updatedWasteTypes = wasteTypes.map(item => ({
-          ...item,
-          price_per_kg: Math.round(item.price_per_kg * 1.05),
-          last_updated: new Date().toISOString().split('T')[0]
-        }));
-        
-        setWasteTypes(updatedWasteTypes);
-        
         Swal.fire({
           icon: 'success',
           title: 'Berhasil!',
-          text: 'Semua harga telah diperbarui dengan kenaikan 5%.',
+          text: `Semua harga telah diperbarui dengan perubahan ${result.value.data.percentage}%.`,
           timer: 2000,
           timerProgressBar: true,
           showConfirmButton: false
@@ -605,27 +740,36 @@ const KelolaHargaSampah = () => {
                   <TableBody>
                     {filteredWasteTypes
                       .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                      .map((wasteType) => (
-                        <TableRow key={wasteType.id} hover>
-                          <TableCell>{wasteType.name}</TableCell>
+                      .map((wasteType, index) => (
+                        <TableRow key={wasteType.id ? wasteType.id : `waste-type-${index}`} hover>
+                          <TableCell>{wasteType.name || 'Unnamed'}</TableCell>
                           <TableCell>
-                            <Chip 
-                              label={wasteType.category_name} 
-                              size="small" 
-                              color={
-                                wasteType.category_id === 1 ? 'primary' : 
-                                wasteType.category_id === 2 ? 'secondary' :
-                                wasteType.category_id === 3 ? 'info' :
-                                wasteType.category_id === 4 ? 'warning' :
-                                'success'
-                              }
-                              variant="outlined"
-                            />
+                            {wasteType.category_name ? (
+                              <Chip 
+                                label={wasteType.category_name} 
+                                size="small" 
+                                color={
+                                  wasteType.category_name === 'PLASTIK' ? 'primary' : 
+                                  wasteType.category_name === 'KERTAS' ? 'secondary' :
+                                  wasteType.category_name === 'LOGAM' ? 'warning' :
+                                  wasteType.category_name === 'LIMBAH BIODIESEL' ? 'success' :
+                                  'info'
+                                }
+                                variant="outlined"
+                              />
+                            ) : (
+                              <Chip 
+                                label="Tidak Terkategori" 
+                                size="small" 
+                                color="default"
+                                variant="outlined"
+                              />
+                            )}
                           </TableCell>
                           <TableCell align="right" sx={{ fontWeight: 700 }}>
-                            {formatCurrency(wasteType.price_per_kg)}
+                            {formatCurrency(wasteType.price_per_kg || 0)}
                           </TableCell>
-                          <TableCell>{formatDate(wasteType.last_updated)}</TableCell>
+                          <TableCell>{wasteType.last_updated ? formatDate(wasteType.last_updated) : '-'}</TableCell>
                           <TableCell align="center">
                             <Tooltip title="Edit Harga">
                               <IconButton 
@@ -676,12 +820,43 @@ const KelolaHargaSampah = () => {
                 <Typography variant="body2" sx={{ mb: 0.5 }}>
                   Total Jenis Sampah: <strong>{wasteTypes.length}</strong>
                 </Typography>
-                <Typography variant="body2" sx={{ mb: 0.5 }}>
-                  Harga Tertinggi: <strong>{formatCurrency(Math.max(...wasteTypes.map(w => w.price_per_kg)))}</strong> ({wasteTypes.find(w => w.price_per_kg === Math.max(...wasteTypes.map(item => item.price_per_kg)))?.name})
-                </Typography>
-                <Typography variant="body2">
-                  Harga Terendah: <strong>{formatCurrency(Math.min(...wasteTypes.map(w => w.price_per_kg)))}</strong> ({wasteTypes.find(w => w.price_per_kg === Math.min(...wasteTypes.map(item => item.price_per_kg)))?.name})
-                </Typography>
+                {wasteTypes.length > 0 ? (
+                  <>
+                    {/* Filter nilai yang valid dulu untuk perhitungan */}
+                    {(() => {
+                      // Olah data terlebih dahulu
+                      const validPrices = wasteTypes
+                        .filter(w => w && w.price_per_kg && !isNaN(w.price_per_kg) && w.price_per_kg > 0)
+                        .map(w => Number(w.price_per_kg));
+                        
+                      if (validPrices.length === 0) {
+                        return <Typography variant="body2">Tidak ada data harga sampah yang valid</Typography>;
+                      }
+                      
+                      const maxPrice = Math.max(...validPrices);
+                      const minPrice = Math.min(...validPrices);
+                      const maxPriceType = wasteTypes.find(w => Number(w.price_per_kg) === maxPrice);
+                      const minPriceType = wasteTypes.find(w => Number(w.price_per_kg) === minPrice);
+                      
+                      return (
+                        <>
+                          <Typography variant="body2" sx={{ mb: 0.5 }}>
+                            Harga Tertinggi: <strong>{formatCurrency(maxPrice)}</strong> 
+                            {maxPriceType?.name && ` (${maxPriceType.name})`}
+                          </Typography>
+                          <Typography variant="body2">
+                            Harga Terendah: <strong>{formatCurrency(minPrice)}</strong>
+                            {minPriceType?.name && ` (${minPriceType.name})`}
+                          </Typography>
+                        </>
+                      );
+                    })()}
+                  </>
+                ) : (
+                  <Typography variant="body2">
+                    Tidak ada data harga sampah
+                  </Typography>
+                )}
               </Box>
             </Grid>
             <Grid item xs={12} md={5} sx={{ mt: { xs: 2, md: 0 } }}>
@@ -690,7 +865,19 @@ const KelolaHargaSampah = () => {
                 <Box>
                   <Typography variant="body2">Rata-rata Harga per Kg</Typography>
                   <Typography variant="h4" fontWeight={700}>
-                    {formatCurrency(wasteTypes.reduce((acc, curr) => acc + curr.price_per_kg, 0) / (wasteTypes.length || 1))}
+                    {(() => {
+                      // Menghitung rata-rata dengan validasi
+                      const validPrices = wasteTypes
+                        .filter(w => w && w.price_per_kg && !isNaN(w.price_per_kg) && w.price_per_kg > 0)
+                        .map(w => Number(w.price_per_kg));
+                        
+                      if (validPrices.length === 0) {
+                        return formatCurrency(0);
+                      }
+                      
+                      const sum = validPrices.reduce((acc, price) => acc + price, 0);
+                      return formatCurrency(sum / validPrices.length);
+                    })()}
                   </Typography>
                 </Box>
               </Box>
@@ -759,6 +946,10 @@ const KelolaHargaSampah = () => {
                     error={!!formErrors.price_per_kg}
                     helperText={formErrors.price_per_kg}
                     margin="normal"
+                    inputProps={{ 
+                      min: "1", 
+                      step: "100" 
+                    }}
                     InputProps={{
                       startAdornment: <InputAdornment position="start">Rp</InputAdornment>,
                     }}

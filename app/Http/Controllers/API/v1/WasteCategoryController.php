@@ -98,7 +98,7 @@ class WasteCategoryController extends Controller
      */
     public function show(Request $request, $id)
     {
-        $query = WasteCategory::where('category_id', $id);
+        $query = WasteCategory::where('kategori_id', $id);
         
         // Eager loading
         if ($request->has('with_waste_types') && $request->with_waste_types) {
@@ -122,7 +122,7 @@ class WasteCategoryController extends Controller
         $category = WasteCategory::findOrFail($id);
         
         $request->validate([
-            'nama_kategori' => 'sometimes|string|max:255|unique:waste_categories,nama_kategori,' . $id . ',category_id',
+            'nama_kategori' => 'sometimes|string|max:255|unique:waste_categories,nama_kategori,' . $id . ',kategori_id',
             'deskripsi' => 'nullable|string',
             'status' => 'nullable|string|in:AKTIF,TIDAK_AKTIF',
             'ikon' => 'nullable|image|mimes:jpeg,png,jpg,svg|max:2048',

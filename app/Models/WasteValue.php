@@ -13,31 +13,15 @@ class WasteValue extends Model
     use HasFactory, CommonScopes, RecyclableTrait;
     
     /**
-     * Nama tabel yang terkait dengan model.
+     * The attributes that are mass assignable.
      *
-     * @var string
-     */
-    protected $table = 'waste_values';
-    
-    /**
-     * Primary key yang digunakan oleh tabel.
-     *
-     * @var string
-     */
-    protected $primaryKey = 'nilai_id';
-    
-    /**
-     * Kolom yang bisa diisi secara massal.
-     *
-     * @var array<string>
+     * @var array<int, string>
      */
     protected $fillable = [
-        'waste_id',
-        'harga_minimum',
-        'harga_maksimum',
-        'satuan',
-        'tanggal_update',
-        'sumber_data',
+        'waste_type_id',
+        'price_per_unit',
+        'is_active',
+        'notes'
     ];
     
     /**
@@ -46,6 +30,9 @@ class WasteValue extends Model
      * @var array<string, string>
      */
     protected $casts = [
+        'price_per_unit' => 'decimal:2',
+        'is_active' => 'boolean',
+        // Keep old casts for backward compatibility
         'harga_minimum' => 'decimal:2',
         'harga_maksimum' => 'decimal:2',
         'tanggal_update' => 'datetime',
@@ -56,14 +43,14 @@ class WasteValue extends Model
      *
      * @var array<string>
      */
-    protected $searchableFields = ['sumber_data', 'satuan'];
+    protected $searchableFields = ['waste_type_id', 'price_per_unit', 'notes'];
     
     /**
      * Kolom tanggal untuk pengurutan data terbaru
      *
      * @var string
      */
-    protected $dateColumn = 'tanggal_update';
+    protected $dateColumn = 'updated_at';
     
     /**
      * Method tambahan untuk memfilter berdasarkan range harga
@@ -75,17 +62,29 @@ class WasteValue extends Model
      */
     public function scopePriceRange($query, $min, $max)
     {
-        return $query->where('harga_minimum', '>=', $min)
-                     ->where('harga_maksimum', '<=', $max);
+        return $query->where('price_per_unit', '>=', $min)
+                     ->where('price_per_unit', '<=', $max);
     }
     
     /**
-     * Relasi ke model WasteType (jenis sampah).
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * Get the waste type that owns this value.
      */
-    public function wasteType(): BelongsTo
+    public function wasteType()
     {
-        return $this->belongsTo(WasteType::class, 'waste_id', 'waste_id');
+        return $this->belongsTo(WasteType::class, 'waste_type_id', 'waste_id');
     }
+
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'waste_values_new';
+
+    /**
+     * The primary key for the model.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'id';
 }

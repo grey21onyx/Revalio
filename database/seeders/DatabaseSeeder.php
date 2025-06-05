@@ -28,16 +28,12 @@ class DatabaseSeeder extends Seeder
             RolesAndPermissionsSeeder::class,
             WasteCategorySeeder::class,
             WasteTypeSeeder::class,
-            WasteValueSeeder::class,
             WasteBuyerSeeder::class,
             TutorialAndArticleSeeder::class,
             ForumSeeder::class,
             UserWasteTrackingSeeder::class,
             ForumThreadSeeder::class,
         ]);
-
-        // Seed waste categories
-        $this->seedWasteCategories();
 
         // Add Forum Reports
         $this->call(ForumReportSeeder::class);
@@ -89,17 +85,5 @@ class DatabaseSeeder extends Seeder
         foreach ($categories as $category) {
             DB::table('waste_categories')->insertOrIgnore($category);
         }
-
-        // Tambah nilai sampah untuk waste_id 1
-        DB::table('waste_values')->insertOrIgnore([
-            'waste_id' => 1,
-            'harga_minimum' => 1000,
-            'harga_maksimum' => 2000,
-            'satuan' => 'kg',
-            'tanggal_update' => now(),
-            'sumber_data' => 'Seeder',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
     }
 }

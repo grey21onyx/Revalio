@@ -7,6 +7,7 @@ use App\Traits\RecyclableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Schema;
 
 class WasteCategory extends Model
 {
@@ -35,6 +36,8 @@ class WasteCategory extends Model
         'nama_kategori',
         'deskripsi',
         'ikon',
+        'name',
+        'description',
     ];
     
     /**
@@ -42,7 +45,35 @@ class WasteCategory extends Model
      *
      * @var array<string>
      */
-    protected $searchableFields = ['nama_kategori', 'deskripsi'];
+    protected $searchableFields = ['nama_kategori', 'deskripsi', 'name', 'description'];
+    
+    /**
+     * Accessor to always return a name regardless of schema
+     *
+     * @return string
+     */
+    public function getNameAttribute($value)
+    {
+        if (Schema::hasColumn('waste_categories', 'name') && !empty($value)) {
+            return $value;
+        }
+        
+        return $this->attributes['nama_kategori'] ?? '';
+    }
+    
+    /**
+     * Accessor to always return a description regardless of schema
+     *
+     * @return string
+     */
+    public function getDescriptionAttribute($value)
+    {
+        if (Schema::hasColumn('waste_categories', 'description') && !empty($value)) {
+            return $value;
+        }
+        
+        return $this->attributes['deskripsi'] ?? '';
+    }
     
     /**
      * Relasi ke model WasteType (jenis sampah).
@@ -52,5 +83,13 @@ class WasteCategory extends Model
     public function wasteTypes(): HasMany
     {
         return $this->hasMany(WasteType::class, 'kategori_id', 'kategori_id');
+    }
+    
+    /**
+     * Relasi ke model WasteType menggunakan kolom baru.
+     */
+    public function wasteTypesNew(): HasMany
+    {
+        return $this->hasMany(WasteType::class, 'waste_category_id', 'kategori_id');
     }
 }

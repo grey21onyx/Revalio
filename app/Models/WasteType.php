@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\Schema;
 
 class WasteType extends Model
 {
@@ -42,6 +43,10 @@ class WasteType extends Model
         'cara_penyimpanan',
         'gambar',
         'status_aktif',
+        'name',
+        'waste_category_id',
+        'unit',
+        'description'
     ];
     
     /**
@@ -58,7 +63,10 @@ class WasteType extends Model
      *
      * @var array<string>
      */
-    protected $searchableFields = ['nama_sampah', 'deskripsi', 'cara_sortir', 'cara_penyimpanan'];
+    protected $searchableFields = [
+        'nama_sampah', 'deskripsi', 'cara_sortir', 'cara_penyimpanan',
+        'name', 'description'
+    ];
     
     /**
      * Kolom status untuk menentukan status aktif
@@ -73,6 +81,38 @@ class WasteType extends Model
      * @var mixed
      */
     protected $activeStatusValue = true;
+    
+    /**
+     * Accessor to always return a name regardless of schema
+     *
+     * @return string
+     */
+    public function getNameAttribute($value)
+    {
+        // If the name column exists and has a value, return it
+        if (Schema::hasColumn('waste_types', 'name') && !empty($value)) {
+            return $value;
+        }
+        
+        // Otherwise fallback to the old column name
+        return $this->attributes['nama_sampah'] ?? '';
+    }
+    
+    /**
+     * Accessor to always return a description regardless of schema
+     *
+     * @return string
+     */
+    public function getDescriptionAttribute($value)
+    {
+        // If the description column exists and has a value, return it
+        if (Schema::hasColumn('waste_types', 'description') && !empty($value)) {
+            return $value;
+        }
+        
+        // Otherwise fallback to the old column name
+        return $this->attributes['deskripsi'] ?? '';
+    }
     
     /**
      * Relasi ke model WasteCategory (kategori sampah).
@@ -144,5 +184,21 @@ class WasteType extends Model
     {
         return $this->belongsToMany(User::class, 'user_favorite_waste_types', 'waste_id', 'user_id')
                     ->withTimestamps();
+    }
+
+    /**
+     * Get the waste value for this waste type.
+     */
+    public function wasteValue()
+    {
+        return $this->hasOne(WasteValue::class, 'waste_type_id', 'waste_id');
+    }
+
+    /**
+     * Get the waste category that this waste type belongs to.
+     */
+    public function wasteCategory()
+    {
+        return $this->belongsTo(WasteCategory::class, 'waste_category_id', 'kategori_id');
     }
 }

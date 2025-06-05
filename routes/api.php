@@ -133,6 +133,8 @@ Route::prefix('v1')->group(function () {
         // Waste Values
         Route::apiResource('waste-values', WasteValueController::class);
         Route::get('/waste-values/history/{wasteTypeId}', [WasteValueController::class, 'getValueHistory']);
+        Route::get('/waste-categories', [WasteValueController::class, 'categories']);
+        Route::post('/waste-values/bulk-update', [WasteValueController::class, 'bulkUpdate']);
         
         // Tutorials
         Route::get('tutorials', [TutorialController::class, 'index']);
@@ -230,5 +232,19 @@ Route::prefix('v1/gis')->group(function () {
     // admin routes untuk update lokasi
     Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
         Route::put('/location/{id}', [GISController::class, 'updateLocation']);
+    });
+});
+
+// User Waste Tracking (Authenticated users)
+Route::prefix('v1')->group(function () {
+    // Public route for waste types
+    Route::get('/waste-tracking/waste-types', [UserWasteTrackingController::class, 'getWasteTypes']);
+    
+    // Routes that require authentication
+    Route::middleware('auth:sanctum')->group(function () {
+        // User waste tracking operations
+        Route::apiResource('user-waste-trackings', UserWasteTrackingController::class);
+        Route::get('/user-waste-trackings/export/{format}', [UserWasteTrackingController::class, 'export']);
+        Route::get('/user-waste-trackings/summary', [UserWasteTrackingController::class, 'getSummary']);
     });
 });

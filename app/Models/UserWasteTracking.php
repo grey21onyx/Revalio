@@ -17,30 +17,29 @@ class UserWasteTracking extends Model
      *
      * @var string
      */
-    protected $table = 'user_waste_tracking';
+    protected $table = 'user_waste_trackings';
     
     /**
      * Primary key yang digunakan oleh tabel.
      *
      * @var string
      */
-    protected $primaryKey = 'tracking_id';
+    protected $primaryKey = 'id';
     
     /**
-     * Kolom yang bisa diisi secara massal.
+     * The attributes that are mass assignable.
      *
-     * @var array<string>
+     * @var array<int, string>
      */
     protected $fillable = [
         'user_id',
-        'waste_id',
-        'jumlah',
-        'satuan',
-        'tanggal_pencatatan',
-        'status_pengelolaan',
-        'nilai_estimasi',
-        'catatan',
-        'foto',
+        'waste_type_id',
+        'amount',
+        'unit',
+        'tracking_date',
+        'management_status',
+        'estimated_value',
+        'notes',
     ];
     
     /**
@@ -49,31 +48,31 @@ class UserWasteTracking extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'jumlah' => 'float',
-        'nilai_estimasi' => 'float',
-        'tanggal_pencatatan' => 'datetime',
+        'amount' => 'float',
+        'estimated_value' => 'float',
+        'tracking_date' => 'datetime',
     ];
     
     /**
-     * Menentukan bahwa model hanya menggunakan timestamp updated_at.
+     * Menentukan bahwa model menggunakan timestamps created_at dan updated_at
      *
      * @var bool
      */
-    public $timestamps = false;
+    public $timestamps = true;
     
     /**
      * Field yang dapat dicari
      *
      * @var array<string>
      */
-    protected $searchableFields = ['catatan', 'status_pengelolaan'];
+    protected $searchableFields = ['notes', 'management_status'];
     
     /**
      * Kolom tanggal untuk pengurutan data terbaru
      *
      * @var string
      */
-    protected $dateColumn = 'tanggal_pencatatan';
+    protected $dateColumn = 'tracking_date';
     
     /**
      * Total nilai estimasi tracking sampah
@@ -86,7 +85,7 @@ class UserWasteTracking extends Model
             $query->where('user_id', $userId);
         }
         
-        return $query->sum('nilai_estimasi');
+        return $query->sum('estimated_value');
     }
     
     /**
@@ -100,7 +99,7 @@ class UserWasteTracking extends Model
             $query->where('user_id', $userId);
         }
         
-        return $query->sum('jumlah');
+        return $query->sum('amount');
     }
     
     /**
@@ -108,7 +107,7 @@ class UserWasteTracking extends Model
      */
     public function scopeWithStatus($query, $status)
     {
-        return $query->where('status_pengelolaan', $status);
+        return $query->where('management_status', $status);
     }
     
     /**
@@ -116,7 +115,7 @@ class UserWasteTracking extends Model
      */
     public function scopeInDateRange($query, $startDate, $endDate)
     {
-        return $query->whereBetween('tanggal_pencatatan', [$startDate, $endDate]);
+        return $query->whereBetween('tracking_date', [$startDate, $endDate]);
     }
     
     /**
@@ -130,12 +129,10 @@ class UserWasteTracking extends Model
     }
     
     /**
-     * Relasi ke model WasteType (jenis sampah).
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * Get the waste type of this tracking record.
      */
-    public function wasteType(): BelongsTo
+    public function wasteType()
     {
-        return $this->belongsTo(WasteType::class, 'waste_id');
+        return $this->belongsTo(WasteType::class, 'waste_type_id');
     }
 } 
